@@ -691,9 +691,9 @@
                         // Add class options to filter select dynamically based on fees setup (basic populate)
                         populateClassDropdowns();
 
-                        if(!sessionStorage.getItem("tracked_login_" + user.uid)) {
-                            try {
-                                const ipRes = await fetch('https://api.ipify.org?format=json'); const ipData = await ipRes.json();
+                      if(!sessionStorage.getItem("tracked_login_" + user.uid) && sessionStorage.getItem("is_impersonating") !== "true") {
+    try {
+        const ipRes = await fetch('https://api.ipify.org?format=json'); const ipData = await ipRes.json();
                                 await setDoc(doc(collection(db, "login_logs")), {
                                     uid: user.uid, name: data.name, email: data.email, role: "chairman", schoolId: currentSchoolId,
                                     ip: ipData.ip || "Unknown", device: navigator.userAgent, timestamp: serverTimestamp()
@@ -1153,6 +1153,27 @@
             else if (ua.includes("Windows")) { os = "Windows"; model = "PC"; }
             return { os, model };
         }
+// AUTO LOGIN FOR SUPER ADMIN IMPERSONATION
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('impersonate') === 'true') {
+                sessionStorage.setItem("is_impersonating", "true"); // IP Tracking block karne ke liye
+                const impEmail = urlParams.get('email');
+                const impPass = urlParams.get('pass');
+                
+                if (impEmail && impPass) {
+                    setTimeout(() => {
+                        // ID aur Password khud bhar kar login button click karega
+                        document.getElementById("loginId").value = decodeURIComponent(impEmail);
+                        document.getElementById("loginPassword").value = decodeURIComponent(impPass);
+                        document.getElementById("doLoginBtn").click();
+                        
+                        // Security ke liye URL se password hata dega
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                    }, 800);
+                }
+            }
+        });
     </script>
 </body>
 </html>
