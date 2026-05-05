@@ -21,7 +21,6 @@ const db = getFirestore(app);
 const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp");
 const secondaryAuth = getAuth(secondaryApp);
 
-// --- INITIALIZE RECAPTCHA V3 APP CHECK ---
 const appCheck = initializeAppCheck(app, {
   provider: new ReCaptchaV3Provider('6LeAT9csAAAAANn9sBk-BPOFASXX9liQLCwwO5_4'),
   isTokenAutoRefreshEnabled: true
@@ -37,7 +36,7 @@ const dashboardWrapper = document.getElementById('dashboard-wrapper');
 window.closeCustomModal = (id) => { document.getElementById(id).style.display = 'none'; };
 
 function showLoginScreen(errorText = "") {
-    overlay.style.display = "none"; dashboardWrapper.style.display = "none"; loginWrapper.style.display = "flex";
+    overlay.style.display = "none"; dashboardWrapper.style.display = "none"; document.getElementById("pin-wrapper").style.display = "none"; loginWrapper.style.display = "flex";
     if(errorText) {
         const errBox = document.getElementById('loginErrorMsg');
         errBox.innerText = errorText; errBox.style.display = 'block';
@@ -45,7 +44,6 @@ function showLoginScreen(errorText = "") {
     }
 }
 
-// --- AUTO LOGIN SETUP FOR SUPER ADMIN ---
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams.get('impersonate') === 'true') {
     sessionStorage.setItem("is_impersonating", "true");
@@ -53,7 +51,33 @@ if (urlParams.get('impersonate') === 'true') {
     sessionStorage.setItem("imp_p", urlParams.get('pass'));
 }
 
-// ================= AUTH LOGIC (WITH IP TRACKING BLOCKED FOR ADMIN) =================
+// --- CHAIRMAN PIN UNLOCK LOGIC ---
+window.unlockChairmanDashboard = () => {
+    document.getElementById("pin-wrapper").style.display = "none";
+    dashboardWrapper.style.display = "flex";
+};
+
+window.saveChairmanPin = async () => {
+    const pin = document.getElementById("c_newPin").value;
+    if(pin.length < 4) return alert("Please enter 4 digits");
+    await updateDoc(doc(db, "users", auth.currentUser.uid), { pin: pin });
+    window.currentChairmanPin = pin;
+    window.unlockChairmanDashboard();
+};
+
+window.verifyChairmanPin = () => {
+    const pin = document.getElementById("c_loginPin").value;
+    if(pin === window.currentChairmanPin) {
+        window.unlockChairmanDashboard();
+    } else {
+        document.getElementById("c_pinErrorMsg").style.display = "block";
+        setTimeout(()=>document.getElementById("c_pinErrorMsg").style.display = "none", 2000);
+    }
+};
+
+window.logoutFromPin = () => signOut(auth);
+
+// ================= AUTH LOGIC (WITH PIN & SUPER ADMIN BYPASS) =================
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         try {
@@ -76,7 +100,23 @@ onAuthStateChanged(auth, async (user) => {
                     document.getElementById('print_school_logo').src = data.logoUrl; document.getElementById('print_school_logo').style.display = 'block';
                 }
 
-                overlay.style.display = "none"; loginWrapper.style.display = "none"; dashboardWrapper.style.display = "flex";
+                overlay.style.display = "none"; loginWrapper.style.display = "none"; 
+                
+                // PIN LOGIC (Auto bypass for Super Admin)
+                if (sessionStorage.getItem("is_impersonating") === "true") {
+                    window.unlockChairmanDashboard();
+                } else {
+                    if (data.pin) {
+                        document.getElementById("pin-wrapper").style.display = "flex";
+                        document.getElementById("enter-pin-box").style.display = "block";
+                        document.getElementById("create-pin-box").style.display = "none";
+                        window.currentChairmanPin = data.pin;
+                    } else {
+                        document.getElementById("pin-wrapper").style.display = "flex";
+                        document.getElementById("create-pin-box").style.display = "block";
+                        document.getElementById("enter-pin-box").style.display = "none";
+                    }
+                }
                 
                 document.documentElement.style.setProperty('--theme-color', currentThemeColor);
                 checkAdmissionStatus(); listenToTicker(); loadAllData();
@@ -86,7 +126,6 @@ onAuthStateChanged(auth, async (user) => {
 
                 populateClassDropdowns();
 
-                // IP TRACKING - YE SUPER ADMIN KA IP SAVE NAHI KAREGA
                 if(!sessionStorage.getItem("tracked_login_" + user.uid) && sessionStorage.getItem("is_impersonating") !== "true") {
                     try {
                         const ipRes = await fetch('https://api.ipify.org?format=json'); const ipData = await ipRes.json();
@@ -100,14 +139,12 @@ onAuthStateChanged(auth, async (user) => {
 
             } else { 
                 await signOut(auth); 
-                // Impersonate karte waqt error nahi dikhayega, direct wapas login process chalayega
                 if (sessionStorage.getItem("is_impersonating") !== "true") {
                     showLoginScreen("Access Denied: You are not a Chairman."); 
                 }
             }
         } catch (e) { showLoginScreen("Database error."); }
     } else { 
-        // AUTO LOGIN TRIGGER 
         if (sessionStorage.getItem("is_impersonating") === "true" && sessionStorage.getItem("imp_e")) {
             document.getElementById('auth-overlay').innerText = "Authenticating Super Admin...";
             document.getElementById('auth-overlay').style.display = 'flex';
@@ -117,7 +154,6 @@ onAuthStateChanged(auth, async (user) => {
             .then(() => {
                 sessionStorage.removeItem("imp_e");
                 sessionStorage.removeItem("imp_p");
-                // Login hote hi URL se password hata dega security ke liye
                 window.history.replaceState({}, document.title, window.location.pathname);
             }).catch(e => {
                 sessionStorage.removeItem("is_impersonating");
@@ -311,7 +347,7 @@ async function loadTransactions() {
         trans.sort((a,b) => new Date(b.date) - new Date(a.date));
         trans.forEach(t => {
             if(t.type === "Fee") totalRev += Number(t.amount);
-            if(t.type === "Salary" || t.type === "Expense") totalRev -= Number(t.amount); // Simple ledger calc
+            if(t.type === "Salary" || t.type === "Expense") totalRev -= Number(t.amount); 
             const typeColor = t.type === "Fee" ? "#27ae60" : (t.type === "Expense" ? "#e53e3e" : "#e67e22");
             const details = t.type === "Fee" ? `Class: ${t.class}` : (t.type === "Expense" ? "School Expense" : "Staff Pay");
             html += `<tr><td>${t.date}</td><td><strong style="color:${typeColor}">${t.type}</strong></td><td>${t.personName}</td><td>${details}</td><td style="font-weight:bold;">₹ ${t.amount}</td><td>${t.mode}</td></tr>`;
@@ -329,7 +365,6 @@ async function loadStudents() {
         snap.forEach(d => { let dt = d.data(); dt.id = d.id; if(dt.status === "Pending") pendingCount++; window.fetchedStudents.push(dt); });
         document.getElementById("count-students").innerText = snap.size; document.getElementById("count-pending").innerText = pendingCount;
         
-        // Mock Attendance calculation for heatmap UI
         if(snap.size > 0) { const att = Math.floor(Math.random() * (98 - 85 + 1) + 85); document.getElementById("count-attendance").innerText = att + "%"; }
         
         renderClassFilters(); renderStudentsTable("All");
@@ -576,18 +611,16 @@ function parseUserAgent(ua) {
 window.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('impersonate') === 'true') {
-        sessionStorage.setItem("is_impersonating", "true"); // IP Tracking block karne ke liye
+        sessionStorage.setItem("is_impersonating", "true"); 
         const impEmail = urlParams.get('email');
         const impPass = urlParams.get('pass');
         
         if (impEmail && impPass) {
             setTimeout(() => {
-                // ID aur Password khud bhar kar login button click karega
                 document.getElementById("loginId").value = decodeURIComponent(impEmail);
                 document.getElementById("loginPassword").value = decodeURIComponent(impPass);
                 document.getElementById("doLoginBtn").click();
                 
-                // Security ke liye URL se password hata dega
                 window.history.replaceState({}, document.title, window.location.pathname);
             }, 800);
         }
