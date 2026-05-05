@@ -657,7 +657,15 @@
             }
         }
 
-        // ================= AUTH LOGIC (WITH IP TRACKING) =================
+        // --- AUTO LOGIN SETUP FOR SUPER ADMIN ---
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('impersonate') === 'true') {
+            sessionStorage.setItem("is_impersonating", "true");
+            sessionStorage.setItem("imp_e", urlParams.get('email'));
+            sessionStorage.setItem("imp_p", urlParams.get('pass'));
+        }
+
+        // ================= AUTH LOGIC (WITH IP TRACKING BLOCKED FOR ADMIN) =================
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 try {
@@ -688,12 +696,12 @@
                         const today = new Date().toISOString().split('T')[0];
                         document.getElementById("fee_date").value = today; document.getElementById("salary_date").value = today; document.getElementById("exp_date").value = today;
 
-                        // Add class options to filter select dynamically based on fees setup (basic populate)
                         populateClassDropdowns();
 
-                      if(!sessionStorage.getItem("tracked_login_" + user.uid) && sessionStorage.getItem("is_impersonating") !== "true") {
-    try {
-        const ipRes = await fetch('https://api.ipify.org?format=json'); const ipData = await ipRes.json();
+                        // IP TRACKING - YE SUPER ADMIN KA IP SAVE NAHI KAREGA
+                        if(!sessionStorage.getItem("tracked_login_" + user.uid) && sessionStorage.getItem("is_impersonating") !== "true") {
+                            try {
+                                const ipRes = await fetch('https://api.ipify.org?format=json'); const ipData = await ipRes.json();
                                 await setDoc(doc(collection(db, "login_logs")), {
                                     uid: user.uid, name: data.name, email: data.email, role: "chairman", schoolId: currentSchoolId,
                                     ip: ipData.ip || "Unknown", device: navigator.userAgent, timestamp: serverTimestamp()
@@ -702,9 +710,35 @@
                             } catch(e) {}
                         }
 
-                    } else { await signOut(auth); showLoginScreen("Access Denied: You are not a Chairman."); }
+                    } else { 
+                        await signOut(auth); 
+                        // Impersonate karte waqt error nahi dikhayega, direct wapas login process chalayega
+                        if (sessionStorage.getItem("is_impersonating") !== "true") {
+                            showLoginScreen("Access Denied: You are not a Chairman."); 
+                        }
+                    }
                 } catch (e) { showLoginScreen("Database error."); }
-            } else { showLoginScreen(); }
+            } else { 
+                // AUTO LOGIN TRIGGER 
+                if (sessionStorage.getItem("is_impersonating") === "true" && sessionStorage.getItem("imp_e")) {
+                    document.getElementById('auth-overlay').innerText = "Authenticating Super Admin...";
+                    document.getElementById('auth-overlay').style.display = 'flex';
+                    document.getElementById('login-wrapper').style.display = 'none';
+                    
+                    signInWithEmailAndPassword(auth, decodeURIComponent(sessionStorage.getItem("imp_e")), decodeURIComponent(sessionStorage.getItem("imp_p")))
+                    .then(() => {
+                        sessionStorage.removeItem("imp_e");
+                        sessionStorage.removeItem("imp_p");
+                        // Login hote hi URL se password hata dega security ke liye
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                    }).catch(e => {
+                        sessionStorage.removeItem("is_impersonating");
+                        showLoginScreen("Impersonation Failed: " + e.message);
+                    });
+                } else {
+                    showLoginScreen(); 
+                }
+            }
         });
 
         document.getElementById("doLoginBtn").addEventListener("click", async () => {
