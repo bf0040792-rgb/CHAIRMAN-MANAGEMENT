@@ -390,7 +390,71 @@
 
         <div id="role-footer">System Access: CHAIRMAN AUTHORITY</div>
     </div>
+<!-- ========================================== -->
+    <!-- 🧑‍🏫 STAFF / TEACHER DASHBOARD WRAPPER -->
+    <!-- ========================================== -->
+    <div id="staff-dashboard-wrapper" style="display: none;">
+        <div class="top-navbar" style="background: #2c3e50;">
+            <div class="brand">
+                <span id="staff-school-name" class="desktop-name" style="color: #60a5fa;">School Name</span>
+            </div>
+            <div style="color: white; font-weight: bold; font-size: 14px; background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px;">
+                <i class="fas fa-chalkboard-teacher"></i> Staff Portal
+            </div>
+        </div>
 
+        <div class="dashboard-body">
+            <div class="sidebar" style="background: #1a252f;">
+                <div class="menu-container">
+                    <div class="menu-item active" data-target="staff-tab-attendance"><i class="fas fa-clipboard-list"></i> Daily Attendance</div>
+                    <div class="menu-item" data-target="staff-tab-marks"><i class="fas fa-pen-alt"></i> Enter Exam Marks</div>
+                    <div class="menu-item" data-target="staff-tab-notices"><i class="fas fa-bullhorn"></i> Notice Board</div>
+                    <div class="menu-item" data-target="staff-tab-profile"><i class="fas fa-user-circle"></i> My Profile</div>
+                    <div class="logout-btn" onclick="doLogout()" style="background: #e53e3e;"><i class="fas fa-power-off"></i> Secure Logout</div>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div class="header-title">
+                    <h1 id="staff-tab-title">Teacher Dashboard</h1>
+                    <p style="color: #94a3b8; margin-top: 5px;">Welcome, <span id="staff-welcome-name" style="color: white; font-weight: bold;">Teacher Name</span>!</p>
+                </div>
+
+                <!-- STAFF TAB: ATTENDANCE -->
+                <div id="staff-tab-attendance" class="tab-content active">
+                    <div class="card" style="border-left: 4px solid #3b82f6;">
+                        <h3><i class="fas fa-clipboard-list"></i> Class Attendance</h3>
+                        <p style="font-size:13px; color:#666;">Select your class to mark daily student attendance.</p>
+                        <!-- Form fields for attendance will come here -->
+                        <button class="submit-btn"><i class="fas fa-search"></i> Load Students</button>
+                    </div>
+                </div>
+
+                <!-- STAFF TAB: EXAM MARKS -->
+                <div id="staff-tab-marks" class="tab-content">
+                    <div class="card" style="border-left: 4px solid #10b981;">
+                        <h3><i class="fas fa-pen-alt"></i> Enter Students Marks</h3>
+                        <p style="font-size:13px; color:#666;">Marks entered here will go to the Chairman for Final Veto Approval.</p>
+                        <!-- Form fields for marks entry will come here -->
+                        <button class="submit-btn" style="background: #10b981;"><i class="fas fa-upload"></i> Submit for Veto</button>
+                    </div>
+                </div>
+
+                <!-- STAFF TAB: NOTICES -->
+                <div id="staff-tab-notices" class="tab-content">
+                    <div class="card">
+                        <h3><i class="fas fa-bullhorn"></i> School Notices</h3>
+                        <div style="padding: 20px; text-align: center; color: #888; background: #f8fafc; border-radius: 8px;">
+                            Loading latest announcements from Chairman...
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div id="role-footer" style="background: #1e293b; border-top: 2px solid #3b82f6;">System Access: STAFF AUTHORITY</div>
+    </div>
     <!-- MODAL: EDIT STAFF & PRIVILEGES -->
     <div id="edit-staff-modal" class="custom-modal-overlay">
         <div class="custom-modal-box">
