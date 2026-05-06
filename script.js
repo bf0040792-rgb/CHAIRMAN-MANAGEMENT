@@ -32,15 +32,39 @@ window.fetchedStudents = []; window.fetchedStaff =[]; let currentEditStaffId = n
 const overlay = document.getElementById('auth-overlay');
 const loginWrapper = document.getElementById('login-wrapper');
 const dashboardWrapper = document.getElementById('dashboard-wrapper');
+const licenseLockScreen = document.getElementById('license-lock-screen');
 
 window.closeCustomModal = (id) => { document.getElementById(id).style.display = 'none'; };
 
 function showLoginScreen(errorText = "") {
-    overlay.style.display = "none"; dashboardWrapper.style.display = "none"; document.getElementById("pin-wrapper").style.display = "none"; loginWrapper.style.display = "flex";
+    overlay.style.display = "none"; 
+    dashboardWrapper.style.display = "none"; 
+    document.getElementById("pin-wrapper").style.display = "none"; 
+    licenseLockScreen.style.display = "none"; 
+    loginWrapper.style.display = "flex";
+    
     if(errorText) {
         const errBox = document.getElementById('loginErrorMsg');
         errBox.innerText = errorText; errBox.style.display = 'block';
         setTimeout(() => errBox.style.display = 'none', 5000);
+    }
+}
+
+// --- LICENSE VERIFICATION API LOGIC ---
+async function verifySchoolLicense(schoolId) {
+    try {
+        const response = await fetch("https://school-backend-zlgy.onrender.com/api/verify-license", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ schoolId: schoolId })
+        });
+        const data = await response.json();
+        return data.valid === true;
+    } catch (error) {
+        console.error("License verification failed:", error);
+        return false; // Blocks access if the API call completely fails
     }
 }
 
@@ -77,7 +101,7 @@ window.verifyChairmanPin = () => {
 
 window.logoutFromPin = () => signOut(auth);
 
-// ================= AUTH LOGIC (WITH PIN & SUPER ADMIN BYPASS) =================
+// ================= AUTH LOGIC (WITH PIN, LICENSE LOCK & SUPER ADMIN BYPASS) =================
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         try {
@@ -89,6 +113,23 @@ onAuthStateChanged(auth, async (user) => {
                 }
                 
                 currentSchoolId = data.schoolId; currentSchoolName = data.schoolName;
+
+                // --- TRIGGER SAAS LICENSE VERIFICATION ---
+                overlay.innerText = "Verifying License Subscription...";
+                overlay.style.display = 'flex';
+                
+                const isLicenseValid = await verifySchoolLicense(currentSchoolId);
+                
+                if (!isLicenseValid) {
+                    overlay.style.display = 'none';
+                    dashboardWrapper.style.display = "none";
+                    loginWrapper.style.display = "none";
+                    document.getElementById("pin-wrapper").style.display = "none";
+                    licenseLockScreen.style.display = "flex";
+                    return; // Prevent remainder of the script from executing if invalid
+                }
+                // -----------------------------------------
+
                 document.getElementById('top-school-name').innerText = data.schoolName;
                 document.getElementById('req_old_pass').value = data.plainPassword || '******';
 
@@ -543,7 +584,7 @@ window.approveResult = async (docId) => { try { await updateDoc(doc(db, "exam_ma
 async function loadStaffLogs() {
     try {
         const snap = await getDocs(query(collection(db, "login_logs"), where("schoolId", "==", currentSchoolId)));
-        let html = ""; let logs = [];
+        let html = ""; let logs =[];
         snap.forEach(d => { logs.push({ id: d.id, ...d.data() }); });
         
         logs.sort((a,b) => { if(!a.timestamp) return 1; if(!b.timestamp) return -1; return b.timestamp.toMillis() - a.timestamp.toMillis(); });
