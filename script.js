@@ -26,7 +26,7 @@ const appCheck = initializeAppCheck(app, {
   isTokenAutoRefreshEnabled: true
 });
 
-let currentSchoolId = ""; let currentSchoolName = ""; let currentSignatureUrl = ""; let currentThemeColor = "#1e3c72"; 
+let currentSchoolId = ""; let currentSchoolName = ""; let currentSignatureUrl = ""; let currentThemeColor = "#1e3c72"; let currentIdTemplateUrl = "";
 window.fetchedStudents = []; window.fetchedStaff =[]; let currentEditStaffId = null;
 
 const overlay = document.getElementById('auth-overlay');
@@ -247,6 +247,7 @@ async function checkAdmissionStatus() {
     const docSnap = await getDoc(doc(db, "schools", currentSchoolId));
     if(docSnap.exists()) {
         const data = docSnap.data();
+        if(data.idTemplateUrl) { currentIdTemplateUrl = data.idTemplateUrl; }
         document.getElementById("admissionToggle").checked = data.admissionOpen !== false;
         
         if(data.emergencyMobile) { document.getElementById("school_emergency").value = data.emergencyMobile; document.getElementById("print_emergency").innerText = "Emergency: " + data.emergencyMobile; }
@@ -307,6 +308,16 @@ window.saveEmergency = async () => {
 window.saveSignature = async () => {
     let sigUrl = await uploadToCloudinary("sig_photo", "sig_btn", "<i class='fas fa-pen-nib'></i> Save Signature"); if(!sigUrl) return alert("Please select an image.");
     try { await updateDoc(doc(db, "schools", currentSchoolId), { signatureUrl: sigUrl }); currentSignatureUrl = sigUrl; document.getElementById("preview-signature").src = sigUrl; document.getElementById("print_sig").src = sigUrl; document.getElementById("print_sig").style.display = "block"; document.getElementById("cert_sig").src = sigUrl; document.getElementById("cert_sig").style.display = "block"; alert("Signature Saved!"); } catch(e) {}
+};
+
+window.saveIdTemplate = async () => {
+    let tempUrl = await uploadToCloudinary("id_template_photo", "template_btn", "<i class='fas fa-upload'></i> Save Template");
+    if(!tempUrl) return alert("Please select an image.");
+    try {
+        await updateDoc(doc(db, "schools", currentSchoolId), { idTemplateUrl: tempUrl });
+        currentIdTemplateUrl = tempUrl;
+        alert("ID Card Background Template Saved Successfully!");
+    } catch(e) { alert("Error saving template."); }
 };
 window.sendPasswordRequest = async () => {
     const newPass = document.getElementById("req_new_pass").value.trim(); if(!newPass) return alert("Please enter a new password.");
@@ -464,16 +475,45 @@ window.runDefaulterLockdown = () => { alert("Defaulter Lockdown Tool active! Cli
 // ====== CLEAN ID CARD & CERTIFICATES ======
 window.showIDCard = async (id) => {
     const st = window.fetchedStudents.find(s => s.id === id); if(!st) return;
-    document.getElementById("print_header").style.backgroundColor = currentThemeColor; document.getElementById("print_name").style.backgroundColor = currentThemeColor; document.getElementById("print_footer_stripe").style.backgroundColor = currentThemeColor;
-    document.getElementById("print_school_name").innerText = currentSchoolName; document.getElementById("print_name").innerText = st.name; document.getElementById("print_father").innerText = st.fatherName || "N/A"; document.getElementById("print_mother").innerText = st.motherName || "N/A"; document.getElementById("print_address").innerText = st.address || "N/A"; document.getElementById("print_mobile").innerText = st.mobile || "N/A"; document.getElementById("print_class").innerText = st.class || "N/A"; document.getElementById("print_photo").src = st.photoUrl;
-    document.getElementById("printable-id").style.display = "flex"; document.getElementById("final-id-image").style.display = "none"; document.getElementById("id-actions").style.display = "none"; document.getElementById("generating-text").style.display = "block"; document.getElementById("id-modal").style.display = "flex";
-    setTimeout(() => {
-        html2canvas(document.getElementById("printable-id"), { useCORS: true, scale: 2, backgroundColor: null }).then(canvas => {
-            document.getElementById("final-id-image").src = canvas.toDataURL("image/png");
-            document.getElementById("printable-id").style.display = "none"; document.getElementById("generating-text").style.display = "none";
-            document.getElementById("final-id-image").style.display = "block"; document.getElementById("id-actions").style.display = "flex";
-        }).catch(e => { alert("Generation failed."); document.getElementById("generating-text").style.display = "none"; document.getElementById("id-actions").style.display = "flex"; });
-    }, 800); 
+    if(!currentIdTemplateUrl) return alert("Please upload an ID Card Background Template in School Settings first!");
+
+    // Setup UI for loading
+    document.getElementById("printable-id").style.display = "none"; 
+    document.getElementById("generating-text").style.display = "block";
+    document.getElementById("final-id-image").style.display = "none";
+    document.getElementById("id-actions").style.display = "none";
+    document.getElementById("id-modal").style.display = "flex";
+
+    try {
+        const response = await fetch("https://school-backend-zlgy.onrender.com/api/generate-id-card", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                studentData: {
+                    name: st.name,
+                    class: st.class,
+                    fatherName: st.fatherName || "N/A",
+                    mobile: st.mobile || "N/A",
+                    photoUrl: st.photoUrl || "https://via.placeholder.com/150"
+                },
+                templateUrl: currentIdTemplateUrl
+            })
+        });
+
+        const data = await response.json();
+        if(data.success) {
+            document.getElementById("final-id-image").src = data.idCardUrl;
+            document.getElementById("generating-text").style.display = "none";
+            document.getElementById("final-id-image").style.display = "block";
+            document.getElementById("id-actions").style.display = "flex";
+        } else {
+            alert("API Error: " + data.message);
+            document.getElementById("id-modal").style.display = "none";
+        }
+    } catch (e) {
+        alert("Failed to generate ID Card. Ensure backend is running.");
+        document.getElementById("id-modal").style.display = "none";
+    }
 };
 
 window.generateCertificate = async (id, type) => {
