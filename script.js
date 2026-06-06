@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs, query, where, deleteDoc, serverTimestamp, deleteField, onSnapshot, orderBy, limit, addDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 // --- ADDED RECAPTCHA V3 IMPORTS ---
@@ -53,18 +53,22 @@ function showLoginScreen(errorText = "") {
 // --- LICENSE VERIFICATION API LOGIC ---
 async function verifySchoolLicense(schoolId) {
     try {
-        const response = await fetch("https://school-backend-zlgy.onrender.com/api/verify-license", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ schoolId: schoolId })
-        });
-        const data = await response.json();
-        return data.valid === true;
+        const docSnap = await getDoc(doc(db, "schools", schoolId));
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            // If no license date is set, assume it is valid (Lifetime)
+            if (!data.licenseExpiry) return true; 
+            
+            const expiryDate = new Date(data.licenseExpiry);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Reset time for accurate date comparison
+            
+            return expiryDate >= today;
+        }
+        return false;
     } catch (error) {
         console.error("License verification failed:", error);
-        return false; // Blocks access if the API call completely fails
+        return false;
     }
 }
 
@@ -210,7 +214,12 @@ document.getElementById("doLoginBtn").addEventListener("click", async () => {
     const email = document.getElementById("loginId").value.trim(); const pass = document.getElementById("loginPassword").value.trim(); const btn = document.getElementById("doLoginBtn");
     if(!email || !pass) return showLoginScreen("Enter Username and Password");
     btn.innerText = "Verifying...";
-    try { await signInWithEmailAndPassword(auth, email, pass); } catch(e) { btn.innerText = "Login"; showLoginScreen("Invalid Credentials!"); }
+    try { 
+        await setPersistence(auth, browserSessionPersistence);
+        await signInWithEmailAndPassword(auth, email, pass); 
+    } catch(e) { 
+        btn.innerText = "Login"; showLoginScreen("Invalid Credentials!"); 
+    }
 });
 
 window.doLogout = () => signOut(auth);
