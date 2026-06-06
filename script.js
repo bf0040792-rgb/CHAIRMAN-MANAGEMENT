@@ -323,8 +323,10 @@ window.saveIdTemplate = async () => {
     let tempUrl = await uploadToCloudinary("id_template_photo", "template_btn", "<i class='fas fa-upload'></i> Save Template");
     if(!tempUrl) return alert("Please select an image.");
     try {
-        await updateDoc(doc(db, "schools", currentSchoolId), { idTemplateUrl: tempUrl });
+        const idConfig = { photo: { x: 100, y: 150 }, name: { x: 350, y: 150 }, class: { x: 350, y: 200 }, father: { x: 350, y: 250 }, mobile: { x: 350, y: 300 } };
+        await updateDoc(doc(db, "schools", currentSchoolId), { idTemplateUrl: tempUrl, idConfig: idConfig });
         currentIdTemplateUrl = tempUrl;
+        window.currentIdConfig = idConfig;
         alert("ID Card Background Template Saved Successfully!");
     } catch(e) { alert("Error saving template."); }
 };
@@ -494,6 +496,11 @@ window.showIDCard = async (id) => {
     document.getElementById("id-modal").style.display = "flex";
 
     try {
+        let idConfig = null;
+        const sDoc = await getDoc(doc(db, "schools", currentSchoolId));
+        if (sDoc.exists() && sDoc.data().idConfig) { idConfig = sDoc.data().idConfig; }
+        else { idConfig = { photo: { x: 100, y: 150 }, name: { x: 350, y: 150 }, class: { x: 350, y: 200 }, father: { x: 350, y: 250 }, mobile: { x: 350, y: 300 } }; }
+
         const response = await fetch("https://school-backend-zlgy.onrender.com/api/generate-id-card", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -505,7 +512,8 @@ window.showIDCard = async (id) => {
                     mobile: st.mobile || "N/A",
                     photoUrl: st.photoUrl || "https://via.placeholder.com/150"
                 },
-                templateUrl: currentIdTemplateUrl
+                templateUrl: currentIdTemplateUrl,
+                config: idConfig
             })
         });
 
@@ -523,6 +531,25 @@ window.showIDCard = async (id) => {
         alert("Failed to generate ID Card. Ensure backend is running.");
         document.getElementById("id-modal").style.display = "none";
     }
+};
+
+window.downloadGeneratedID = () => {
+    const img = document.getElementById('final-id-image');
+    if(!img.src) return alert("No ID card available.");
+    const link = document.createElement('a');
+    link.href = img.src;
+    link.download = `Student_IDCard.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
+window.printGeneratedID = () => {
+    const img = document.getElementById('final-id-image');
+    if(!img.src) return alert("No ID card available.");
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write('<html><head><title>Print ID Card</title></head><body><img src="' + img.src + '" onload="window.print();window.close()"></body></html>');
+    printWindow.document.close();
 };
 
 window.generateCertificate = async (id, type) => {
