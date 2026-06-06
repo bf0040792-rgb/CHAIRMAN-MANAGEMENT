@@ -227,7 +227,7 @@ document.querySelectorAll('.menu-item').forEach(item => {
 });
 
 window.generateRegistrationLink = () => {
-    const liveDomain = "https://sioncom.netlify.app"; const link = `${liveDomain}/?school=${currentSchoolId}`;
+    const liveDomain = "https://bf0040792-rgb.github.io/CHAIRMAN-MANAGEMENT/admission.html"; const link = `${liveDomain}?school=${currentSchoolId}`;
     document.getElementById("short-link-input").value = link; document.getElementById("link-display-box").style.display = "flex";
 };
 
