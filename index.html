@@ -89,7 +89,7 @@
                     <div class="menu-item" data-target="tab-academics"><i class="fas fa-book-open"></i> Academic Veto</div>
                     <div class="menu-item" data-target="tab-notices"><i class="fas fa-bullhorn"></i> Notices & Ticker</div>
                     <div class="menu-item" data-target="tab-mailbox"><i class="fas fa-envelope"></i> Mail Box</div>
-                    <div class="menu-item" data-target="tab-surveillance"><i class="fas fa-shield-alt"></i> Surveillance Logs</div>
+
                     <div class="menu-item" data-target="tab-password"><i class="fas fa-key"></i> Change Password</div>
                     <div class="menu-item" data-target="tab-settings"><i class="fas fa-cogs"></i> School Settings</div>
                     <div class="logout-btn" id="logoutBtn" onclick="doLogout()"><i class="fas fa-power-off"></i> Secure Logout</div>
@@ -331,21 +331,7 @@
                     </div>
                 </div>
 
-                <!-- TAB: SURVEILLANCE LOGS -->
-                <div id="tab-surveillance" class="tab-content">
-                    <div class="card">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                            <h3 style="margin:0;"><i class="fas fa-user-secret"></i> Staff Activity & Login Logs</h3>
-                            <button class="action-btn btn-blue" style="padding:8px 15px;" onclick="loadStaffLogs()"><i class="fas fa-sync"></i> Refresh Logs</button>
-                        </div>
-                        <div style="overflow-x:auto;">
-                            <table>
-                                <thead><tr><th>Timestamp</th><th>Staff Member</th><th>IP / Device</th><th>Action / Login</th></tr></thead>
-                                <tbody id="surveillance-table"><tr><td colspan='4' style='text-align:center;'>Loading logs...</td></tr></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+
 
                 <!-- TAB: CHANGE PASSWORD -->
                 <div id="tab-password" class="tab-content">

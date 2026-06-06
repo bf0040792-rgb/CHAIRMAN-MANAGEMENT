@@ -295,7 +295,7 @@ const uploadToCloudinary = async (fileInputId, btnId, defaultText) => {
     } catch (e) { btn.innerHTML = defaultText; return null; }
 };
 
-function loadAllData() { loadStudents(); loadStaff(); loadNotices(); loadInbox(); loadSentMail(); loadTransactions(); loadPendingResults(); loadStaffLogs(); }
+function loadAllData() { loadStudents(); loadStaff(); loadNotices(); loadInbox(); loadSentMail(); loadTransactions(); loadPendingResults(); }
 
 window.saveThemeColor = async () => {
     const color = document.getElementById("school_theme_color").value;
@@ -620,28 +620,6 @@ async function loadPendingResults() {
     } catch(e) { console.log("Academic veto skip", e); }
 }
 window.approveResult = async (docId) => { try { await updateDoc(doc(db, "exam_marks", docId), { status: "Approved" }); alert("Result Approved! Students can now see it."); loadPendingResults(); } catch(e) {} };
-// ================= SURVEILLANCE & LOGS =================
-async function loadStaffLogs() {
-    try {
-        const snap = await getDocs(query(collection(db, "login_logs"), where("schoolId", "==", currentSchoolId)));
-        let html = ""; let logs =[];
-        snap.forEach(d => { logs.push({ id: d.id, ...d.data() }); });
-        
-        logs.sort((a,b) => { if(!a.timestamp) return 1; if(!b.timestamp) return -1; return b.timestamp.toMillis() - a.timestamp.toMillis(); });
-        
-        logs.forEach(dt => {
-            let ts = dt.timestamp ? new Date(dt.timestamp.toMillis()).toLocaleString() : "Unknown"; 
-            let parsedDevice = parseUserAgent(dt.device);
-            html += `<tr>
-                        <td>${ts}</td>
-                        <td><strong>${dt.name}</strong><br><small>${dt.email}</small></td>
-                        <td><span style="color:#d35400;">IP: ${dt.ip || 'N/A'}</span><br><small>${parsedDevice.os} / ${parsedDevice.model}</small></td>
-                        <td><span style="background:#eaf4ff; color:#2c7be5; padding:2px 6px; border-radius:4px; font-size:11px;">Logged In</span></td>
-                    </tr>`;
-        });
-        document.getElementById("surveillance-table").innerHTML = html || "<tr><td colspan='4' style='text-align:center;'>No logs found.</td></tr>";
-    } catch(e) { console.log("Staff Logs Error", e); }
-}
 
 // ================= NOTICES =================
 window.saveNotice = async () => {
