@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Public Admission Form</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --theme-color: #1e3c72;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --text-main: #333333;
+            --text-muted: #777777;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+            overflow: hidden;
+            display: none; /* Hidden by default until validated */
+            flex-direction: column;
+        }
+
+        .header {
+            background-color: var(--theme-color);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header img {
+            max-width: 100px;
+            max-height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid rgba(255, 255, 255, 0.8);
+            display: none;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .form-body {
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            font-weight: 500;
+            font-size: 14px;
+            color: var(--text-main);
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            padding: 12px 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: border-color 0.3s;
+            background-color: #fafafa;
+        }
+
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: var(--theme-color);
+            background-color: #fff;
+        }
+
+        .submit-btn {
+            background-color: var(--theme-color);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.3s, transform 0.1s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .submit-btn:hover {
+            opacity: 0.9;
+        }
+
+        .submit-btn:active {
+            transform: scale(0.98);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        #message-box {
+            text-align: center;
+            padding: 40px 20px;
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+            display: block; /* Shown by default for "Checking link..." or Error */
+        }
+
+        #message-box i {
+            font-size: 50px;
+            margin-bottom: 20px;
+        }
+
+        #message-box h2 {
+            font-size: 22px;
+            margin-bottom: 10px;
+        }
+
+        #message-box p {
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .success { color: #2ecc71; }
+        .error { color: #e74c3c; }
+        .loading { color: var(--theme-color); }
+
+    </style>
+</head>
+<body>
+
+    <!-- Main Form Container -->
+    <div class="container" id="admission-container">
+        <div class="header" id="school-header">
+            <img src="" id="school-logo" alt="School Logo">
+            <h1 id="school-name">Loading...</h1>
+            <p style="font-size: 14px; opacity: 0.9;">New Student Admission Form</p>
+        </div>
+        
+        <form class="form-body" id="admission-form">
+            <div class="form-group">
+                <label for="student-name">Student Full Name *</label>
+                <input type="text" id="student-name" required placeholder="Enter full name">
+            </div>
+
+            <div class="form-group">
+                <label for="student-class">Class *</label>
+                <select id="student-class" required>
+                    <option value="">-- Select Class --</option>
+                    <option value="Nursery">Nursery</option>
+                    <option value="LKG">LKG</option>
+                    <option value="UKG">UKG</option>
+                    <option value="1st">1st</option>
+                    <option value="2nd">2nd</option>
+                    <option value="3rd">3rd</option>
+                    <option value="4th">4th</option>
+                    <option value="5th">5th</option>
+                    <option value="6th">6th</option>
+                    <option value="7th">7th</option>
+                    <option value="8th">8th</option>
+                    <option value="9th">9th</option>
+                    <option value="10th">10th</option>
+                    <option value="11th">11th</option>
+                    <option value="12th">12th</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="father-name">Father's Name *</label>
+                <input type="text" id="father-name" required placeholder="Enter father's name">
+            </div>
+
+            <div class="form-group">
+                <label for="mother-name">Mother's Name *</label>
+                <input type="text" id="mother-name" required placeholder="Enter mother's name">
+            </div>
+
+            <div class="form-group">
+                <label for="mobile">Mobile Number *</label>
+                <input type="tel" id="mobile" required placeholder="Enter active mobile number">
+            </div>
+
+            <div class="form-group">
+                <label for="address">Full Address *</label>
+                <textarea id="address" rows="3" required placeholder="Enter complete residential address"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="photo">Student Photo *</label>
+                <input type="file" id="photo" accept="image/*" required>
+            </div>
+
+            <button type="submit" class="submit-btn" id="submit-btn">
+                <i class="fas fa-paper-plane"></i> Submit Application
+            </button>
+        </form>
+    </div>
+
+    <!-- Message Box (Error/Success) -->
+    <div id="message-box">
+        <i class="fas fa-spinner fa-spin loading" id="msg-icon"></i>
+        <h2 id="msg-title">Validating...</h2>
+        <p id="msg-text">Checking the admission link...</p>
+    </div>
+
+    <script type="module" src="admission.js"></script>
+</body>
+</html>
