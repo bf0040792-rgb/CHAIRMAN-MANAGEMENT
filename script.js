@@ -260,23 +260,6 @@ async function checkAdmissionStatus() {
         if(data.idTemplateColor && document.getElementById("id_template_color")) {
             document.getElementById("id_template_color").value = data.idTemplateColor;
         }
-        if(data.idConfig) {
-            window.currentIdConfig = data.idConfig;
-            if(document.getElementById("coord_photo_x")) {
-                document.getElementById("coord_photo_x").value = data.idConfig.photo.x;
-                document.getElementById("coord_photo_y").value = data.idConfig.photo.y;
-                if(document.getElementById("coord_photo_w")) document.getElementById("coord_photo_w").value = data.idConfig.photo.w || 150;
-                if(document.getElementById("coord_photo_h")) document.getElementById("coord_photo_h").value = data.idConfig.photo.h || 150;
-                document.getElementById("coord_name_x").value = data.idConfig.name.x;
-                document.getElementById("coord_name_y").value = data.idConfig.name.y;
-                document.getElementById("coord_class_x").value = data.idConfig.class.x;
-                document.getElementById("coord_class_y").value = data.idConfig.class.y;
-                document.getElementById("coord_father_x").value = data.idConfig.father.x;
-                document.getElementById("coord_father_y").value = data.idConfig.father.y;
-                document.getElementById("coord_mobile_x").value = data.idConfig.mobile.x;
-                document.getElementById("coord_mobile_y").value = data.idConfig.mobile.y;
-            }
-        }
         document.getElementById("admissionToggle").checked = data.admissionOpen !== false;
         
         if(data.emergencyMobile) { document.getElementById("school_emergency").value = data.emergencyMobile; document.getElementById("print_emergency").innerText = "Emergency: " + data.emergencyMobile; }
@@ -339,35 +322,7 @@ window.saveSignature = async () => {
     try { await updateDoc(doc(db, "schools", currentSchoolId), { signatureUrl: sigUrl }); currentSignatureUrl = sigUrl; document.getElementById("preview-signature").src = sigUrl; document.getElementById("print_sig").src = sigUrl; document.getElementById("print_sig").style.display = "block"; document.getElementById("cert_sig").src = sigUrl; document.getElementById("cert_sig").style.display = "block"; alert("Signature Saved!"); } catch(e) {}
 };
 
-window.saveIdTemplate = async () => {
-    const idConfig = {
-        photo: { 
-            x: Number(document.getElementById("coord_photo_x").value) || 100, 
-            y: Number(document.getElementById("coord_photo_y").value) || 150,
-            w: Number(document.getElementById("coord_photo_w").value) || 150,
-            h: Number(document.getElementById("coord_photo_h").value) || 150 
-        },
-        name: { x: Number(document.getElementById("coord_name_x").value) || 350, y: Number(document.getElementById("coord_name_y").value) || 150 },
-        class: { x: Number(document.getElementById("coord_class_x").value) || 350, y: Number(document.getElementById("coord_class_y").value) || 200 },
-        father: { x: Number(document.getElementById("coord_father_x").value) || 350, y: Number(document.getElementById("coord_father_y").value) || 250 },
-        mobile: { x: Number(document.getElementById("coord_mobile_x").value) || 350, y: Number(document.getElementById("coord_mobile_y").value) || 300 }
-    };
 
-    const themeColor = document.getElementById("id_template_color").value;
-    const tempUrl = `https://bf0040792-rgb.github.io/CHAIRMAN-MANAGEMENT/templates/template_${themeColor}.png`;
-
-    try {
-        document.getElementById("template_btn").innerHTML = "<i class='fas fa-spinner fa-spin'></i> Saving...";
-        await updateDoc(doc(db, "schools", currentSchoolId), { idTemplateUrl: tempUrl, idTemplateColor: themeColor, idConfig: idConfig });
-        currentIdTemplateUrl = tempUrl;
-        window.currentIdConfig = idConfig;
-        alert("ID Card Theme & Configurations Saved Successfully!");
-        document.getElementById("template_btn").innerHTML = "<i class='fas fa-save'></i> Save Theme & Coords";
-    } catch(e) { 
-        alert("Error saving configurations."); 
-        document.getElementById("template_btn").innerHTML = "<i class='fas fa-save'></i> Save Theme & Coords";
-    }
-};
 window.sendPasswordRequest = async () => {
     const newPass = document.getElementById("req_new_pass").value.trim(); if(!newPass) return alert("Please enter a new password.");
     try { await updateDoc(doc(db, "users", auth.currentUser.uid), { suggestedPassword: newPass }); alert("Password change request sent to Super Admin!"); document.getElementById("req_new_pass").value = ""; } catch(e) {}
@@ -534,10 +489,7 @@ window.showIDCard = async (id) => {
     document.getElementById("id-modal").style.display = "flex";
 
     try {
-        let idConfig = null;
-        const sDoc = await getDoc(doc(db, "schools", currentSchoolId));
-        if (sDoc.exists() && sDoc.data().idConfig) { idConfig = sDoc.data().idConfig; }
-        else { idConfig = { photo: { x: 100, y: 150 }, name: { x: 350, y: 150 }, class: { x: 350, y: 200 }, father: { x: 350, y: 250 }, mobile: { x: 350, y: 300 } }; }
+        let schoolName = window.fetchedSchoolData?.schoolName || document.getElementById('school-name')?.innerText || "ABC SCHOOL NAME";
 
         const response = await fetch("https://school-backend-zlgy.onrender.com/api/generate-id-card", {
             method: "POST",
@@ -550,8 +502,8 @@ window.showIDCard = async (id) => {
                     mobile: st.mobile || "N/A",
                     photoUrl: st.photoUrl || "https://via.placeholder.com/150"
                 },
-                templateUrl: currentIdTemplateUrl,
-                config: idConfig
+                themeColor: window.currentThemeColor || "#1e3c72",
+                schoolName: schoolName
             })
         });
 
@@ -762,7 +714,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // ================= BULK ID GENERATION =================
 window.bulkGenerateIDCards = async () => {
-    if (!currentIdTemplateUrl) return alert("Please upload an ID Card Background Template in School Settings first!");
     const approvedStudents = window.fetchedStudents;
     if (!approvedStudents || approvedStudents.length === 0) return alert("No students available for ID generation.");
 
@@ -771,23 +722,14 @@ window.bulkGenerateIDCards = async () => {
     document.getElementById("bulk-id-grid").innerHTML = "";
 
     try {
-        let idConfig = window.currentIdConfig;
-        if(!idConfig) {
-            const sDoc = await getDoc(doc(db, "schools", currentSchoolId));
-            if(sDoc.exists() && sDoc.data().idConfig) {
-                idConfig = sDoc.data().idConfig;
-                window.currentIdConfig = idConfig;
-            } else {
-                idConfig = { photo: { x: 100, y: 150 }, name: { x: 350, y: 150 }, class: { x: 350, y: 200 }, father: { x: 350, y: 250 }, mobile: { x: 350, y: 300 } };
-            }
-        }
+        let schoolName = window.fetchedSchoolData?.schoolName || document.getElementById('school-name')?.innerText || "ABC SCHOOL NAME";
 
         const response = await fetch("https://school-backend-zlgy.onrender.com/api/bulk-generate-id-cards", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                templateUrl: currentIdTemplateUrl,
-                config: idConfig,
+                themeColor: window.currentThemeColor || "#1e3c72",
+                schoolName: schoolName,
                 students: approvedStudents.map(st => ({
                     name: st.name,
                     class: st.class,
