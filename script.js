@@ -257,6 +257,26 @@ async function checkAdmissionStatus() {
     if(docSnap.exists()) {
         const data = docSnap.data();
         if(data.idTemplateUrl) { currentIdTemplateUrl = data.idTemplateUrl; }
+        if(data.idTemplateColor && document.getElementById("id_template_color")) {
+            document.getElementById("id_template_color").value = data.idTemplateColor;
+        }
+        if(data.idConfig) {
+            window.currentIdConfig = data.idConfig;
+            if(document.getElementById("coord_photo_x")) {
+                document.getElementById("coord_photo_x").value = data.idConfig.photo.x;
+                document.getElementById("coord_photo_y").value = data.idConfig.photo.y;
+                if(document.getElementById("coord_photo_w")) document.getElementById("coord_photo_w").value = data.idConfig.photo.w || 150;
+                if(document.getElementById("coord_photo_h")) document.getElementById("coord_photo_h").value = data.idConfig.photo.h || 150;
+                document.getElementById("coord_name_x").value = data.idConfig.name.x;
+                document.getElementById("coord_name_y").value = data.idConfig.name.y;
+                document.getElementById("coord_class_x").value = data.idConfig.class.x;
+                document.getElementById("coord_class_y").value = data.idConfig.class.y;
+                document.getElementById("coord_father_x").value = data.idConfig.father.x;
+                document.getElementById("coord_father_y").value = data.idConfig.father.y;
+                document.getElementById("coord_mobile_x").value = data.idConfig.mobile.x;
+                document.getElementById("coord_mobile_y").value = data.idConfig.mobile.y;
+            }
+        }
         document.getElementById("admissionToggle").checked = data.admissionOpen !== false;
         
         if(data.emergencyMobile) { document.getElementById("school_emergency").value = data.emergencyMobile; document.getElementById("print_emergency").innerText = "Emergency: " + data.emergencyMobile; }
@@ -320,15 +340,33 @@ window.saveSignature = async () => {
 };
 
 window.saveIdTemplate = async () => {
-    let tempUrl = await uploadToCloudinary("id_template_photo", "template_btn", "<i class='fas fa-upload'></i> Save Template");
-    if(!tempUrl) return alert("Please select an image.");
+    const idConfig = {
+        photo: { 
+            x: Number(document.getElementById("coord_photo_x").value) || 100, 
+            y: Number(document.getElementById("coord_photo_y").value) || 150,
+            w: Number(document.getElementById("coord_photo_w").value) || 150,
+            h: Number(document.getElementById("coord_photo_h").value) || 150 
+        },
+        name: { x: Number(document.getElementById("coord_name_x").value) || 350, y: Number(document.getElementById("coord_name_y").value) || 150 },
+        class: { x: Number(document.getElementById("coord_class_x").value) || 350, y: Number(document.getElementById("coord_class_y").value) || 200 },
+        father: { x: Number(document.getElementById("coord_father_x").value) || 350, y: Number(document.getElementById("coord_father_y").value) || 250 },
+        mobile: { x: Number(document.getElementById("coord_mobile_x").value) || 350, y: Number(document.getElementById("coord_mobile_y").value) || 300 }
+    };
+
+    const themeColor = document.getElementById("id_template_color").value;
+    const tempUrl = `https://bf0040792-rgb.github.io/CHAIRMAN-MANAGEMENT/templates/template_${themeColor}.png`;
+
     try {
-        const idConfig = { photo: { x: 100, y: 150 }, name: { x: 350, y: 150 }, class: { x: 350, y: 200 }, father: { x: 350, y: 250 }, mobile: { x: 350, y: 300 } };
-        await updateDoc(doc(db, "schools", currentSchoolId), { idTemplateUrl: tempUrl, idConfig: idConfig });
+        document.getElementById("template_btn").innerHTML = "<i class='fas fa-spinner fa-spin'></i> Saving...";
+        await updateDoc(doc(db, "schools", currentSchoolId), { idTemplateUrl: tempUrl, idTemplateColor: themeColor, idConfig: idConfig });
         currentIdTemplateUrl = tempUrl;
         window.currentIdConfig = idConfig;
-        alert("ID Card Background Template Saved Successfully!");
-    } catch(e) { alert("Error saving template."); }
+        alert("ID Card Theme & Configurations Saved Successfully!");
+        document.getElementById("template_btn").innerHTML = "<i class='fas fa-save'></i> Save Theme & Coords";
+    } catch(e) { 
+        alert("Error saving configurations."); 
+        document.getElementById("template_btn").innerHTML = "<i class='fas fa-save'></i> Save Theme & Coords";
+    }
 };
 window.sendPasswordRequest = async () => {
     const newPass = document.getElementById("req_new_pass").value.trim(); if(!newPass) return alert("Please enter a new password.");
@@ -721,3 +759,83 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
+
+// ================= BULK ID GENERATION =================
+window.bulkGenerateIDCards = async () => {
+    if (!currentIdTemplateUrl) return alert("Please upload an ID Card Background Template in School Settings first!");
+    const approvedStudents = window.fetchedStudents;
+    if (!approvedStudents || approvedStudents.length === 0) return alert("No students available for ID generation.");
+
+    document.getElementById("bulk-id-modal").style.display = "block";
+    document.getElementById("bulk-generating-text").style.display = "block";
+    document.getElementById("bulk-id-grid").innerHTML = "";
+
+    try {
+        let idConfig = window.currentIdConfig;
+        if(!idConfig) {
+            const sDoc = await getDoc(doc(db, "schools", currentSchoolId));
+            if(sDoc.exists() && sDoc.data().idConfig) {
+                idConfig = sDoc.data().idConfig;
+                window.currentIdConfig = idConfig;
+            } else {
+                idConfig = { photo: { x: 100, y: 150 }, name: { x: 350, y: 150 }, class: { x: 350, y: 200 }, father: { x: 350, y: 250 }, mobile: { x: 350, y: 300 } };
+            }
+        }
+
+        const response = await fetch("https://school-backend-zlgy.onrender.com/api/bulk-generate-id-cards", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                templateUrl: currentIdTemplateUrl,
+                config: idConfig,
+                students: approvedStudents.map(st => ({
+                    name: st.name,
+                    class: st.class,
+                    fatherName: st.fatherName || "N/A",
+                    mobile: st.mobile || "N/A",
+                    photoUrl: st.photoUrl || "https://via.placeholder.com/150"
+                }))
+            })
+        });
+
+        const data = await response.json();
+        document.getElementById("bulk-generating-text").style.display = "none";
+
+        if(data.success && data.images) {
+            window.lastGeneratedBulkIds = data.images;
+            data.images.forEach((imgBase64, index) => {
+                const imgElement = document.createElement("img");
+                imgElement.src = imgBase64;
+                imgElement.style.width = "100%";
+                imgElement.style.borderRadius = "8px";
+                imgElement.style.boxShadow = "0 4px 6px rgba(0,0,0,0.1)";
+                document.getElementById("bulk-id-grid").appendChild(imgElement);
+            });
+        } else {
+            alert("API Error: " + data.error);
+        }
+    } catch (e) {
+        document.getElementById("bulk-generating-text").style.display = "none";
+        alert("Failed to generate IDs. Check backend status.");
+    }
+};
+
+window.downloadAllIdsAsZip = async () => {
+    if (!window.lastGeneratedBulkIds || window.lastGeneratedBulkIds.length === 0) {
+        return alert("No ID cards to download.");
+    }
+
+    const zip = new JSZip();
+    const folder = zip.folder("Student_ID_Cards");
+
+    window.lastGeneratedBulkIds.forEach((base64String, index) => {
+        // Remove the data URL prefix
+        const base64Data = base64String.split(',')[1] || base64String;
+        const studentName = (window.fetchedStudents && window.fetchedStudents[index] && window.fetchedStudents[index].name) ? window.fetchedStudents[index].name.replace(/[^a-z0-9]/gi, '_') : index + 1;
+        folder.file(`Student_ID_${studentName}.jpg`, base64Data, {base64: true});
+    });
+
+    zip.generateAsync({type:"blob"}).then(function(content) {
+        saveAs(content, "Bulk_ID_Cards.zip");
+    });
+};

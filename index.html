@@ -133,7 +133,10 @@
                     <div class="card">
                         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom: 15px;">
                             <h3 style="margin:0;"><i class="fas fa-list"></i> Student Database & Certificates</h3>
-                            <button class="action-btn btn-dark" style="padding:10px 15px;" onclick="runDefaulterLockdown()"><i class="fas fa-lock"></i> Auto-Lock Defaulters</button>
+                            <div style="display: flex; gap: 10px;">
+                                <button id="bulk-id-btn" class="action-btn btn-blue" style="padding:10px 15px;" onclick="window.bulkGenerateIDCards()"><i class="fas fa-id-badge"></i> Generate All ID Cards</button>
+                                <button class="action-btn btn-dark" style="padding:10px 15px;" onclick="runDefaulterLockdown()"><i class="fas fa-lock"></i> Auto-Lock Defaulters</button>
+                            </div>
                         </div>
                         <p style="font-size:13px; color:#666; margin-bottom:15px;">Manage students, issue certificates, and enforce Defaulter Lockdown.</p>
                         
@@ -371,10 +374,34 @@
 
                         <div class="setting-row">
                             <div class="form-group" style="flex:1;">
-                                <label>ID Card Background Template (Used for Auto-Generation)</label>
-                                <input type="file" id="id_template_photo" accept="image/*">
+                                <label>ID Card Theme Color (Based on provided designs)</label>
+                                <select id="id_template_color" class="input-premium">
+                                    <option value="purple">Purple Theme</option>
+                                    <option value="darkblue">Dark Blue Theme</option>
+                                    <option value="lightblue">Light Blue Theme</option>
+                                </select>
                             </div>
-                            <button class="submit-btn" id="template_btn" onclick="saveIdTemplate()"><i class="fas fa-upload"></i> Save Template</button>
+                            <button class="submit-btn" id="template_btn" onclick="saveIdTemplate()"><i class="fas fa-save"></i> Save Theme & Coords</button>
+                        </div>
+                        
+                        <!-- ID Card Coordinates Configuration -->
+                        <div class="card" style="margin-top: 15px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 15px;">
+                            <h4 style="margin: 0 0 10px 0;"><i class="fas fa-crosshairs"></i> ID Card Elements Coordinates (X, Y)</h4>
+                            <p style="font-size: 12px; color: #888; margin-bottom: 15px;">Set exactly where text should appear over the template. Leave empty for defaults.</p>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 15px;">
+                                <div class="form-group"><label style="font-size: 11px;">Photo X</label><input type="number" id="coord_photo_x" class="input-premium" placeholder="100"></div>
+                                <div class="form-group"><label style="font-size: 11px;">Photo Y</label><input type="number" id="coord_photo_y" class="input-premium" placeholder="150"></div>
+                                <div class="form-group"><label style="font-size: 11px;">Photo W</label><input type="number" id="coord_photo_w" class="input-premium" placeholder="150"></div>
+                                <div class="form-group"><label style="font-size: 11px;">Photo H</label><input type="number" id="coord_photo_h" class="input-premium" placeholder="150"></div>
+                                <div class="form-group"><label style="font-size: 11px;">Name X</label><input type="number" id="coord_name_x" class="input-premium" placeholder="350"></div>
+                                <div class="form-group"><label style="font-size: 11px;">Name Y</label><input type="number" id="coord_name_y" class="input-premium" placeholder="150"></div>
+                                <div class="form-group"><label style="font-size: 11px;">Class X</label><input type="number" id="coord_class_x" class="input-premium" placeholder="350"></div>
+                                <div class="form-group"><label style="font-size: 11px;">Class Y</label><input type="number" id="coord_class_y" class="input-premium" placeholder="200"></div>
+                                <div class="form-group"><label style="font-size: 11px;">Father X</label><input type="number" id="coord_father_x" class="input-premium" placeholder="350"></div>
+                                <div class="form-group"><label style="font-size: 11px;">Father Y</label><input type="number" id="coord_father_y" class="input-premium" placeholder="250"></div>
+                                <div class="form-group"><label style="font-size: 11px;">Mobile X</label><input type="number" id="coord_mobile_x" class="input-premium" placeholder="350"></div>
+                                <div class="form-group"><label style="font-size: 11px;">Mobile Y</label><input type="number" id="coord_mobile_y" class="input-premium" placeholder="300"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -530,6 +557,27 @@
             <button class="submit-btn" style="background:#e53e3e;" onclick="closeCustomModal('cert-modal')"><i class="fas fa-times"></i> Close</button>
         </div>
     </div>
+
+    <!-- BULK ID MODAL -->
+    <div id="bulk-id-modal" class="modal-overlay" style="display:none; z-index: 100000; position: fixed; inset: 0; background: rgba(0,0,0,0.8);">
+        <div class="modal-content" style="max-width:90%; width: 1000px; max-height: 90vh; overflow-y: auto; background: #fff; margin: 5vh auto; padding: 20px; border-radius: 10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                <h2 style="margin:0; color: #333;"><i class="fas fa-id-badge" style="color: #2563eb;"></i> Bulk Generated ID Cards</h2>
+                <div style="display: flex; gap: 10px;">
+                    <button class="submit-btn" style="background:#10b981; padding: 10px 20px; border: none; border-radius: 5px; color: white; cursor: pointer;" onclick="window.downloadAllIdsAsZip()"><i class="fas fa-file-archive"></i> Download All as ZIP</button>
+                    <button class="submit-btn" style="background:#e53e3e; padding: 10px 20px; border: none; border-radius: 5px; color: white; cursor: pointer;" onclick="closeCustomModal('bulk-id-modal')"><i class="fas fa-times"></i> Close</button>
+                </div>
+            </div>
+            <p id="bulk-generating-text" style="text-align:center; font-weight:bold; margin:20px 0; display:none; color: #333;"><i class="fas fa-spinner fa-spin"></i> Generating IDs in bulk... Please wait!</p>
+            <div id="bulk-id-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; padding: 10px;">
+                <!-- Generated IDs will appear here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- JSZip and FileSaver for Bulk ZIP Download -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
     <!-- FIREBASE LOGIC -->
     <script type="module" src="script.js"></script>
