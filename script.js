@@ -274,9 +274,33 @@ async function checkAdmissionStatus() {
         document.getElementById("admissionToggle").checked = data.admissionOpen !== false;
         
         if(data.emergencyMobile) { document.getElementById("school_emergency").value = data.emergencyMobile; document.getElementById("print_emergency").innerText = "Emergency: " + data.emergencyMobile; }
-        if(data.signatureUrl) { currentSignatureUrl = data.signatureUrl; document.getElementById("preview-signature").src = data.signatureUrl; document.getElementById("print_sig").src = data.signatureUrl; document.getElementById("print_sig").style.display = "block"; document.getElementById("cert_sig").src = data.signatureUrl; document.getElementById("cert_sig").style.display = "block"; }
+        if(data.signatureUrl) { 
+            currentSignatureUrl = data.signatureUrl; 
+            document.getElementById("preview-signature").src = data.signatureUrl; 
+            if(!data.sigSettings || data.sigSettings.idCard !== false) document.getElementById("print_sig").src = data.signatureUrl; 
+            document.getElementById("cert_sig").src = data.signatureUrl; 
+        }
+        if(data.sigSettings) {
+            window.currentSigSettings = data.sigSettings;
+            if(document.getElementById("sig_on_id")) {
+                document.getElementById("sig_on_id").checked = data.sigSettings.idCard;
+                document.getElementById("sig_on_tc").checked = data.sigSettings.tc;
+                document.getElementById("sig_on_char").checked = data.sigSettings.char;
+                document.getElementById("sig_on_bonafide").checked = data.sigSettings.bonafide;
+            }
+        } else {
+            window.currentSigSettings = { idCard: true, tc: true, char: true, bonafide: true };
+        }
         if(data.themeColor) { currentThemeColor = data.themeColor; document.getElementById("school_theme_color").value = currentThemeColor; document.documentElement.style.setProperty('--theme-color', currentThemeColor); }
         if(data.emergencyTicker) { document.getElementById("ticker_input").value = data.emergencyTicker; }
+        
+        // Authority Enforcement: Hide restricted modules
+        if(data.blockedModules && Array.isArray(data.blockedModules)) {
+            data.blockedModules.forEach(mod => {
+                const menuItem = document.querySelector(`.menu-item[data-target="tab-${mod}"]`);
+                if(menuItem) menuItem.style.display = 'none';
+            });
+        }
     }
 }
 
@@ -346,8 +370,30 @@ window.saveEmergency = async () => {
     try { await updateDoc(doc(db, "schools", currentSchoolId), { emergencyMobile: num }); document.getElementById("print_emergency").innerText = "Emergency: " + num; alert("Emergency Number Saved!"); } catch(e) {}
 };
 window.saveSignature = async () => {
-    let sigUrl = await uploadToCloudinary("sig_photo", "sig_btn", "<i class='fas fa-pen-nib'></i> Save Signature"); if(!sigUrl) return alert("Please select an image.");
-    try { await updateDoc(doc(db, "schools", currentSchoolId), { signatureUrl: sigUrl }); currentSignatureUrl = sigUrl; document.getElementById("preview-signature").src = sigUrl; document.getElementById("print_sig").src = sigUrl; document.getElementById("print_sig").style.display = "block"; document.getElementById("cert_sig").src = sigUrl; document.getElementById("cert_sig").style.display = "block"; alert("Signature Saved!"); } catch(e) {}
+    let sigUrl = currentSignatureUrl; 
+    if (document.getElementById("sig_photo").files.length > 0) {
+        sigUrl = await uploadToCloudinary("sig_photo", "sig_btn", "<i class='fas fa-pen-nib'></i> Save Signature & Preferences");
+        if(!sigUrl) return alert("Please select an image or wait for upload.");
+    }
+    
+    const sigSettings = {
+        idCard: document.getElementById("sig_on_id").checked,
+        tc: document.getElementById("sig_on_tc").checked,
+        char: document.getElementById("sig_on_char").checked,
+        bonafide: document.getElementById("sig_on_bonafide").checked
+    };
+
+    try { 
+        await updateDoc(doc(db, "schools", currentSchoolId), { signatureUrl: sigUrl, sigSettings: sigSettings }); 
+        currentSignatureUrl = sigUrl; 
+        window.currentSigSettings = sigSettings;
+        if(sigUrl) {
+            document.getElementById("preview-signature").src = sigUrl; 
+            document.getElementById("print_sig").src = sigUrl; 
+            document.getElementById("cert_sig").src = sigUrl; 
+        }
+        alert("Signature & Preferences Saved!"); 
+    } catch(e) { console.error(e); }
 };
 
 
@@ -462,9 +508,40 @@ function renderClassFilters() {
 }
 window.filterStudents = (className, btnElement) => { document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active')); if(btnElement) btnElement.classList.add('active'); renderStudentsTable(className); };
 
-function renderStudentsTable(className) {
+window.searchStudent = () => {
+    const term = document.getElementById("searchStudentInput").value;
+    const activeClass = document.querySelector('.filter-btn.active') ? document.querySelector('.filter-btn.active').innerText : 'All';
+    renderStudentsTable(activeClass, term);
+};
+
+window.filterByStatus = (status) => {
+    switchTab('tab-students');
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('.filter-btn').classList.add('active');
+    renderStudentsTable('All', null, status);
+};
+
+function renderStudentsTable(className, searchTerm = null, statusFilter = null) {
     const tbody = document.getElementById("student-table"); let html = "";
     let filtered = className === "All" ? window.fetchedStudents : window.fetchedStudents.filter(s => s.class && s.class.toUpperCase() === className.toUpperCase());
+    
+    if(statusFilter && statusFilter !== 'all') {
+        filtered = filtered.filter(s => s.status && s.status.toLowerCase() === statusFilter.toLowerCase());
+    }
+
+    if(searchTerm) {
+        const lowerTerm = searchTerm.toLowerCase();
+        filtered = filtered.filter(s => 
+            (s.name && s.name.toLowerCase().includes(lowerTerm)) ||
+            (s.rollNo && String(s.rollNo).includes(lowerTerm)) ||
+            (s.regNo && String(s.regNo).includes(lowerTerm)) ||
+            (s.mobile && String(s.mobile).includes(lowerTerm))
+        );
+    }
+
+    // Sort by Roll Number Ascending
+    filtered.sort((a,b) => (Number(a.rollNo) || 999999) - (Number(b.rollNo) || 999999));
+
     filtered.forEach(dt => {
         const safeId = dt.id.replace(/'/g, "\\'"); const locked = dt.lockedOut;
         const statusColor = dt.status === 'Approved' ? '#27ae60' : (dt.status === 'Pending' ? '#e67e22' : '#e53e3e'); const statusIcon = dt.status === 'Approved' ? '✓' : '⏳';
@@ -475,33 +552,89 @@ function renderStudentsTable(className) {
             ? `<button class="action-btn btn-green" onclick="updateStudentStatus('${safeId}')"><i class="fas fa-check"></i> Approve</button>`
             : `
             <button class="action-btn btn-blue" onclick="showIDCard('${safeId}')"><i class="fas fa-id-card"></i> ID</button>
-            <div style="display:inline-block; position:relative; margin:0 3px;">
-                <button class="action-btn btn-purple" onclick="generateCertificate('${safeId}', 'tc')">TC</button>
-                <button class="action-btn btn-purple" onclick="generateCertificate('${safeId}', 'character')">Char.</button>
-                <button class="action-btn btn-purple" onclick="generateCertificate('${safeId}', 'bonafide')">Bonafide</button>
-            </div>
+            <button class="action-btn btn-purple" onclick="openStudentModal('${safeId}')"><i class="fas fa-edit"></i> Edit</button>
             ${lockBtn}`;
         
         html += `<tr class="${locked ? 'locked-row' : ''}">
             <td><img src="${dt.photoUrl || 'https://via.placeholder.com/100'}" class="img-circle"></td>
             <td><strong style="display:block; font-size:13px;">${dt.name || 'N/A'} ${locked ? '<i class="fas fa-lock" style="color:#e53e3e"></i>' : ''}</strong><small style="color:#7f8c8d;">${dt.mobile || 'No Mobile'}</small></td>
+            <td><span style="font-weight:bold; font-size:13px; color:#333;">${dt.rollNo || 'N/A'}</span></td>
             <td><span style="background:#eaf4ff; color:#2c7be5; padding:3px 8px; border-radius:12px; font-size:12px; font-weight:bold;">Class: ${dt.class || 'N/A'}</span></td>
             <td><span style="font-size:12px; display:block;"><b>F:</b> ${dt.fatherName || 'N/A'}</span><span style="font-size:12px; display:block;"><b>M:</b> ${dt.motherName || 'N/A'}</span></td>
             <td><span style="color:${statusColor}; font-weight:bold; font-size:13px;">${statusIcon} ${dt.status || 'N/A'}</span></td>
             <td style="white-space:nowrap;">${actionBtns} <button class="action-btn btn-red" onclick="deleteStudent('${safeId}')"><i class="fas fa-trash"></i></button></td>
         </tr>`;
     });
-    tbody.innerHTML = html || "<tr><td colspan='6' style='text-align:center; padding:30px; color:#999;'>No Students Found.</td></tr>";
+    tbody.innerHTML = html || "<tr><td colspan='7' style='text-align:center; padding:30px; color:#999;'>No Students Found.</td></tr>";
 }
 
 window.updateStudentStatus = async (id) => { if(confirm("Approve admission?")) { await updateDoc(doc(db, "students", id), { status: "Approved" }); loadStudents(); } };
 window.deleteStudent = async (id) => { if(confirm("Delete this student permanently?")) { await deleteDoc(doc(db, "students", id)); loadStudents(); } };
 
 window.toggleStudentLock = async (id, state) => {
-    if(confirm(state ? "Lock this student's account (Defaulter)?" : "Unlock this student?")) {
+    if(confirm(state ? "Lock this student's account?" : "Unlock this student's account?")) {
         await updateDoc(doc(db, "students", id), { lockedOut: state }); loadStudents();
     }
 };
+
+window.openStudentModal = (id = null) => {
+    document.getElementById("student-modal").style.display = "flex";
+    if (id) {
+        document.getElementById("student-modal-title").innerText = "Edit Student";
+        const st = window.fetchedStudents.find(s => s.id === id);
+        document.getElementById("modal-student-id").value = id;
+        document.getElementById("modal-student-name").value = st.name || "";
+        document.getElementById("modal-student-regNo").value = st.regNo || "";
+        document.getElementById("modal-student-rollNo").value = st.rollNo || "";
+        document.getElementById("modal-student-class").value = st.class || "";
+        document.getElementById("modal-student-father").value = st.fatherName || "";
+        document.getElementById("modal-student-mobile").value = st.mobile || "";
+        document.getElementById("modal-student-photo").value = st.photoUrl || "";
+    } else {
+        document.getElementById("student-modal-title").innerText = "Add Student";
+        document.getElementById("modal-student-id").value = "";
+        document.getElementById("modal-student-name").value = "";
+        document.getElementById("modal-student-regNo").value = "";
+        document.getElementById("modal-student-rollNo").value = "";
+        document.getElementById("modal-student-class").value = "1st";
+        document.getElementById("modal-student-father").value = "";
+        document.getElementById("modal-student-mobile").value = "";
+        document.getElementById("modal-student-photo").value = "";
+    }
+};
+
+window.saveStudentModal = async () => {
+    const id = document.getElementById("modal-student-id").value;
+    const data = {
+        name: document.getElementById("modal-student-name").value.trim(),
+        regNo: document.getElementById("modal-student-regNo").value.trim(),
+        rollNo: document.getElementById("modal-student-rollNo").value.trim(),
+        class: document.getElementById("modal-student-class").value,
+        fatherName: document.getElementById("modal-student-father").value.trim(),
+        mobile: document.getElementById("modal-student-mobile").value.trim(),
+        photoUrl: document.getElementById("modal-student-photo").value.trim(),
+        schoolId: currentSchoolId
+    };
+
+    if(!data.name || !data.class) return alert("Name and Class are required.");
+
+    try {
+        if (id) {
+            await updateDoc(doc(db, "students", id), data);
+            alert("Student details updated successfully!");
+        } else {
+            data.status = "Approved"; // Auto-approve manual additions
+            data.createdAt = serverTimestamp();
+            await addDoc(collection(db, "students"), data);
+            alert("New student added successfully!");
+        }
+        document.getElementById("student-modal").style.display = "none";
+        loadStudents();
+    } catch (e) {
+        alert("Error saving student.");
+    }
+};
+
 window.runDefaulterLockdown = () => { alert("Defaulter Lockdown Tool active! Click the padlock icon next to a student's ID button to lock their portal/results access."); };
 
 // ====== CLEAN ID CARD & CERTIFICATES ======
@@ -772,9 +905,11 @@ window.bulkGenerateIDCards = async () => {
                 secondaryColor: currentSecondaryColor || "#ffffff",
                 templateStyle: templateStyle,
                 schoolName: schoolName,
-                signatureUrl: currentSignatureUrl || "",
+                signatureUrl: (window.currentSigSettings && window.currentSigSettings.idCard === false) ? "" : currentSignatureUrl,
                 students: approvedStudents.map(st => ({
                     id: st.id || st.regNo,
+                    regNo: st.regNo || "N/A",
+                    rollNo: st.rollNo || "N/A",
                     name: st.name,
                     class: st.class,
                     fatherName: st.fatherName || "N/A",
