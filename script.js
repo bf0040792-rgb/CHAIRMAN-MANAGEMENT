@@ -586,6 +586,7 @@ window.openStudentModal = (id = null) => {
         document.getElementById("modal-student-class").value = st.class || "";
         document.getElementById("modal-student-father").value = st.fatherName || "";
         document.getElementById("modal-student-mobile").value = st.mobile || "";
+        document.getElementById("modal-student-address").value = st.address || "";
         document.getElementById("modal-student-photo-url").value = st.photoUrl || "";
         if(st.photoUrl) {
             document.getElementById("modal-student-photo-preview").src = st.photoUrl;
@@ -602,6 +603,7 @@ window.openStudentModal = (id = null) => {
         document.getElementById("modal-student-class").value = "1st";
         document.getElementById("modal-student-father").value = "";
         document.getElementById("modal-student-mobile").value = "";
+        document.getElementById("modal-student-address").value = "";
         document.getElementById("modal-student-photo-url").value = "";
         document.getElementById("modal-student-photo-preview").style.display = "none";
     }
@@ -623,6 +625,7 @@ window.saveStudentModal = async () => {
         class: document.getElementById("modal-student-class").value,
         fatherName: document.getElementById("modal-student-father").value.trim(),
         mobile: document.getElementById("modal-student-mobile").value.trim(),
+        address: document.getElementById("modal-student-address").value.trim(),
         photoUrl: photoUrl.trim(),
         schoolId: currentSchoolId
     };
@@ -674,6 +677,7 @@ window.showIDCard = async (id) => {
                     class: st.class,
                     fatherName: st.fatherName || "N/A",
                     mobile: st.mobile || "N/A",
+                    address: st.address || "N/A",
                     photoUrl: st.photoUrl || "https://via.placeholder.com/150"
                 },
                 themeColor: currentThemeColor || "#1e3c72",
@@ -928,6 +932,7 @@ window.bulkGenerateIDCards = async () => {
                     class: st.class,
                     fatherName: st.fatherName || "N/A",
                     mobile: st.mobile || "N/A",
+                    address: st.address || "N/A",
                     photoUrl: st.photoUrl || "https://via.placeholder.com/150"
                 }))
             })
