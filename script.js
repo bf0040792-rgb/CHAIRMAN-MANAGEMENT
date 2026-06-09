@@ -527,7 +527,8 @@ window.showIDCard = async (id) => {
                 },
                 themeColor: window.currentThemeColor || "#1e3c72",
                 templateStyle: templateStyle,
-                schoolName: schoolName
+                schoolName: schoolName,
+                signatureUrl: window.currentSignatureUrl || ""
             })
         });
 
@@ -762,6 +763,7 @@ window.bulkGenerateIDCards = async () => {
                 themeColor: window.currentThemeColor || "#1e3c72",
                 templateStyle: templateStyle,
                 schoolName: schoolName,
+                signatureUrl: window.currentSignatureUrl || "",
                 students: approvedStudents.map(st => ({
                     id: st.id || st.regNo,
                     name: st.name,
