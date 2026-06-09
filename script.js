@@ -26,7 +26,7 @@ const appCheck = initializeAppCheck(app, {
   isTokenAutoRefreshEnabled: true
 });
 
-let currentSchoolId = ""; let currentSchoolName = ""; let currentSignatureUrl = ""; let currentThemeColor = "#1e3c72"; let currentIdTemplateUrl = "";
+let currentSchoolId = ""; let currentSchoolName = ""; let currentSignatureUrl = ""; let currentThemeColor = "#1e3c72"; let currentSecondaryColor = "#ffffff"; let currentTemplateStyle = "wave"; let currentIdTemplateUrl = "";
 window.fetchedStudents = []; window.fetchedStaff =[]; let currentEditStaffId = null;
 
 const overlay = document.getElementById('auth-overlay');
@@ -258,7 +258,7 @@ async function checkAdmissionStatus() {
         const data = docSnap.data();
         if(data.idTemplateUrl) { currentIdTemplateUrl = data.idTemplateUrl; }
         if(data.idTemplateStyle) { 
-            window.currentTemplateStyle = data.idTemplateStyle;
+            currentTemplateStyle = data.idTemplateStyle;
             if(document.getElementById('ts_' + data.idTemplateStyle)) {
                 document.getElementById('ts_' + data.idTemplateStyle).checked = true;
                 if(typeof window.selectTemplateUI === 'function') window.selectTemplateUI(data.idTemplateStyle);
@@ -266,6 +266,10 @@ async function checkAdmissionStatus() {
         }
         if(data.idTemplateColor && document.getElementById("id_template_color")) {
             document.getElementById("id_template_color").value = data.idTemplateColor;
+        }
+        if(data.secondaryColor && document.getElementById("school_secondary_color")) {
+            document.getElementById("school_secondary_color").value = data.secondaryColor;
+            currentSecondaryColor = data.secondaryColor;
         }
         document.getElementById("admissionToggle").checked = data.admissionOpen !== false;
         
@@ -317,17 +321,20 @@ const uploadToCloudinary = async (fileInputId, btnId, defaultText) => {
 function loadAllData() { loadStudents(); loadStaff(); loadNotices(); loadInbox(); loadSentMail(); loadTransactions(); loadPendingResults(); }
 
 window.selectTemplateUI = (style) => {
-    window.currentTemplateStyle = style;
+    currentTemplateStyle = style;
     document.querySelectorAll('[id^="card_"]').forEach(el => el.style.borderColor = "transparent");
-    document.getElementById("card_" + style).style.borderColor = "#10b981";
+    const selectedCard = document.getElementById("card_" + style);
+    if(selectedCard) selectedCard.style.borderColor = "#10b981";
 };
 
 window.saveThemeSettings = async () => {
-    const color = document.getElementById("school_theme_color").value;
-    const style = window.currentTemplateStyle || "wave";
+    const color = document.getElementById("school_theme_color")?.value || currentThemeColor;
+    const secColor = document.getElementById("school_secondary_color")?.value || currentSecondaryColor;
+    const style = currentTemplateStyle || "wave";
     try { 
-        await updateDoc(doc(db, "schools", currentSchoolId), { themeColor: color, idTemplateColor: color, idTemplateStyle: style }); 
+        await updateDoc(doc(db, "schools", currentSchoolId), { themeColor: color, idTemplateColor: color, secondaryColor: secColor, idTemplateStyle: style }); 
         currentThemeColor = color; 
+        currentSecondaryColor = secColor;
         document.documentElement.style.setProperty('--theme-color', currentThemeColor); 
         alert("ID Card Design & Theme Color Saved Successfully!"); 
     } catch(e) {
@@ -510,8 +517,8 @@ window.showIDCard = async (id) => {
     document.getElementById("id-modal").style.display = "flex";
 
     try {
-        let schoolName = window.fetchedSchoolData?.schoolName || document.getElementById('school-name')?.innerText || "ABC SCHOOL NAME";
-        const templateStyle = window.currentTemplateStyle || "wave";
+        let schoolName = currentSchoolName || document.getElementById('school-name')?.innerText || "ABC SCHOOL NAME";
+        const templateStyle = currentTemplateStyle || "wave";
 
         const response = await fetch("https://school-backend-zlgy.onrender.com/api/generate-id-card", {
             method: "POST",
@@ -525,10 +532,11 @@ window.showIDCard = async (id) => {
                     mobile: st.mobile || "N/A",
                     photoUrl: st.photoUrl || "https://via.placeholder.com/150"
                 },
-                themeColor: window.currentThemeColor || "#1e3c72",
+                themeColor: currentThemeColor || "#1e3c72",
+                secondaryColor: currentSecondaryColor || "#ffffff",
                 templateStyle: templateStyle,
                 schoolName: schoolName,
-                signatureUrl: window.currentSignatureUrl || ""
+                signatureUrl: currentSignatureUrl || ""
             })
         });
 
@@ -753,17 +761,18 @@ window.bulkGenerateIDCards = async () => {
     document.getElementById("bulk-id-grid").innerHTML = "";
 
     try {
-        let schoolName = window.fetchedSchoolData?.schoolName || document.getElementById('school-name')?.innerText || "ABC SCHOOL NAME";
-        const templateStyle = window.currentTemplateStyle || "wave";
+        let schoolName = currentSchoolName || document.getElementById('school-name')?.innerText || "ABC SCHOOL NAME";
+        const templateStyle = currentTemplateStyle || "wave";
 
         const response = await fetch("https://school-backend-zlgy.onrender.com/api/bulk-generate-id-cards", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                themeColor: window.currentThemeColor || "#1e3c72",
+                themeColor: currentThemeColor || "#1e3c72",
+                secondaryColor: currentSecondaryColor || "#ffffff",
                 templateStyle: templateStyle,
                 schoolName: schoolName,
-                signatureUrl: window.currentSignatureUrl || "",
+                signatureUrl: currentSignatureUrl || "",
                 students: approvedStudents.map(st => ({
                     id: st.id || st.regNo,
                     name: st.name,
