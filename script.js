@@ -284,12 +284,10 @@ async function checkAdmissionStatus() {
             window.currentSigSettings = data.sigSettings;
             if(document.getElementById("sig_on_id")) {
                 document.getElementById("sig_on_id").checked = data.sigSettings.idCard;
-                document.getElementById("sig_on_tc").checked = data.sigSettings.tc;
-                document.getElementById("sig_on_char").checked = data.sigSettings.char;
                 document.getElementById("sig_on_bonafide").checked = data.sigSettings.bonafide;
             }
         } else {
-            window.currentSigSettings = { idCard: true, tc: true, char: true, bonafide: true };
+            window.currentSigSettings = { idCard: true, bonafide: true };
         }
         if(data.themeColor) { currentThemeColor = data.themeColor; document.getElementById("school_theme_color").value = currentThemeColor; document.documentElement.style.setProperty('--theme-color', currentThemeColor); }
         if(data.emergencyTicker) { document.getElementById("ticker_input").value = data.emergencyTicker; }
@@ -378,8 +376,6 @@ window.saveSignature = async () => {
     
     const sigSettings = {
         idCard: document.getElementById("sig_on_id").checked,
-        tc: document.getElementById("sig_on_tc").checked,
-        char: document.getElementById("sig_on_char").checked,
         bonafide: document.getElementById("sig_on_bonafide").checked
     };
 

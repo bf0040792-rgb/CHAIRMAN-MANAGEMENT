@@ -465,8 +465,6 @@
                             <div style="display:flex; flex-direction:column; gap:10px; background:#f9f9f9; padding:15px; border-radius:8px; border:1px solid #eee; margin-bottom:15px;">
                                 <strong style="color:#2d3748; font-size:14px; margin-bottom:5px;">Print Signature On:</strong>
                                 <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:14px;"><input type="checkbox" id="sig_on_id" checked> Student ID Cards</label>
-                                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:14px;"><input type="checkbox" id="sig_on_tc" checked> Transfer Certificate (TC)</label>
-                                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:14px;"><input type="checkbox" id="sig_on_char" checked> Character Certificate</label>
                                 <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:14px;"><input type="checkbox" id="sig_on_bonafide" checked> Bonafide Certificate</label>
                             </div>
                             <button class="submit-btn" id="sig_btn" onclick="saveSignature()"><i class="fas fa-pen-nib"></i> Save Signature & Preferences</button>
@@ -572,7 +570,7 @@
     </div>
 
     <!-- Student Edit/Add Modal -->
-    <div id="student-modal" class="modal">
+    <div id="student-modal" class="modal" style="display: none;">
         <div class="modal-content" style="max-width: 600px;">
             <h2 id="student-modal-title">Edit Student</h2>
             <input type="hidden" id="modal-student-id">
