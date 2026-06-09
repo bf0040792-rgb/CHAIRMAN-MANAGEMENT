@@ -133,8 +133,26 @@
                     <div class="card">
                         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom: 15px;">
                             <h3 style="margin:0;"><i class="fas fa-list"></i> Student Database & Certificates</h3>
-                            <div style="display: flex; gap: 10px;">
-                                <button id="bulk-id-btn" class="action-btn btn-blue" style="padding:10px 15px;" onclick="window.bulkGenerateIDCards()"><i class="fas fa-id-badge"></i> Generate All ID Cards</button>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <select id="bulk_class_select" class="input-premium" style="width: auto; padding: 8px 10px;">
+                                    <option value="ALL">All Classes</option>
+                                    <option value="Nursery">Nursery</option>
+                                    <option value="LKG">LKG</option>
+                                    <option value="UKG">UKG</option>
+                                    <option value="1st">1st</option>
+                                    <option value="2nd">2nd</option>
+                                    <option value="3rd">3rd</option>
+                                    <option value="4th">4th</option>
+                                    <option value="5th">5th</option>
+                                    <option value="6th">6th</option>
+                                    <option value="7th">7th</option>
+                                    <option value="8th">8th</option>
+                                    <option value="9th">9th</option>
+                                    <option value="10th">10th</option>
+                                    <option value="11th">11th</option>
+                                    <option value="12th">12th</option>
+                                </select>
+                                <button id="bulk-id-btn" class="action-btn btn-blue" style="padding:10px 15px;" onclick="window.bulkGenerateIDCards()"><i class="fas fa-id-badge"></i> Generate ID Cards</button>
                                 <button class="action-btn btn-dark" style="padding:10px 15px;" onclick="runDefaulterLockdown()"><i class="fas fa-lock"></i> Auto-Lock Defaulters</button>
                             </div>
                         </div>
@@ -353,12 +371,47 @@
                     <div class="card">
                         <h3><i class="fas fa-cogs"></i> School White-Labeling & ID Settings</h3>
                         
+                        <div class="setting-row" style="flex-direction: column; align-items: flex-start;">
+                            <label style="font-weight: bold; margin-bottom: 10px;">ID Card Template Selection</label>
+                            <div style="display: flex; gap: 20px; overflow-x: auto; width: 100%; padding: 10px 0;">
+                                <label style="cursor: pointer; text-align: center;">
+                                    <input type="radio" name="template_style" value="wave" style="display:none;" id="ts_wave" checked onclick="selectTemplateUI('wave')">
+                                    <div id="card_wave" style="width: 80px; height: 120px; border: 3px solid #10b981; border-radius: 8px; background: #eee; position: relative; overflow: hidden; transition: 0.3s;">
+                                        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 40px; background: var(--theme-color, #1e3c72); border-bottom-left-radius: 50%; border-bottom-right-radius: 50%;"></div>
+                                    </div>
+                                    <span style="font-size: 12px; display: block; margin-top: 5px;">Modern Wave</span>
+                                </label>
+                                <label style="cursor: pointer; text-align: center;">
+                                    <input type="radio" name="template_style" value="triangle" style="display:none;" id="ts_triangle" onclick="selectTemplateUI('triangle')">
+                                    <div id="card_triangle" style="width: 80px; height: 120px; border: 3px solid transparent; border-radius: 8px; background: #eee; position: relative; overflow: hidden; transition: 0.3s;">
+                                        <div style="position: absolute; top: 0; left: 0; width: 0; height: 0; border-left: 40px solid transparent; border-right: 40px solid transparent; border-top: 50px solid var(--theme-color, #1e3c72);"></div>
+                                    </div>
+                                    <span style="font-size: 12px; display: block; margin-top: 5px;">Corporate V</span>
+                                </label>
+                                <label style="cursor: pointer; text-align: center;">
+                                    <input type="radio" name="template_style" value="curved" style="display:none;" id="ts_curved" onclick="selectTemplateUI('curved')">
+                                    <div id="card_curved" style="width: 80px; height: 120px; border: 3px solid transparent; border-radius: 8px; background: #eee; position: relative; overflow: hidden; transition: 0.3s;">
+                                        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 40px; background: var(--theme-color, #1e3c72); border-bottom-left-radius: 20px;"></div>
+                                    </div>
+                                    <span style="font-size: 12px; display: block; margin-top: 5px;">Smooth Curve</span>
+                                </label>
+                                <label style="cursor: pointer; text-align: center;">
+                                    <input type="radio" name="template_style" value="corners" style="display:none;" id="ts_corners" onclick="selectTemplateUI('corners')">
+                                    <div id="card_corners" style="width: 80px; height: 120px; border: 3px solid transparent; border-radius: 8px; background: #eee; position: relative; overflow: hidden; transition: 0.3s;">
+                                        <div style="position: absolute; top: -10px; left: -10px; width: 40px; height: 40px; background: var(--theme-color, #1e3c72); border-radius: 50%;"></div>
+                                        <div style="position: absolute; bottom: -10px; right: -10px; width: 40px; height: 40px; background: var(--theme-color, #1e3c72); border-radius: 50%;"></div>
+                                    </div>
+                                    <span style="font-size: 12px; display: block; margin-top: 5px;">Creative Dots</span>
+                                </label>
+                            </div>
+                        </div>
+
                         <div class="setting-row">
                             <div class="form-group" style="flex:1;">
                                 <label>ID Card Highlight & Theme Color</label>
-                                <input type="color" id="school_theme_color" value="#1e3c72" style="width: 60px; height: 40px; padding: 2px;">
+                                <input type="color" id="school_theme_color" value="#1e3c72" style="width: 60px; height: 40px; padding: 2px; cursor: pointer;">
                             </div>
-                            <button class="submit-btn" onclick="saveThemeColor()"><i class="fas fa-palette"></i> Save Color</button>
+                            <button class="submit-btn" onclick="saveThemeSettings()"><i class="fas fa-palette"></i> Save Design & Color</button>
                         </div>
 
                         <div class="setting-row">

@@ -257,6 +257,13 @@ async function checkAdmissionStatus() {
     if(docSnap.exists()) {
         const data = docSnap.data();
         if(data.idTemplateUrl) { currentIdTemplateUrl = data.idTemplateUrl; }
+        if(data.idTemplateStyle) { 
+            window.currentTemplateStyle = data.idTemplateStyle;
+            if(document.getElementById('ts_' + data.idTemplateStyle)) {
+                document.getElementById('ts_' + data.idTemplateStyle).checked = true;
+                if(typeof window.selectTemplateUI === 'function') window.selectTemplateUI(data.idTemplateStyle);
+            }
+        }
         if(data.idTemplateColor && document.getElementById("id_template_color")) {
             document.getElementById("id_template_color").value = data.idTemplateColor;
         }
@@ -309,9 +316,23 @@ const uploadToCloudinary = async (fileInputId, btnId, defaultText) => {
 
 function loadAllData() { loadStudents(); loadStaff(); loadNotices(); loadInbox(); loadSentMail(); loadTransactions(); loadPendingResults(); }
 
-window.saveThemeColor = async () => {
+window.selectTemplateUI = (style) => {
+    window.currentTemplateStyle = style;
+    document.querySelectorAll('[id^="card_"]').forEach(el => el.style.borderColor = "transparent");
+    document.getElementById("card_" + style).style.borderColor = "#10b981";
+};
+
+window.saveThemeSettings = async () => {
     const color = document.getElementById("school_theme_color").value;
-    try { await updateDoc(doc(db, "schools", currentSchoolId), { themeColor: color }); currentThemeColor = color; document.documentElement.style.setProperty('--theme-color', currentThemeColor); alert("✅ Theme Color Saved Successfully!"); } catch(e) {}
+    const style = window.currentTemplateStyle || "wave";
+    try { 
+        await updateDoc(doc(db, "schools", currentSchoolId), { themeColor: color, idTemplateColor: color, idTemplateStyle: style }); 
+        currentThemeColor = color; 
+        document.documentElement.style.setProperty('--theme-color', currentThemeColor); 
+        alert("ID Card Design & Theme Color Saved Successfully!"); 
+    } catch(e) {
+        alert("Error saving design settings.");
+    }
 };
 window.saveEmergency = async () => {
     const num = document.getElementById("school_emergency").value.trim(); if(!num) return alert("Enter Emergency Number");
@@ -490,12 +511,14 @@ window.showIDCard = async (id) => {
 
     try {
         let schoolName = window.fetchedSchoolData?.schoolName || document.getElementById('school-name')?.innerText || "ABC SCHOOL NAME";
+        const templateStyle = window.currentTemplateStyle || "wave";
 
         const response = await fetch("https://school-backend-zlgy.onrender.com/api/generate-id-card", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 studentData: {
+                    id: st.id || st.regNo,
                     name: st.name,
                     class: st.class,
                     fatherName: st.fatherName || "N/A",
@@ -503,6 +526,7 @@ window.showIDCard = async (id) => {
                     photoUrl: st.photoUrl || "https://via.placeholder.com/150"
                 },
                 themeColor: window.currentThemeColor || "#1e3c72",
+                templateStyle: templateStyle,
                 schoolName: schoolName
             })
         });
@@ -714,8 +738,14 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // ================= BULK ID GENERATION =================
 window.bulkGenerateIDCards = async () => {
-    const approvedStudents = window.fetchedStudents;
+    let approvedStudents = window.fetchedStudents;
     if (!approvedStudents || approvedStudents.length === 0) return alert("No students available for ID generation.");
+
+    const selectedClass = document.getElementById("bulk_class_select")?.value;
+    if (selectedClass && selectedClass !== "ALL") {
+        approvedStudents = approvedStudents.filter(st => st.class === selectedClass);
+        if (approvedStudents.length === 0) return alert("No students found in the selected class.");
+    }
 
     document.getElementById("bulk-id-modal").style.display = "block";
     document.getElementById("bulk-generating-text").style.display = "block";
@@ -723,14 +753,17 @@ window.bulkGenerateIDCards = async () => {
 
     try {
         let schoolName = window.fetchedSchoolData?.schoolName || document.getElementById('school-name')?.innerText || "ABC SCHOOL NAME";
+        const templateStyle = window.currentTemplateStyle || "wave";
 
         const response = await fetch("https://school-backend-zlgy.onrender.com/api/bulk-generate-id-cards", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 themeColor: window.currentThemeColor || "#1e3c72",
+                templateStyle: templateStyle,
                 schoolName: schoolName,
                 students: approvedStudents.map(st => ({
+                    id: st.id || st.regNo,
                     name: st.name,
                     class: st.class,
                     fatherName: st.fatherName || "N/A",
