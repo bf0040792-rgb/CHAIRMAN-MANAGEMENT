@@ -680,7 +680,8 @@ window.showIDCard = async (id) => {
                 secondaryColor: currentSecondaryColor || "#ffffff",
                 templateStyle: templateStyle,
                 schoolName: schoolName,
-                signatureUrl: currentSignatureUrl || ""
+                schoolEmergency: document.getElementById("school_emergency").value || "N/A",
+                signatureUrl: (window.currentSigSettings && window.currentSigSettings.idCard === false) ? "" : currentSignatureUrl
             })
         });
 
@@ -916,6 +917,8 @@ window.bulkGenerateIDCards = async () => {
                 secondaryColor: currentSecondaryColor || "#ffffff",
                 templateStyle: templateStyle,
                 schoolName: schoolName,
+                schoolEmergency: document.getElementById("school_emergency").value || "N/A",
+                emergencyMobile: document.getElementById("school_emergency_mobile")?.value || "N/A",
                 signatureUrl: (window.currentSigSettings && window.currentSigSettings.idCard === false) ? "" : currentSignatureUrl,
                 students: approvedStudents.map(st => ({
                     id: st.id || st.regNo,
