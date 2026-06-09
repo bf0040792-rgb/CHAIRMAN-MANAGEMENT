@@ -575,6 +575,7 @@ window.toggleStudentLock = async (id, state) => {
 
 window.openStudentModal = (id = null) => {
     document.getElementById("student-modal").style.display = "flex";
+    document.getElementById("modal-student-photo-file").value = "";
     if (id) {
         document.getElementById("student-modal-title").innerText = "Edit Student";
         const st = window.fetchedStudents.find(s => s.id === id);
@@ -585,7 +586,13 @@ window.openStudentModal = (id = null) => {
         document.getElementById("modal-student-class").value = st.class || "";
         document.getElementById("modal-student-father").value = st.fatherName || "";
         document.getElementById("modal-student-mobile").value = st.mobile || "";
-        document.getElementById("modal-student-photo").value = st.photoUrl || "";
+        document.getElementById("modal-student-photo-url").value = st.photoUrl || "";
+        if(st.photoUrl) {
+            document.getElementById("modal-student-photo-preview").src = st.photoUrl;
+            document.getElementById("modal-student-photo-preview").style.display = "block";
+        } else {
+            document.getElementById("modal-student-photo-preview").style.display = "none";
+        }
     } else {
         document.getElementById("student-modal-title").innerText = "Add Student";
         document.getElementById("modal-student-id").value = "";
@@ -595,12 +602,20 @@ window.openStudentModal = (id = null) => {
         document.getElementById("modal-student-class").value = "1st";
         document.getElementById("modal-student-father").value = "";
         document.getElementById("modal-student-mobile").value = "";
-        document.getElementById("modal-student-photo").value = "";
+        document.getElementById("modal-student-photo-url").value = "";
+        document.getElementById("modal-student-photo-preview").style.display = "none";
     }
 };
 
 window.saveStudentModal = async () => {
     const id = document.getElementById("modal-student-id").value;
+    
+    let photoUrl = document.getElementById("modal-student-photo-url").value;
+    if (document.getElementById("modal-student-photo-file").files.length > 0) {
+        let uploadedUrl = await uploadToCloudinary("modal-student-photo-file", "modal-save-btn", "<i class='fas fa-save'></i> Save");
+        if(uploadedUrl) photoUrl = uploadedUrl;
+    }
+
     const data = {
         name: document.getElementById("modal-student-name").value.trim(),
         regNo: document.getElementById("modal-student-regNo").value.trim(),
@@ -608,7 +623,7 @@ window.saveStudentModal = async () => {
         class: document.getElementById("modal-student-class").value,
         fatherName: document.getElementById("modal-student-father").value.trim(),
         mobile: document.getElementById("modal-student-mobile").value.trim(),
-        photoUrl: document.getElementById("modal-student-photo").value.trim(),
+        photoUrl: photoUrl.trim(),
         schoolId: currentSchoolId
     };
 

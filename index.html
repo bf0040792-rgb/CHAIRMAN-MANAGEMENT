@@ -570,10 +570,37 @@
     </div>
 
     <!-- Student Edit/Add Modal -->
-    <div id="student-modal" class="modal" style="display: none;">
-        <div class="modal-content" style="max-width: 600px;">
-            <h2 id="student-modal-title">Edit Student</h2>
+    <style>
+        .right-drawer-panel {
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 450px;
+            max-width: 100%;
+            height: 100vh;
+            background: #ffffff;
+            padding: 30px;
+            box-shadow: -5px 0 25px rgba(0,0,0,0.15);
+            animation: slideInRight 0.3s ease-out forwards;
+            overflow-y: auto;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        @keyframes slideInRight {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+    </style>
+    <div id="student-modal" class="modal" style="display: none; align-items: flex-start; justify-content: flex-end;">
+        <div class="right-drawer-panel">
+            <div style="display:flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 15px; margin-bottom: 10px;">
+                <h2 id="student-modal-title" style="margin: 0; color: #2d3748;">Edit Student</h2>
+                <i class="fas fa-times" style="font-size: 20px; color: #a0aec0; cursor: pointer;" onclick="document.getElementById('student-modal').style.display='none'"></i>
+            </div>
             <input type="hidden" id="modal-student-id">
+            <input type="hidden" id="modal-student-photo-url"> <!-- Store existing URL -->
             <div class="form-row">
                 <div class="form-group"><label>Full Name</label><input type="text" id="modal-student-name"></div>
                 <div class="form-group"><label>Registration No.</label><input type="text" id="modal-student-regNo"></div>
@@ -596,9 +623,13 @@
                 <div class="form-group"><label>Father's Name</label><input type="text" id="modal-student-father"></div>
                 <div class="form-group"><label>Mobile No.</label><input type="tel" id="modal-student-mobile"></div>
             </div>
-            <div class="form-group"><label>Photo URL (Optional)</label><input type="text" id="modal-student-photo"></div>
-            <div style="display:flex; gap:10px; margin-top:20px;">
-                <button class="submit-btn" onclick="saveStudentModal()" style="flex:1;"><i class="fas fa-save"></i> Save</button>
+            <div class="form-group">
+                <label>Student Photo</label>
+                <input type="file" id="modal-student-photo-file" accept="image/*">
+                <img src="" id="modal-student-photo-preview" style="max-width: 100px; max-height: 100px; margin-top: 10px; display: none; border-radius: 8px;">
+            </div>
+            <div style="display:flex; gap:10px; margin-top: auto; padding-top: 20px;">
+                <button class="submit-btn" id="modal-save-btn" onclick="saveStudentModal()" style="flex:1;"><i class="fas fa-save"></i> Save</button>
                 <button class="submit-btn" style="background:#e53e3e; flex:1;" onclick="document.getElementById('student-modal').style.display='none'">Cancel</button>
             </div>
         </div>
