@@ -86,6 +86,7 @@
                     <div class="menu-item" data-target="tab-students"><i class="fas fa-user-graduate"></i> Students & Certs</div>
                     <div class="menu-item" data-target="tab-staff"><i class="fas fa-user-tie"></i> Staff Manager</div>
                     <div class="menu-item" data-target="tab-finance"><i class="fas fa-rupee-sign"></i> Finance & Fees</div>
+                    <div class="menu-item" data-target="tab-fee-approvals"><i class="fas fa-check-circle"></i> Fee Approvals</div>
                     <div class="menu-item" data-target="tab-academics"><i class="fas fa-book-open"></i> Academic Veto</div>
                     <div class="menu-item" data-target="tab-notices"><i class="fas fa-bullhorn"></i> Notices & Ticker</div>
                     <div class="menu-item" data-target="tab-mailbox"><i class="fas fa-envelope"></i> Mail Box</div>
@@ -158,6 +159,7 @@
                                 </select>
                                 <input type="text" id="searchStudentInput" class="input-premium" placeholder="Search Student..." onkeyup="searchStudent()" style="padding: 8px 10px; width: 200px;">
                                 <button id="bulk-id-btn" class="action-btn btn-blue" style="padding:10px 15px;" onclick="window.bulkGenerateIDCards()"><i class="fas fa-id-badge"></i> Generate ID Cards</button>
+                                <button id="bulk-admit-btn" class="action-btn btn-purple" style="padding:10px 15px;" onclick="window.bulkGenerateAdmitCards()"><i class="fas fa-file-alt"></i> Generate Admit Cards</button>
                                 <button class="action-btn btn-dark" style="padding:10px 15px;" onclick="runDefaulterLockdown()"><i class="fas fa-lock"></i> Auto-Lock Defaulters</button>
                             </div>
                         </div>
@@ -319,6 +321,18 @@
                             </table>
                         </div>
                     </div>
+                    
+                    <div class="card">
+                        <h3><i class="fas fa-brands fa-whatsapp" style="color: #25D366;"></i> Official WhatsApp Group Broadcast</h3>
+                        <p style="font-size:13px; color:#666; margin-bottom:15px;">Configure your school's WhatsApp Group link and broadcast messages directly.</p>
+                        <div class="form-group" style="display: flex; gap: 10px;">
+                            <input type="text" id="wa_group_link" class="input-premium" style="flex: 1;" placeholder="https://chat.whatsapp.com/...">
+                            <button class="submit-btn" style="width: auto; padding: 0 20px;" onclick="saveWhatsappLink()">Save Link</button>
+                        </div>
+                        <hr style="margin: 20px 0; border: 0; border-top: 1px solid #e2e8f0;">
+                        <div class="form-group"><label>Broadcast Message</label><textarea id="wa_message" rows="3" placeholder="Write your message here..."></textarea></div>
+                        <button class="submit-btn" style="background-color: #25D366;" onclick="broadcastToWhatsapp()"><i class="fas fa-paper-plane"></i> Broadcast to WhatsApp</button>
+                    </div>
                 </div>
 
                 <!-- TAB: MAILBOX -->
@@ -376,6 +390,33 @@
                         <div class="form-group"><label>Current Password</label><input type="text" id="req_old_pass" readonly style="background:#e9ecef; cursor:not-allowed;"></div>
                         <div class="form-group"><label>New Requested Password</label><input type="text" id="req_new_pass" placeholder="Enter new strong password"></div>
                         <button class="submit-btn" onclick="sendPasswordRequest()"><i class="fas fa-paper-plane"></i> Send Request to Super Admin</button>
+                    </div>
+                </div>
+
+                <!-- TAB: FEE APPROVALS -->
+                <div id="tab-fee-approvals" class="tab-content">
+                    <div class="card">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom: 15px;">
+                            <h3 style="margin:0;"><i class="fas fa-check-circle"></i> Fee Verification Inbox</h3>
+                            <button onclick="loadFeeVerifications()" class="action-btn" style="background:#3182ce;"><i class="fas fa-sync"></i> Refresh Inbox</button>
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date & Time</th>
+                                        <th>Student Details</th>
+                                        <th>Transaction Ref (UTR)</th>
+                                        <th>Amount</th>
+                                        <th>Screenshot</th>
+                                        <th>Status/Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="fee-verifications-body">
+                                    <tr><td colspan="6" style="text-align:center;">Loading Inbox...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
@@ -480,6 +521,21 @@
                         </div>
 
 
+                    </div>
+
+                    <div class="card">
+                        <h3><i class="fas fa-qrcode"></i> Zero-Commission Manual QR Fee System</h3>
+                        <div class="form-group" style="margin-bottom: 15px;">
+                            <label style="font-weight: bold; display: block; margin-bottom: 5px;">Payment QR Code Image</label>
+                            <input type="file" id="payment_qr_upload" accept="image/*" class="input-premium">
+                            <br>
+                            <img id="payment_qr_preview" src="https://via.placeholder.com/150" style="max-width: 150px; margin-top: 10px; border-radius: 8px; border: 1px solid #ddd; object-fit: cover;">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 15px;">
+                            <label style="font-weight: bold; display: block; margin-bottom: 5px;">School UPI ID</label>
+                            <input type="text" id="upi_id_input" class="input-premium" placeholder="e.g. school@upi">
+                        </div>
+                        <button class="submit-btn" id="save_qr_btn" onclick="savePaymentSettings()"><i class="fas fa-save"></i> Save Payment Settings</button>
                     </div>
                 </div>
 
@@ -719,11 +775,75 @@
         </div>
     </div>
 
-    <!-- JSZip and FileSaver for Bulk ZIP Download -->
+    <!-- Custom Defaulter Check Modal for Admit Cards -->
+    <div id="defaulter-admit-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 450px; text-align: center;">
+            <div class="modal-header" style="justify-content: center; background: #fff3cd; color: #856404; padding: 20px;">
+                <h3 style="margin:0;"><i class="fas fa-exclamation-triangle fa-2x"></i><br><br>Defaulters Detected</h3>
+            </div>
+            <div style="padding: 20px;">
+                <p style="margin-bottom: 20px; color: #4a5568; font-size: 16px;">Some students have pending fees. Generate Admit Cards for them as well?</p>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <button class="action-btn" style="background:#e53e3e; padding:12px; font-size:15px;" onclick="window.proceedAdmitCards('enable')"><i class="fas fa-check"></i> Enable (Generate for ALL with Watermark)</button>
+                    <button class="action-btn" style="background:#3182ce; padding:12px; font-size:15px;" onclick="window.proceedAdmitCards('disable')"><i class="fas fa-times"></i> Disable (Only Paid Students)</button>
+                    <button class="action-btn btn-dark" style="padding:12px; font-size:15px;" onclick="closeCustomModal('defaulter-admit-modal')">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Off-screen Admit Card Template for html2canvas -->
+    <div id="admit-card-template" style="position: absolute; top: -9999px; left: -9999px; width: 600px; height: 800px; background: white; border: 2px solid #1e3c72; padding: 20px; font-family: 'Inter', sans-serif; box-sizing: border-box;">
+        <div style="text-align: center; border-bottom: 2px solid #1e3c72; padding-bottom: 10px; margin-bottom: 20px;">
+            <img id="admit-logo" src="" style="width: 80px; height: 80px; object-fit: contain;">
+            <h1 id="admit-school" style="color: #1e3c72; margin: 10px 0 5px; font-size: 24px;">SCHOOL NAME</h1>
+            <h2 style="margin: 0; font-size: 18px; color: #e53e3e; letter-spacing: 2px;">ADMIT CARD 2026-27</h2>
+        </div>
+        <div style="display: flex; gap: 20px; margin-bottom: 20px;">
+            <div style="flex: 1; font-size: 16px; line-height: 1.8;">
+                <p><strong>Student Name:</strong> <span id="admit-name"></span></p>
+                <p><strong>Class:</strong> <span id="admit-class"></span></p>
+                <p><strong>Roll No:</strong> <span id="admit-roll"></span></p>
+                <p><strong>Father's Name:</strong> <span id="admit-fname"></span></p>
+                <p><strong>Mother's Name:</strong> <span id="admit-mname"></span></p>
+                <p><strong>DOB:</strong> <span id="admit-dob"></span></p>
+            </div>
+            <div>
+                <img id="admit-photo" src="" style="width: 120px; height: 140px; border: 2px solid #ccc; object-fit: cover; border-radius: 8px;">
+            </div>
+        </div>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+            <thead>
+                <tr style="background: #1e3c72; color: white;">
+                    <th style="padding: 10px; border: 1px solid #ccc;">Date</th>
+                    <th style="padding: 10px; border: 1px solid #ccc;">Subject</th>
+                    <th style="padding: 10px; border: 1px solid #ccc;">Timing</th>
+                    <th style="padding: 10px; border: 1px solid #ccc;">Invigilator Sign</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td style="padding:15px; border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td></tr>
+                <tr><td style="padding:15px; border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td></tr>
+                <tr><td style="padding:15px; border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td></tr>
+                <tr><td style="padding:15px; border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td></tr>
+                <tr><td style="padding:15px; border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td></tr>
+            </tbody>
+        </table>
+        <div style="display: flex; justify-content: space-between; margin-top: 50px;">
+            <div style="text-align: center; border-top: 1px solid #333; padding-top: 5px; width: 200px;">Student Signature</div>
+            <div style="text-align: center; border-top: 1px solid #333; padding-top: 5px; width: 200px; position:relative;">
+                <img id="admit-sig" src="" style="position:absolute; bottom:25px; left:50%; transform:translateX(-50%); max-height:40px; display:none;">
+                Principal Signature
+            </div>
+        </div>
+        <!-- Watermark -->
+        <div id="admit-watermark" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 55px; font-weight: 900; color: rgba(229, 62, 62, 0.4); border: 8px solid rgba(229, 62, 62, 0.4); padding: 20px; white-space: nowrap; display: none; z-index: 100; pointer-events: none;">FEE PENDING - CONTACT ADMIN</div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-
-    <!-- FIREBASE LOGIC -->
     <script type="module" src="script.js"></script>
 </body>
 </html>

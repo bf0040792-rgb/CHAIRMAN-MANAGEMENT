@@ -312,6 +312,21 @@ window.listenToTicker = () => {
             } else { 
                 document.getElementById("school-ticker-container").style.display = "none"; 
             }
+            
+            // Payment Settings Init
+            if(data.paymentQrUrl) {
+                currentPaymentQrUrl = data.paymentQrUrl;
+                const preview = document.getElementById("payment_qr_preview");
+                if (preview) { preview.src = currentPaymentQrUrl; preview.style.display = "block"; }
+            }
+            if(data.upiId) {
+                const upiEl = document.getElementById("upi_id_input");
+                if(upiEl && upiEl.value === "") upiEl.value = data.upiId;
+            }
+            if(data.whatsappGroup) {
+                const waEl = document.getElementById("wa_group_link");
+                if(waEl && waEl.value === "") waEl.value = data.whatsappGroup;
+            }
 
             // Feature Modules Toggles
             const enabledModules = data.enabledModules || [];
@@ -487,6 +502,26 @@ window.saveSignature = async () => {
     } catch(e) { console.error(e); }
 };
 
+let currentPaymentQrUrl = "";
+window.savePaymentSettings = async () => {
+    let qrUrl = currentPaymentQrUrl;
+    if (document.getElementById("payment_qr_upload").files.length > 0) {
+        qrUrl = await uploadToCloudinary("payment_qr_upload", "save_qr_btn", "<i class='fas fa-save'></i> Save Payment Settings");
+        if (!qrUrl) return alert("Upload failed.");
+    }
+    
+    const upiId = document.getElementById("upi_id_input").value.trim();
+    if (!upiId) return alert("Please enter a valid UPI ID.");
+    
+    try {
+        await updateDoc(doc(db, "schools", currentSchoolId), { paymentQrUrl: qrUrl, upiId: upiId });
+        currentPaymentQrUrl = qrUrl;
+        if (qrUrl) document.getElementById("payment_qr_preview").src = qrUrl;
+        alert("Payment Settings Saved successfully!");
+    } catch (e) {
+        alert("Error saving payment settings: " + e.message);
+    }
+};
 
 window.sendPasswordRequest = async () => {
     const newPass = document.getElementById("req_new_pass").value.trim(); if(!newPass) return alert("Please enter a new password.");
@@ -935,6 +970,35 @@ window.saveNotice = async () => {
     } catch(e) { alert("Error saving notice."); }
 };
 
+window.saveWhatsappLink = async () => {
+    const link = document.getElementById("wa_group_link").value.trim();
+    if (!link) return alert("Please enter the WhatsApp Group Link.");
+    
+    try {
+        await updateDoc(doc(db, "schools", currentSchoolId), { whatsappGroup: link });
+        alert("WhatsApp Group Link saved successfully!");
+    } catch(e) {
+        alert("Error saving link.");
+    }
+};
+
+window.broadcastToWhatsapp = async () => {
+    const link = document.getElementById("wa_group_link").value.trim();
+    const msg = document.getElementById("wa_message").value.trim();
+    
+    if (!link) return alert("Please save the Official WhatsApp Group Link first.");
+    if (!msg) return alert("Please enter a message to broadcast.");
+    
+    try {
+        await navigator.clipboard.writeText(msg);
+        alert("Message copied to clipboard! Opening WhatsApp Group...\nPlease paste the message into the chat.");
+        window.open(link, "_blank");
+    } catch (err) {
+        alert("Failed to copy message. Please manually copy it before opening WhatsApp.");
+        window.open(link, "_blank");
+    }
+};
+
 async function loadNotices() {
     try {
         const snap = await getDocs(query(collection(db, "notices"), where("schoolId", "==", currentSchoolId)));
@@ -988,6 +1052,107 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
+
+// ================= BULK ADMIT CARDS =================
+window.pendingAdmitCardStudents = [];
+window.bulkGenerateAdmitCards = async () => {
+    let approvedStudents = window.fetchedStudents;
+    if (!approvedStudents || approvedStudents.length === 0) return alert("No students available for Admit Card generation.");
+
+    const selectedClass = document.getElementById("bulk_class_select")?.value;
+    if (selectedClass && selectedClass !== "ALL") {
+        approvedStudents = approvedStudents.filter(st => st.class === selectedClass);
+        if (approvedStudents.length === 0) return alert("No students found in the selected class.");
+    }
+
+    // Defaulter Check
+    const defaulters = approvedStudents.filter(st => (st.dueBalance && st.dueBalance > 0));
+    window.pendingAdmitCardStudents = approvedStudents;
+    
+    if (defaulters.length > 0) {
+        document.getElementById("defaulter-admit-modal").style.display = "flex";
+    } else {
+        // Proceed normally if no defaulters
+        window.proceedAdmitCards('enable');
+    }
+};
+
+window.proceedAdmitCards = async (mode) => {
+    document.getElementById("defaulter-admit-modal").style.display = "none";
+    let students = window.pendingAdmitCardStudents;
+    
+    if (mode === 'disable') {
+        // Filter out defaulters
+        students = students.filter(st => !(st.dueBalance && st.dueBalance > 0));
+        if (students.length === 0) return alert("No paid students available to generate admit cards.");
+    }
+
+    document.getElementById("bulk-id-modal").style.display = "block";
+    document.getElementById("bulk-generating-text").style.display = "block";
+    document.getElementById("bulk-generating-text").innerText = "Generating Admit Cards... Please wait";
+    document.getElementById("bulk-id-grid").innerHTML = "";
+
+    const zip = new JSZip();
+    const folder = zip.folder("Student_Admit_Cards");
+    let schoolName = currentSchoolName || document.getElementById('school-name')?.innerText || "SCHOOL NAME";
+    let logoUrl = document.getElementById('school-logo')?.src || "https://via.placeholder.com/80";
+
+    const template = document.getElementById("admit-card-template");
+    document.getElementById("admit-school").innerText = schoolName.toUpperCase();
+    document.getElementById("admit-logo").src = logoUrl;
+    if (currentSignatureUrl && window.currentSigSettings && window.currentSigSettings.idCard) {
+        document.getElementById("admit-sig").src = currentSignatureUrl;
+        document.getElementById("admit-sig").style.display = "block";
+    } else {
+        document.getElementById("admit-sig").style.display = "none";
+    }
+
+    try {
+        for (let i = 0; i < students.length; i++) {
+            const st = students[i];
+            document.getElementById("admit-name").innerText = st.name || "N/A";
+            document.getElementById("admit-class").innerText = st.class || "N/A";
+            document.getElementById("admit-roll").innerText = st.rollNo || "N/A";
+            document.getElementById("admit-fname").innerText = st.fatherName || "N/A";
+            document.getElementById("admit-mname").innerText = st.motherName || "N/A";
+            document.getElementById("admit-dob").innerText = st.dob || "N/A"; // May be N/A if not collected
+            document.getElementById("admit-photo").src = st.photoUrl || "https://via.placeholder.com/120x140?text=Photo";
+
+            const watermark = document.getElementById("admit-watermark");
+            if (mode === 'enable' && st.dueBalance && st.dueBalance > 0) {
+                watermark.style.display = "block";
+            } else {
+                watermark.style.display = "none";
+            }
+
+            // Ensure images are loaded before canvas capture
+            await new Promise(r => setTimeout(r, 200)); 
+
+            const canvas = await html2canvas(template, { useCORS: true, scale: 2 });
+            const base64Data = canvas.toDataURL("image/jpeg").split(',')[1];
+            
+            const studentNameStr = st.name.replace(/[^a-z0-9]/gi, '_');
+            folder.file(`Admit_Card_${studentNameStr}.jpg`, base64Data, {base64: true});
+
+            // Add to grid preview
+            const imgElement = document.createElement("img");
+            imgElement.src = canvas.toDataURL("image/jpeg");
+            imgElement.style.width = "100%";
+            imgElement.style.borderRadius = "8px";
+            imgElement.style.boxShadow = "0 4px 6px rgba(0,0,0,0.1)";
+            document.getElementById("bulk-id-grid").appendChild(imgElement);
+        }
+
+        document.getElementById("bulk-generating-text").style.display = "none";
+        zip.generateAsync({type:"blob"}).then(function(content) {
+            saveAs(content, "Bulk_Admit_Cards.zip");
+        });
+
+    } catch(e) {
+        document.getElementById("bulk-generating-text").style.display = "none";
+        alert("Failed to generate Admit Cards. Error: " + e.message);
+    }
+};
 
 // ================= BULK ID GENERATION =================
 window.bulkGenerateIDCards = async () => {
@@ -1073,4 +1238,85 @@ window.downloadAllIdsAsZip = async () => {
     zip.generateAsync({type:"blob"}).then(function(content) {
         saveAs(content, "Bulk_ID_Cards.zip");
     });
+};
+
+// ==========================================
+// ZERO-COMMISSION FEE APPROVAL MODULE
+// ==========================================
+
+window.loadFeeVerifications = async () => {
+    try {
+        const snap = await getDocs(query(collection(db, "fee_verifications"), where("schoolId", "==", currentSchoolId)));
+        let html = "";
+        const now = new Date();
+        
+        let verifications = [];
+        snap.forEach(d => verifications.push({ id: d.id, ...d.data() }));
+        
+        // Sort by newest first
+        verifications.sort((a, b) => b.createdAt.toDate() - a.createdAt.toDate());
+
+        verifications.forEach(data => {
+            // Auto-hide successful verifications older than 24 hours
+            if (data.status === "Successful") {
+                const ageHours = (now - data.createdAt.toDate()) / (1000 * 60 * 60);
+                if (ageHours > 24) return; 
+            }
+
+            const isPending = data.status === "Pending";
+            const statusClass = isPending ? "color: #d97706;" : "color: #059669;";
+            const btnHtml = isPending ? 
+                `<button class="action-btn" style="background:#059669; padding: 5px 10px; font-size:12px;" onclick="approveFeeVerification('${data.id}', '${data.studentId}', '${data.studentName}', ${data.amount})"><i class="fas fa-check"></i> Approve & Record</button>` :
+                `<span style="color:#059669; font-weight:bold;"><i class="fas fa-check-circle"></i> Approved</span>`;
+
+            html += `<tr>
+                <td>${data.createdAt.toDate().toLocaleString()}</td>
+                <td><strong>${data.studentName}</strong><br><small>Reg: ${data.regNo}</small></td>
+                <td style="font-family: monospace;">${data.utr}</td>
+                <td><strong>₹ ${data.amount}</strong></td>
+                <td><a href="${data.screenshotUrl}" target="_blank" style="color:#3182ce; text-decoration:none;"><i class="fas fa-image"></i> View Proof</a></td>
+                <td style="${statusClass}">${btnHtml}</td>
+            </tr>`;
+        });
+
+        document.getElementById("fee-verifications-body").innerHTML = html || '<tr><td colspan="6" style="text-align:center;">No pending fee verifications.</td></tr>';
+    } catch(e) {
+        console.error("Fee verification load error:", e);
+    }
+};
+
+window.approveFeeVerification = async (verificationId, studentId, studentName, amount) => {
+    if(!confirm(`Approve ₹${amount} fee payment for ${studentName}? This will update the student's balance and ledger.`)) return;
+    
+    try {
+        const batch = writeBatch(db);
+        
+        // 1. Mark verification successful
+        const vRef = doc(db, "fee_verifications", verificationId);
+        batch.update(vRef, { status: "Successful", updatedAt: serverTimestamp() });
+        
+        // 2. Add to transaction ledger
+        const tRef = doc(collection(db, "transactions"));
+        batch.set(tRef, {
+            schoolId: currentSchoolId,
+            type: "Fee",
+            personId: studentId,
+            personName: studentName,
+            amount: Number(amount),
+            mode: "UPI Manual QR",
+            date: new Date().toISOString().split('T')[0],
+            createdAt: serverTimestamp()
+        });
+        
+        // 3. Decrease due balance in student doc
+        const sRef = doc(db, "students", studentId);
+        batch.update(sRef, { dueBalance: increment(-amount) });
+        
+        await batch.commit();
+        alert("Payment Approved! Ledger updated and student balance reduced.");
+        loadFeeVerifications();
+        loadTransactions();
+    } catch(e) {
+        alert("Error approving payment: " + e.message);
+    }
 };

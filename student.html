@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Fee Portal</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="light-mode">
+    <div id="loader" class="loader-overlay" style="display:flex;"><div class="spinner"></div></div>
+
+    <div class="admission-wrapper" id="auth-container">
+        <div class="form-card" style="max-width: 450px;">
+            <div class="school-header">
+                <img src="" id="school-logo" alt="School Logo" style="display:none; width:80px; height:80px; border-radius:50%; object-fit:cover; margin:0 auto 15px;">
+                <h1 id="school-name" style="font-size: 22px; color: #1e3c72; margin-bottom: 5px;">School Fee Portal</h1>
+                <p style="color: #64748b; font-size: 14px;">Please login to view your pending fees and submit payment proofs.</p>
+            </div>
+            
+            <form id="student-login-form">
+                <div class="form-group">
+                    <label>Registration / Roll Number</label>
+                    <input type="text" id="login-regno" class="input-premium" required placeholder="e.g. 2026/001">
+                </div>
+                <div class="form-group">
+                    <label>Mobile Number</label>
+                    <input type="tel" id="login-mobile" class="input-premium" required placeholder="10-digit Mobile No">
+                </div>
+                <button type="submit" class="submit-btn"><i class="fas fa-sign-in-alt"></i> Access Portal</button>
+            </form>
+            <p id="login-error" style="color: #e53e3e; text-align: center; margin-top: 15px; font-weight: bold; display: none;"></p>
+        </div>
+    </div>
+
+    <div class="dashboard-wrapper" id="dashboard-container" style="display: none; padding: 20px;">
+        <div class="top-navbar">
+            <div class="brand">
+                <span id="dash-school-name" class="desktop-name">School Name</span>
+            </div>
+            <button class="logout-btn" onclick="logoutStudent()"><i class="fas fa-power-off"></i> Logout</button>
+        </div>
+        
+        <div class="main-content" style="max-width: 800px; margin: 80px auto; padding: 0;">
+            <div class="card" style="text-align: center; padding: 40px 20px;">
+                <h1 style="color: #1e3c72; margin-bottom: 5px;">Welcome, <span id="student-display-name">Student</span></h1>
+                <p style="color: #64748b; font-size: 16px; margin-bottom: 20px;">Class: <span id="student-display-class"></span> | Reg No: <span id="student-display-reg"></span></p>
+                
+                <div style="background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 15px; padding: 30px; margin-bottom: 20px;">
+                    <p style="font-size: 18px; color: #475569; margin-bottom: 10px;">Total Due Balance</p>
+                    <h2 style="font-size: 48px; color: #e53e3e; margin: 0;">₹ <span id="student-due-balance">0</span></h2>
+                </div>
+                
+                <button id="show-payment-btn" class="submit-btn" onclick="showPaymentSection()" style="font-size: 18px; padding: 15px 30px; background: #10b981;"><i class="fas fa-qrcode"></i> Pay Now (Zero Commission)</button>
+            </div>
+
+            <div id="payment-section" class="card" style="display: none; text-align: center;">
+                <h2 style="color: #1e3c72; margin-bottom: 15px;"><i class="fas fa-mobile-alt"></i> Scan & Pay</h2>
+                <p style="color: #64748b; margin-bottom: 20px;">Use any UPI App (GPay, PhonePe, Paytm) to scan the QR code below or tap the direct link.</p>
+                
+                <div style="background: white; padding: 20px; border-radius: 15px; display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid #e2e8f0;">
+                    <img id="school-qr-img" src="" alt="Payment QR" style="width: 250px; height: 250px; object-fit: contain;">
+                    <p style="margin-top: 15px; font-weight: bold; color: #475569; font-family: monospace; font-size: 16px;" id="school-upi-text"></p>
+                </div>
+                
+                <br>
+                <a id="upi-deep-link" href="#" class="action-btn" style="background: #3182ce; font-size: 16px; padding: 12px 25px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none;"><i class="fas fa-external-link-alt"></i> Open UPI App on Device</a>
+                
+                <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 40px 0;">
+                
+                <h2 style="color: #1e3c72; margin-bottom: 15px;"><i class="fas fa-file-invoice"></i> Submit Payment Verification</h2>
+                <p style="color: #64748b; margin-bottom: 20px;">After making the payment, please upload the screenshot and enter the 12-digit UTR / Transaction ID.</p>
+                
+                <form id="verification-form" style="max-width: 400px; margin: 0 auto; text-align: left;">
+                    <div class="form-group">
+                        <label>Amount Paid (₹)</label>
+                        <input type="number" id="pay-amount" class="input-premium" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Transaction ID (UTR)</label>
+                        <input type="text" id="pay-utr" class="input-premium" required placeholder="12-digit UTR Number">
+                    </div>
+                    <div class="form-group">
+                        <label>Upload Payment Screenshot</label>
+                        <input type="file" id="pay-screenshot" class="input-premium" accept="image/*" required>
+                    </div>
+                    <button type="submit" id="submit-verification-btn" class="submit-btn" style="width: 100%;"><i class="fas fa-cloud-upload-alt"></i> Submit for Verification</button>
+                </form>
+            </div>
+            
+            <div id="success-section" class="card" style="display: none; text-align: center; padding: 50px 20px;">
+                <i class="fas fa-check-circle" style="font-size: 64px; color: #10b981; margin-bottom: 20px;"></i>
+                <h2 style="color: #1e3c72;">Verification Submitted!</h2>
+                <p style="color: #64748b;">Your payment details have been sent to the Chairman. Once verified, your due balance will be updated automatically.</p>
+            </div>
+            
+        </div>
+    </div>
+
+    <script type="module" src="student.js"></script>
+</body>
+</html>
