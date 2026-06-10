@@ -89,6 +89,10 @@
                     <div class="menu-item" data-target="tab-academics"><i class="fas fa-book-open"></i> Academic Veto</div>
                     <div class="menu-item" data-target="tab-notices"><i class="fas fa-bullhorn"></i> Notices & Ticker</div>
                     <div class="menu-item" data-target="tab-mailbox"><i class="fas fa-envelope"></i> Mail Box</div>
+                    
+                    <div id="module-qr-fee" class="menu-item" data-target="tab-qr-fee" style="display:none"><i class="fas fa-qrcode"></i> QR Fee Module</div>
+                    <div id="module-admit-card" class="menu-item" data-target="tab-admit-card" style="display:none"><i class="fas fa-id-badge"></i> Admit Card Module</div>
+                    <div id="module-whatsapp" class="menu-item" data-target="tab-whatsapp" style="display:none"><i class="fas fa-brands fa-whatsapp"></i> WhatsApp Module</div>
 
                     <div class="menu-item" data-target="tab-password"><i class="fas fa-key"></i> Change Password</div>
                     <div class="menu-item" data-target="tab-settings"><i class="fas fa-cogs"></i> School Settings</div>
@@ -156,6 +160,11 @@
                                 <button id="bulk-id-btn" class="action-btn btn-blue" style="padding:10px 15px;" onclick="window.bulkGenerateIDCards()"><i class="fas fa-id-badge"></i> Generate ID Cards</button>
                                 <button class="action-btn btn-dark" style="padding:10px 15px;" onclick="runDefaulterLockdown()"><i class="fas fa-lock"></i> Auto-Lock Defaulters</button>
                             </div>
+                        </div>
+                        <div style="display:flex; justify-content: flex-end; align-items: center; gap:10px; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #e2e8f0;">
+                            <span id="session-upgrade-status-text" style="font-size: 13px; font-weight: bold; color: #7f8c8d;">Status: N/A</span>
+                            <button id="request-upgrade-btn" class="action-btn btn-purple" style="padding:8px 12px;" onclick="requestSessionUpgrade()"><i class="fas fa-paper-plane"></i> Request Session Upgrade</button>
+                            <button id="execute-promotion-btn" class="action-btn btn-green" style="padding:8px 12px; display: none;" onclick="executePromotion()"><i class="fas fa-rocket"></i> Execute Promotion</button>
                         </div>
                         <p style="font-size:13px; color:#666; margin-bottom:15px;">Manage students, issue certificates, and enforce Defaulter Lockdown.</p>
                         

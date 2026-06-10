@@ -303,12 +303,107 @@ async function checkAdmissionStatus() {
 }
 
 window.listenToTicker = () => {
-    onSnapshot(doc(db, "schools", currentSchoolId), (doc) => {
-        if(doc.exists() && doc.data().tickerActive && doc.data().emergencyTicker) {
-            document.getElementById("school-ticker-container").style.display = "block";
-            document.getElementById("school-ticker-text").innerText = doc.data().emergencyTicker;
-        } else { document.getElementById("school-ticker-container").style.display = "none"; }
+    onSnapshot(doc(db, "schools", currentSchoolId), (docSnap) => {
+        if(docSnap.exists()) {
+            const data = docSnap.data();
+            if(data.tickerActive && data.emergencyTicker) {
+                document.getElementById("school-ticker-container").style.display = "block";
+                document.getElementById("school-ticker-text").innerText = data.emergencyTicker;
+            } else { 
+                document.getElementById("school-ticker-container").style.display = "none"; 
+            }
+
+            // Feature Modules Toggles
+            const enabledModules = data.enabledModules || [];
+            document.getElementById("module-qr-fee").style.display = enabledModules.includes("QR Fee Module") ? "" : "none";
+            document.getElementById("module-admit-card").style.display = enabledModules.includes("Admit Card Module") ? "" : "none";
+            document.getElementById("module-whatsapp").style.display = enabledModules.includes("WhatsApp Module") ? "" : "none";
+
+            // Session Upgrade Status Logic
+            const upgradeStatus = data.sessionUpgradeStatus;
+            const statusText = document.getElementById("session-upgrade-status-text");
+            const reqBtn = document.getElementById("request-upgrade-btn");
+            const execBtn = document.getElementById("execute-promotion-btn");
+            
+            if (statusText && reqBtn && execBtn) {
+                if (upgradeStatus === "pending") {
+                    statusText.innerText = "Status: Pending Approval (Master Core)";
+                    statusText.style.color = "#d97706";
+                    reqBtn.style.display = "none";
+                    execBtn.style.display = "none";
+                } else if (upgradeStatus === "approved") {
+                    statusText.innerText = "Status: Approved! Ready to Execute.";
+                    statusText.style.color = "#059669";
+                    reqBtn.style.display = "none";
+                    execBtn.style.display = "inline-block";
+                } else {
+                    statusText.innerText = "Status: N/A";
+                    statusText.style.color = "#7f8c8d";
+                    reqBtn.style.display = "inline-block";
+                    execBtn.style.display = "none";
+                }
+            }
+        }
     });
+};
+
+window.requestSessionUpgrade = async () => {
+    if(confirm("Are you sure you want to request a Session Upgrade? This will send a request to the Super Admin (Master Core).")) {
+        try {
+            await updateDoc(doc(db, "schools", currentSchoolId), { sessionUpgradeStatus: "pending" });
+            alert("Request sent successfully! Please wait for Super Admin approval.");
+        } catch (e) {
+            console.error(e);
+            alert("Error sending request.");
+        }
+    }
+};
+
+window.executePromotion = async () => {
+    if(!confirm("CRITICAL WARNING: This will promote ALL approved students to the next class and RESET their Roll Numbers. This action cannot be undone. Do you want to proceed?")) return;
+    
+    try {
+        const batch = writeBatch(db);
+        let promotedCount = 0;
+
+        window.fetchedStudents.forEach(st => {
+            if (st.status === "Approved") {
+                let nextClass = st.class;
+                
+                // Logic to increment class
+                const classMap = {
+                    "Nursery": "LKG", "LKG": "UKG", "UKG": "1st",
+                    "1st": "2nd", "2nd": "3rd", "3rd": "4th", "4th": "5th",
+                    "5th": "6th", "6th": "7th", "7th": "8th", "8th": "9th",
+                    "9th": "10th", "10th": "11th", "11th": "12th", "12th": "Alumni"
+                };
+
+                if (classMap[st.class]) {
+                    nextClass = classMap[st.class];
+                }
+
+                const studentRef = doc(db, "students", st.id);
+                batch.update(studentRef, { 
+                    class: nextClass,
+                    rollNo: "" // Reset roll number
+                });
+                promotedCount++;
+            }
+        });
+
+        if (promotedCount > 0) {
+            await batch.commit();
+            // Reset status after successful execution
+            await updateDoc(doc(db, "schools", currentSchoolId), { sessionUpgradeStatus: null });
+            alert(`Success! ${promotedCount} students have been promoted to the next class and roll numbers reset.`);
+            loadStudents();
+        } else {
+            alert("No approved students found to promote.");
+        }
+    } catch (e) {
+        console.error("Batch promotion error:", e);
+        alert("Failed to execute promotion batch.");
+    }
 };
 
 window.saveEmergencyTicker = async () => {
