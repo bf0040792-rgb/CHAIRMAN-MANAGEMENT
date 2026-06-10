@@ -283,11 +283,12 @@ async function checkAdmissionStatus() {
         if(data.sigSettings) {
             window.currentSigSettings = data.sigSettings;
             if(document.getElementById("sig_on_id")) {
-                document.getElementById("sig_on_id").checked = data.sigSettings.idCard;
-                document.getElementById("sig_on_bonafide").checked = data.sigSettings.bonafide;
+                document.getElementById("sig_on_id").checked = data.sigSettings.idCard !== false;
+                document.getElementById("sig_on_bonafide").checked = data.sigSettings.bonafide !== false;
+                document.getElementById("sig_on_admit").checked = data.sigSettings.admit !== false;
             }
         } else {
-            window.currentSigSettings = { idCard: true, bonafide: true };
+            window.currentSigSettings = { idCard: true, bonafide: true, admit: true };
         }
         if(data.themeColor) { currentThemeColor = data.themeColor; document.getElementById("school_theme_color").value = currentThemeColor; document.documentElement.style.setProperty('--theme-color', currentThemeColor); }
         if(data.emergencyTicker) { document.getElementById("ticker_input").value = data.emergencyTicker; }
@@ -486,7 +487,8 @@ window.saveSignature = async () => {
     
     const sigSettings = {
         idCard: document.getElementById("sig_on_id").checked,
-        bonafide: document.getElementById("sig_on_bonafide").checked
+        bonafide: document.getElementById("sig_on_bonafide").checked,
+        admit: document.getElementById("sig_on_admit").checked
     };
 
     try { 
@@ -678,6 +680,7 @@ function renderStudentsTable(className, searchTerm = null, statusFilter = null) 
             ? `<button class="action-btn btn-green" onclick="updateStudentStatus('${safeId}')"><i class="fas fa-check"></i> Approve</button>`
             : `
             <button class="action-btn btn-blue" onclick="showIDCard('${safeId}')"><i class="fas fa-id-card"></i> ID</button>
+            <button class="action-btn btn-dark" style="background:#e67e22;" onclick="window.generateBonafide('${safeId}')"><i class="fas fa-certificate"></i> Bonafide</button>
             <button class="action-btn btn-purple" onclick="openStudentModal('${safeId}')"><i class="fas fa-edit"></i> Edit</button>
             ${lockBtn}`;
         
@@ -714,6 +717,7 @@ window.openStudentModal = (id = null) => {
         document.getElementById("modal-student-regNo").value = st.regNo || "";
         document.getElementById("modal-student-rollNo").value = st.rollNo || "";
         document.getElementById("modal-student-class").value = st.class || "";
+        document.getElementById("dob").value = st.dob || "";
         document.getElementById("modal-student-father").value = st.fatherName || "";
         document.getElementById("modal-student-mobile").value = st.mobile || "";
         document.getElementById("modal-student-address").value = st.address || "";
@@ -731,6 +735,7 @@ window.openStudentModal = (id = null) => {
         document.getElementById("modal-student-regNo").value = "";
         document.getElementById("modal-student-rollNo").value = "";
         document.getElementById("modal-student-class").value = "1st";
+        document.getElementById("dob").value = "";
         document.getElementById("modal-student-father").value = "";
         document.getElementById("modal-student-mobile").value = "";
         document.getElementById("modal-student-address").value = "";
@@ -753,6 +758,7 @@ window.saveStudentModal = async () => {
         regNo: document.getElementById("modal-student-regNo").value.trim(),
         rollNo: document.getElementById("modal-student-rollNo").value.trim(),
         class: document.getElementById("modal-student-class").value,
+        dob: document.getElementById("dob").value,
         fatherName: document.getElementById("modal-student-father").value.trim(),
         mobile: document.getElementById("modal-student-mobile").value.trim(),
         address: document.getElementById("modal-student-address").value.trim(),
@@ -805,6 +811,7 @@ window.showIDCard = async (id) => {
                     id: st.id || st.regNo,
                     name: st.name,
                     class: st.class,
+                    dob: st.dob || "N/A",
                     fatherName: st.fatherName || "N/A",
                     mobile: st.mobile || "N/A",
                     address: st.address || "N/A",
@@ -1100,11 +1107,22 @@ window.proceedAdmitCards = async (mode) => {
     const template = document.getElementById("admit-card-template");
     document.getElementById("admit-school").innerText = schoolName.toUpperCase();
     document.getElementById("admit-logo").src = logoUrl;
-    if (currentSignatureUrl && window.currentSigSettings && window.currentSigSettings.idCard) {
+    if (currentSignatureUrl && window.currentSigSettings && window.currentSigSettings.admit !== false) {
         document.getElementById("admit-sig").src = currentSignatureUrl;
         document.getElementById("admit-sig").style.display = "block";
     } else {
         document.getElementById("admit-sig").style.display = "none";
+    }
+
+    const uniqueClasses = [...new Set(students.map(st => st.class))];
+    const classSchedules = {};
+    for (let cls of uniqueClasses) {
+        if(cls) {
+            try {
+                const snap = await getDoc(doc(db, "schools", currentSchoolId, "examSchedules", cls));
+                classSchedules[cls] = snap.exists() ? (snap.data().schedule || []) : [];
+            } catch(e) { classSchedules[cls] = []; }
+        }
     }
 
     try {
@@ -1123,6 +1141,15 @@ window.proceedAdmitCards = async (mode) => {
                 watermark.style.display = "block";
             } else {
                 watermark.style.display = "none";
+            }
+
+            const schedRows = document.getElementById("admit-card-tbody").querySelectorAll("tr");
+            const sched = classSchedules[st.class] || [];
+            for(let j=0; j<6; j++) {
+                const tds = schedRows[j].querySelectorAll("td");
+                tds[0].innerText = sched[j]?.date || "";
+                tds[1].innerText = sched[j]?.subject || "";
+                tds[2].innerText = sched[j]?.timing || "";
             }
 
             // Ensure images are loaded before canvas capture
@@ -1190,6 +1217,7 @@ window.bulkGenerateIDCards = async () => {
                     rollNo: st.rollNo || "N/A",
                     name: st.name,
                     class: st.class,
+                    dob: st.dob || "N/A",
                     fatherName: st.fatherName || "N/A",
                     mobile: st.mobile || "N/A",
                     address: st.address || "N/A",
@@ -1319,4 +1347,61 @@ window.approveFeeVerification = async (verificationId, studentId, studentName, a
     } catch(e) {
         alert("Error approving payment: " + e.message);
     }
+};
+window.openExamScheduler = () => {
+    document.getElementById("exam-scheduler-modal").style.display = "flex";
+    window.loadExamSchedule();
+};
+
+window.lastExamScheduleCache = null;
+
+window.loadExamSchedule = async () => {
+    const cls = document.getElementById("scheduler-class-select").value;
+    try {
+        const docSnap = await getDoc(doc(db, "schools", currentSchoolId, "examSchedules", cls));
+        if (docSnap.exists()) {
+            const data = docSnap.data().schedule || [];
+            populateSchedulerTable(data);
+            window.lastExamScheduleCache = data;
+        } else {
+            if (window.lastExamScheduleCache) {
+                populateSchedulerTable(window.lastExamScheduleCache);
+            } else {
+                populateSchedulerTable([]);
+            }
+        }
+    } catch(e) { console.error(e); }
+};
+
+function populateSchedulerTable(data) {
+    const dates = document.querySelectorAll(".sched-date");
+    const subjs = document.querySelectorAll(".sched-subj");
+    const times = document.querySelectorAll(".sched-time");
+    for(let i=0; i<6; i++) {
+        dates[i].value = data[i]?.date || "";
+        subjs[i].value = data[i]?.subject || "";
+        times[i].value = data[i]?.timing || "";
+    }
+}
+
+window.saveExamSchedule = async () => {
+    const cls = document.getElementById("scheduler-class-select").value;
+    const dates = document.querySelectorAll(".sched-date");
+    const subjs = document.querySelectorAll(".sched-subj");
+    const times = document.querySelectorAll(".sched-time");
+    
+    const schedule = [];
+    for(let i=0; i<6; i++) {
+        schedule.push({
+            date: dates[i].value.trim(),
+            subject: subjs[i].value.trim(),
+            timing: times[i].value.trim()
+        });
+    }
+    
+    try {
+        await setDoc(doc(db, "schools", currentSchoolId, "examSchedules", cls), { schedule: schedule });
+        window.lastExamScheduleCache = schedule;
+        alert("Schedule saved for Class " + cls);
+    } catch(e) { alert("Error saving schedule."); }
 };

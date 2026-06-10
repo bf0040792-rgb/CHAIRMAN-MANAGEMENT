@@ -130,6 +130,7 @@ form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
     const name = document.getElementById("student-name").value.trim();
+    const dob = document.getElementById("student-dob").value;
     const rollNo = document.getElementById("roll-no").value.trim();
     const studentClass = document.getElementById("student-class").value;
     const fatherName = document.getElementById("father-name").value.trim();
@@ -161,6 +162,7 @@ form.addEventListener("submit", async (e) => {
             status: "Pending",
             lockedOut: false,
             name: name,
+            dob: dob,
             rollNo: rollNo,
             class: studentClass,
             fatherName: fatherName,
