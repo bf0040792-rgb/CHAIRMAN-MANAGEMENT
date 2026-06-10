@@ -598,21 +598,75 @@ window.saveExpense = async () => {
     try { await setDoc(doc(collection(db, "transactions")), { schoolId: currentSchoolId, type: "Expense", personName: title, amount: Number(amt), mode: "Cash/Bank", date: date, createdAt: serverTimestamp() }); alert("Expense Logged!"); document.getElementById("exp_title").value = ""; document.getElementById("exp_amount").value = ""; loadTransactions(); } catch(e) {}
 };
 
+window.fetchedTransactions = [];
+window.currentLedgerTab = 'All';
+
 async function loadTransactions() {
     try {
         const snap = await getDocs(query(collection(db, "transactions"), where("schoolId", "==", currentSchoolId)));
-        let html = ""; let totalRev = 0; let trans =[]; snap.forEach(d => trans.push({ id: d.id, ...d.data() }));
-        trans.sort((a,b) => new Date(b.date) - new Date(a.date));
-        trans.forEach(t => {
-            if(t.type === "Fee") totalRev += Number(t.amount);
-            if(t.type === "Salary" || t.type === "Expense") totalRev -= Number(t.amount); 
-            const typeColor = t.type === "Fee" ? "#27ae60" : (t.type === "Expense" ? "#e53e3e" : "#e67e22");
-            const details = t.type === "Fee" ? `Class: ${t.class}` : (t.type === "Expense" ? "School Expense" : "Staff Pay");
-            html += `<tr><td>${t.date}</td><td><strong style="color:${typeColor}">${t.type}</strong></td><td>${t.personName}</td><td>${details}</td><td style="font-weight:bold;">₹ ${t.amount}</td><td>${t.mode}</td></tr>`;
+        window.fetchedTransactions = [];
+        snap.forEach(d => window.fetchedTransactions.push({ id: d.id, ...d.data() }));
+        window.fetchedTransactions.sort((a,b) => new Date(b.date) - new Date(a.date));
+        
+        let totalFees = 0, totalSalaries = 0, totalExpenses = 0;
+        window.fetchedTransactions.forEach(t => {
+            if(t.type === "Fee") totalFees += Number(t.amount);
+            if(t.type === "Salary") totalSalaries += Number(t.amount);
+            if(t.type === "Expense") totalExpenses += Number(t.amount);
         });
-        document.getElementById("transaction-table").innerHTML = html || "<tr><td colspan='6' style='text-align:center;'>No Financial Records.</td></tr>";
-        document.getElementById("count-revenue").innerText = "₹ " + totalRev;
+        
+        document.getElementById("summary-fees").innerText = "₹ " + totalFees;
+        document.getElementById("summary-salaries").innerText = "₹ " + totalSalaries;
+        document.getElementById("summary-balance").innerText = "₹ " + (totalFees - totalSalaries - totalExpenses);
+        document.getElementById("count-revenue").innerText = "₹ " + (totalFees - totalSalaries - totalExpenses);
+        
+        window.renderTransactionsTable();
     } catch(e) {}
+}
+
+window.switchLedgerTab = (tab, btnElement) => {
+    window.currentLedgerTab = tab;
+    document.querySelectorAll('#ledger-tabs .filter-btn').forEach(btn => btn.classList.remove('active'));
+    if(btnElement) btnElement.classList.add('active');
+    
+    // Toggle Search Inputs
+    const classFilter = document.getElementById("ledger-search-class");
+    if(tab === 'Fee') classFilter.style.display = "block";
+    else { classFilter.style.display = "none"; classFilter.value = ""; }
+    
+    document.getElementById("ledger-search-name").value = "";
+    document.getElementById("ledger-search-name").placeholder = tab === 'Fee' ? "Search by Student Name..." : (tab === 'Salary' ? "Search by Staff Name/ID..." : "Search by Name/Title...");
+    
+    window.renderTransactionsTable();
+};
+
+window.renderTransactionsTable = () => {
+    const tbody = document.getElementById("transaction-table");
+    const nameSearch = document.getElementById("ledger-search-name").value.toLowerCase();
+    const classSearch = document.getElementById("ledger-search-class").value;
+    
+    let filtered = window.fetchedTransactions;
+    
+    if(window.currentLedgerTab !== 'All') {
+        filtered = filtered.filter(t => t.type === window.currentLedgerTab);
+    }
+    
+    if(classSearch) {
+        filtered = filtered.filter(t => t.class === classSearch);
+    }
+    
+    if(nameSearch) {
+        filtered = filtered.filter(t => t.personName?.toLowerCase().includes(nameSearch));
+    }
+    
+    let html = "";
+    filtered.forEach(t => {
+        const typeColor = t.type === "Fee" ? "#27ae60" : (t.type === "Expense" ? "#e53e3e" : "#e67e22");
+        const details = t.type === "Fee" ? `Class: ${t.class || 'N/A'}` : (t.type === "Expense" ? "School Expense" : "Staff Pay");
+        html += `<tr><td>${t.date}</td><td><strong style="color:${typeColor}">${t.type}</strong></td><td>${t.personName || 'N/A'}</td><td>${details}</td><td style="font-weight:bold;">₹ ${t.amount}</td><td>${t.mode}</td></tr>`;
+    });
+    
+    tbody.innerHTML = html || "<tr><td colspan='6' style='text-align:center;'>No Financial Records Found.</td></tr>";
 }
 
 // ================= STUDENTS, CERTS & DEFAULTER LOCKDOWN =================
@@ -680,7 +734,7 @@ function renderStudentsTable(className, searchTerm = null, statusFilter = null) 
             ? `<button class="action-btn btn-green" onclick="updateStudentStatus('${safeId}')"><i class="fas fa-check"></i> Approve</button>`
             : `
             <button class="action-btn btn-blue" onclick="showIDCard('${safeId}')"><i class="fas fa-id-card"></i> ID</button>
-            <button class="action-btn btn-dark" style="background:#e67e22;" onclick="window.generateBonafide('${safeId}')"><i class="fas fa-certificate"></i> Bonafide</button>
+            <button class="action-btn btn-dark" style="background:#e67e22;" onclick="window.generateCertificate('${safeId}', 'bonafide')"><i class="fas fa-certificate"></i> Bonafide</button>
             <button class="action-btn btn-purple" onclick="openStudentModal('${safeId}')"><i class="fas fa-edit"></i> Edit</button>
             ${lockBtn}`;
         
@@ -895,7 +949,7 @@ window.saveStaff = async () => {
     let photoUrl = await uploadToCloudinary("s_photo", "s_btn", "<i class='fas fa-save'></i> Add Staff Member"); if(!photoUrl) photoUrl = "https://via.placeholder.com/100";
     try {
         const cred = await createUserWithEmailAndPassword(secondaryAuth, email, pass);
-        await setDoc(doc(db, "users", cred.user.uid), { name, email, role: "staff", staffRole: role, plainPassword: pass, photoUrl: photoUrl, schoolId: currentSchoolId, status: "active", privileges: { attendance: true, marks: true, finance: false, notices: false } });
+        await setDoc(doc(db, "users", cred.user.uid), { name, email, role: "staff", staffRole: role, plainPassword: pass, photoUrl: photoUrl, schoolId: currentSchoolId, status: "active", privileges: { attendance: true, marks: true, finance: false, notices: false, admissions: false, certs: false, exams: false, settings: false, view_finance: false, delete: false } });
         alert("Staff created successfully!"); document.getElementById("s_name").value=""; document.getElementById("s_email").value=""; document.getElementById("s_pass").value=""; loadStaff();
     } catch(e) { alert("Error: " + e.message); } finally { await signOut(secondaryAuth).catch(e=>{}); }
 };
@@ -934,13 +988,33 @@ window.editStaff = (id) => {
     const st = window.fetchedStaff.find(s => s.id === id); if(!st) return; currentEditStaffId = id;
     document.getElementById("edit_s_email").value = st.email; document.getElementById("edit_s_pass").value = st.plainPassword || ""; document.getElementById("edit_s_role").value = st.staffRole || "Teacher";
     let p = st.privileges || {};
-    document.getElementById("priv_attendance").checked = p.attendance === true; document.getElementById("priv_marks").checked = p.marks === true; document.getElementById("priv_finance").checked = p.finance === true; document.getElementById("priv_notices").checked = p.notices === true;
+    document.getElementById("priv_attendance").checked = p.attendance === true; 
+    document.getElementById("priv_marks").checked = p.marks === true; 
+    document.getElementById("priv_finance").checked = p.finance === true; 
+    document.getElementById("priv_notices").checked = p.notices === true;
+    document.getElementById("priv_admissions").checked = p.admissions === true;
+    document.getElementById("priv_certs").checked = p.certs === true;
+    document.getElementById("priv_exams").checked = p.exams === true;
+    document.getElementById("priv_settings").checked = p.settings === true;
+    document.getElementById("priv_view_finance").checked = p.view_finance === true;
+    document.getElementById("priv_delete").checked = p.delete === true;
     document.getElementById("edit-staff-modal").style.display = "flex";
 };
 
 window.saveStaffEdits = async () => {
     const p = document.getElementById("edit_s_pass").value; const r = document.getElementById("edit_s_role").value;
-    const privs = { attendance: document.getElementById("priv_attendance").checked, marks: document.getElementById("priv_marks").checked, finance: document.getElementById("priv_finance").checked, notices: document.getElementById("priv_notices").checked };
+    const privs = { 
+        attendance: document.getElementById("priv_attendance").checked, 
+        marks: document.getElementById("priv_marks").checked, 
+        finance: document.getElementById("priv_finance").checked, 
+        notices: document.getElementById("priv_notices").checked,
+        admissions: document.getElementById("priv_admissions").checked,
+        certs: document.getElementById("priv_certs").checked,
+        exams: document.getElementById("priv_exams").checked,
+        settings: document.getElementById("priv_settings").checked,
+        view_finance: document.getElementById("priv_view_finance").checked,
+        delete: document.getElementById("priv_delete").checked
+    };
     try {
         await updateDoc(doc(db, "users", currentEditStaffId), { plainPassword: p, staffRole: r, privileges: privs });
         alert("Staff Privileges & Auth updated successfully!"); document.getElementById("edit-staff-modal").style.display = "none"; loadStaff();
@@ -1373,7 +1447,7 @@ window.loadExamSchedule = async () => {
     } catch(e) { console.error(e); }
 };
 
-function populateSchedulerTable(data) {
+window.populateSchedulerTable = (data) => {
     const dates = document.querySelectorAll(".sched-date");
     const subjs = document.querySelectorAll(".sched-subj");
     const times = document.querySelectorAll(".sched-time");
@@ -1382,7 +1456,7 @@ function populateSchedulerTable(data) {
         subjs[i].value = data[i]?.subject || "";
         times[i].value = data[i]?.timing || "";
     }
-}
+};
 
 window.saveExamSchedule = async () => {
     const cls = document.getElementById("scheduler-class-select").value;
