@@ -1077,6 +1077,24 @@ window.saveStudentMarks = async () => {
     }
 };
 
+window.transparentSigCache = null;
+window.getTransparentSignature = async (sigUrl) => {
+    if (!sigUrl) return "";
+    if (window.transparentSigCache) return window.transparentSigCache;
+    try {
+        const res = await fetch("https://school-backend-zlgy.onrender.com/api/get-transparent-signature", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ signatureUrl: sigUrl })
+        });
+        const data = await res.json();
+        if (data.success) {
+            window.transparentSigCache = data.base64;
+            return data.base64;
+        }
+    } catch (e) { console.error("Transparent sig error:", e); }
+    return sigUrl;
+};
+
 window.generateMarksheet = async (st, marksDoc) => {
     const slipDiv = document.createElement('div');
     slipDiv.style.position = 'absolute';
@@ -1157,6 +1175,8 @@ window.generateMarksheet = async (st, marksDoc) => {
     `;
     
     const renderSig = currentSignatureUrl && (!window.currentSigSettings || window.currentSigSettings.marksheet !== false);
+    let finalSigSrc = "";
+    if (renderSig) finalSigSrc = await window.getTransparentSignature(currentSignatureUrl);
     
     slipDiv.innerHTML += `
         <div style="display:flex; justify-content:space-between; margin-top:60px;">
@@ -1164,7 +1184,7 @@ window.generateMarksheet = async (st, marksDoc) => {
                 <div style="border-top:1px solid #000; padding-top:5px;">Class Teacher</div>
             </div>
             <div style="text-align:center; width:200px;">
-                ${renderSig ? `<img src="${currentSignatureUrl}" style="height:50px; margin-bottom:5px; mix-blend-mode: multiply;">` : `<div style="height:50px;"></div>`}
+                ${renderSig ? `<img src="${finalSigSrc}" style="height:50px; margin-bottom:5px;">` : `<div style="height:50px;"></div>`}
                 <div style="border-top:1px solid #000; padding-top:5px;">Principal Signature</div>
             </div>
         </div>
@@ -1702,7 +1722,9 @@ window.triggerBulkBonafide = async (students) => {
         document.getElementById("cert-body").innerHTML = `This is to certify that <strong>${st.name}</strong>, son/daughter of <strong>${(st.parentage || st.fatherName) || 'N/A'}</strong>, is a bona fide student of this institution, currently studying in class <strong>${st.class}</strong> during the current academic session.`;
 
         if(currentSignatureUrl && (!window.currentSigSettings || window.currentSigSettings.bonafide !== false)) {
-            document.getElementById("cert_sig").src = currentSignatureUrl;
+            const finalSigSrc = await window.getTransparentSignature(currentSignatureUrl);
+            document.getElementById("cert_sig").src = finalSigSrc;
+            document.getElementById("cert_sig").style.mixBlendMode = "normal"; // override inline CSS
             document.getElementById("cert_sig").style.display = "block";
         } else {
             document.getElementById("cert_sig").style.display = "none";
@@ -1777,7 +1799,9 @@ window.proceedAdmitCards = async (mode) => {
     if(logoUrl) document.getElementById("admit-logo").src = logoUrl;
     
     if (currentSignatureUrl && window.currentSigSettings && window.currentSigSettings.admit !== false) {
-        document.getElementById("admit-sig").src = currentSignatureUrl;
+        const finalSigSrc = await window.getTransparentSignature(currentSignatureUrl);
+        document.getElementById("admit-sig").src = finalSigSrc;
+        document.getElementById("admit-sig").style.mixBlendMode = "normal"; // override inline CSS
         document.getElementById("admit-sig").style.display = "block";
     } else {
         document.getElementById("admit-sig").style.display = "none";

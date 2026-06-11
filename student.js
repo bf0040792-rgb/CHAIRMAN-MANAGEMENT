@@ -295,7 +295,21 @@ window.downloadMyAdmitCard = async () => {
         printable.style.border = "2px solid #000";
         
         let logoHtml = currentSchoolDoc.schoolLogoUrl ? `<img src="${currentSchoolDoc.schoolLogoUrl}" style="width:80px; height:80px; object-fit:contain; position:absolute; left:20px; top:20px;">` : '';
-        let sigHtml = (currentSchoolDoc.signatureUrl && (!currentSchoolDoc.sigSettings || currentSchoolDoc.sigSettings.admit !== false)) ? `<img src="${currentSchoolDoc.signatureUrl}" style="height:50px; mix-blend-mode: multiply;">` : '';
+        
+        let finalSigBase64 = "";
+        if (currentSchoolDoc.signatureUrl && (!currentSchoolDoc.sigSettings || currentSchoolDoc.sigSettings.admit !== false)) {
+            finalSigBase64 = currentSchoolDoc.signatureUrl;
+            try {
+                const res = await fetch("https://school-backend-zlgy.onrender.com/api/get-transparent-signature", {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ signatureUrl: currentSchoolDoc.signatureUrl })
+                });
+                const data = await res.json();
+                if (data.success) finalSigBase64 = data.base64;
+            } catch(e) { console.error("Transparent sig fetch failed", e); }
+        }
+        
+        let sigHtml = finalSigBase64 ? `<img src="${finalSigBase64}" style="height:50px;">` : '';
         
         let tbodyHtml = "";
         for (let i = 0; i < 6; i++) {
