@@ -1507,14 +1507,12 @@ window.updateSchedulerDatalists = () => {
     const subjList = document.getElementById("subjectsList");
     if(subjList) {
         subjList.innerHTML = "";
-        subjects.forEach(val => subjList.innerHTML += <option value="$val"></option>);
-    }
+        subjects.forEach(val => subjList.innerHTML += `<option value="${val}"></option>`);
     
     const timeList = document.getElementById("timingsList");
     if(timeList) {
         timeList.innerHTML = "";
-        timings.forEach(val => timeList.innerHTML += <option value="$val"></option>);
-    }
+        timings.forEach(val => timeList.innerHTML += `<option value="${val}"></option>`);
 };
 window.saveExamSchedule = async () => {
     const cls = document.getElementById("scheduler-class-select").value;
