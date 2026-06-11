@@ -55,26 +55,41 @@
     </div>
 
     <!-- NEW PIN SCREEN FOR CHAIRMAN -->
-    <div id="pin-wrapper" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80') center/cover no-repeat; z-index: 9999; justify-content: center; align-items: center;">
+    <div id="pin-wrapper" style="display: none;">
         <div class="glass-login-box" id="create-pin-box" style="display:none;">
-            <h2>Create App PIN</h2>
-            <p style="text-align:center; color:#ddd; margin-bottom:20px; font-size:14px;">Set a PIN for quick login next time.</p>
+            <div class="pro-icon-container">
+                <i class="fas fa-key"></i>
+            </div>
+            <p style="text-align:center; color:rgba(255,255,255,0.6); margin-bottom:20px; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:1px;">Set a PIN for quick login</p>
             <div class="glass-input-group">
                 <label style="text-align:center;">Set 4-Digit PIN</label>
-                <input type="password" id="c_newPin" maxlength="4" style="text-align:center; font-size:24px; letter-spacing:10px;">
+                <div class="input-wrapper" style="justify-content:center;">
+                    <input type="password" id="c_newPin" maxlength="4" style="text-align:center; font-size:24px; letter-spacing:10px; padding:15px !important;">
+                </div>
             </div>
-            <button class="glass-login-btn" onclick="saveChairmanPin()">Save PIN & Enter</button>
+            <button class="glass-login-btn" onclick="saveChairmanPin()">
+                <span>Save & Enter</span> <i class="fas fa-check"></i>
+            </button>
         </div>
+        
         <div class="glass-login-box" id="enter-pin-box" style="display:none;">
-            <h2>Enter PIN</h2>
-            <p style="text-align:center; color:#ddd; margin-bottom:20px; font-size:14px;">Welcome back.</p>
+            <div class="pro-icon-container">
+                <i class="fas fa-unlock-alt"></i>
+            </div>
+            <p style="text-align:center; color:rgba(255,255,255,0.6); margin-bottom:20px; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:1px;">Welcome back</p>
             <div class="glass-input-group">
                 <label style="text-align:center;">4-Digit PIN</label>
-                <input type="password" id="c_loginPin" maxlength="4" style="text-align:center; font-size:24px; letter-spacing:10px;">
+                <div class="input-wrapper" style="justify-content:center;">
+                    <input type="password" id="c_loginPin" maxlength="4" style="text-align:center; font-size:24px; letter-spacing:10px; padding:15px !important;">
+                </div>
             </div>
-            <button class="glass-login-btn" onclick="verifyChairmanPin()">Unlock</button>
+            <button class="glass-login-btn" onclick="verifyChairmanPin()">
+                <span>Unlock</span> <i class="fas fa-unlock"></i>
+            </button>
             <p class="error-msg" id="c_pinErrorMsg">Incorrect PIN!</p>
-            <button class="glass-login-btn" style="margin-top:15px; background:rgba(255,255,255,0.2); color:#fff;" onclick="logoutFromPin()">Logout</button>
+            <button class="glass-login-btn" style="margin-top:20px; background: rgba(0,0,0,0.4) !important; color: #fff !important; box-shadow:none !important;" onclick="logoutFromPin()">
+                <span>Logout</span> <i class="fas fa-sign-out-alt"></i>
+            </button>
         </div>
     </div>
 
