@@ -443,7 +443,7 @@ window.clearEmergencyTicker = async () => {
 };
 
 document.getElementById("admissionToggle").addEventListener("change", async (e) => {
-    try { await updateDoc(doc(db, “schools”, currentSchoolId), { admissionOpen: e.target.checked }); alert(e.target.checked ? “Admissions OPEN.” : “Admissions CLOSED.”); }
+    try { await updateDoc(doc(db, "schools", currentSchoolId), { admissionOpen: e.target.checked }); alert(e.target.checked ? "Admissions OPEN." : "Admissions CLOSED."); }
     catch(err) { e.target.checked = !e.target.checked; }
 });
 
