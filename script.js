@@ -242,7 +242,7 @@ window.generateRegistrationLink = () => {
 
 window.copyToClipboard = () => {
     const link = document.getElementById("short-link-input").value;
-    if(link) { navigator.clipboard.writeText(link).then(() => alert("âœ… Link Copied!")); }
+    if(link) { navigator.clipboard.writeText(link).then(() => alert("Link Copied!")); }
 };
 
 function populateClassDropdowns() {
@@ -443,7 +443,7 @@ window.clearEmergencyTicker = async () => {
 };
 
 document.getElementById("admissionToggle").addEventListener("change", async (e) => {
-    try { await updateDoc(doc(db, "schools", currentSchoolId), { admissionOpen: e.target.checked }); alert(e.target.checked ? "ðŸŸ¢ Admissions OPEN." : "ðŸ”´ Admissions CLOSED."); } 
+    try { await updateDoc(doc(db, “schools”, currentSchoolId), { admissionOpen: e.target.checked }); alert(e.target.checked ? “Admissions OPEN.” : “Admissions CLOSED.”); }
     catch(err) { e.target.checked = !e.target.checked; }
 });
 
@@ -622,10 +622,10 @@ async function loadTransactions() {
             if(t.type === "Expense") totalExpenses += Number(t.amount);
         });
         
-        document.getElementById("summary-fees").innerText = "â‚¹ " + totalFees;
-        document.getElementById("summary-salaries").innerText = "â‚¹ " + totalSalaries;
-        document.getElementById("summary-balance").innerText = "â‚¹ " + (totalFees - totalSalaries - totalExpenses);
-        document.getElementById("count-revenue").innerText = "â‚¹ " + (totalFees - totalSalaries - totalExpenses);
+        document.getElementById("summary-fees").innerText = "\u20B9 " + totalFees;
+        document.getElementById("summary-salaries").innerText = "\u20B9 " + totalSalaries;
+        document.getElementById("summary-balance").innerText = "\u20B9 " + (totalFees - totalSalaries - totalExpenses);
+        document.getElementById("count-revenue").innerText = "\u20B9 " + (totalFees - totalSalaries - totalExpenses);
         
         const staffNames = new Set(window.fetchedTransactions.filter(t => t.type === "Salary" && t.personName).map(t => t.personName));
         const staffDropdown = document.getElementById("ledger-search-staff");
@@ -694,7 +694,7 @@ window.renderTransactionsTable = () => {
     filtered.forEach(t => {
         const typeColor = t.type === "Fee" ? "#27ae60" : (t.type === "Expense" ? "#e53e3e" : "#e67e22");
         const details = t.type === "Fee" ? `Class: ${t.class || 'N/A'}` : (t.type === "Expense" ? "School Expense" : "Staff Pay");
-        html += `<tr><td>${t.date}</td><td><strong style="color:${typeColor}">${t.type}</strong></td><td>${t.personName || 'N/A'}</td><td>${details}</td><td style="font-weight:bold;">â‚¹ ${t.amount}</td><td>${t.mode}</td></tr>`;
+        html += `<tr><td>${t.date}</td><td><strong style="color:${typeColor}">${t.type}</strong></td><td>${t.personName || 'N/A'}</td><td>${details}</td><td style="font-weight:bold;">&#8377; ${t.amount}</td><td>${t.mode}</td></tr>`;
     });
     
     tbody.innerHTML = html || "<tr><td colspan='6' style='text-align:center;'>No Financial Records Found.</td></tr>";
@@ -757,7 +757,7 @@ function renderStudentsTable(className, searchTerm = null, statusFilter = null) 
 
     filtered.forEach(dt => {
         const safeId = dt.id.replace(/'/g, "\\'"); const locked = dt.lockedOut;
-        const statusColor = dt.status === 'Approved' ? '#27ae60' : (dt.status === 'Pending' ? '#e67e22' : '#e53e3e'); const statusIcon = dt.status === 'Approved' ? 'âœ“' : 'â³';
+        const statusColor = dt.status === 'Approved' ? '#27ae60' : (dt.status === 'Pending' ? '#e67e22' : '#e53e3e'); const statusIcon = dt.status === 'Approved' ? '\u2714' : '\u23F3';
         
         const lockBtn = locked ? `<button class="action-btn btn-green" onclick="toggleStudentLock('${safeId}', false)" title="Unlock Account"><i class="fas fa-unlock"></i></button>` : `<button class="action-btn btn-dark" onclick="toggleStudentLock('${safeId}', true)" title="Lock Account"><i class="fas fa-lock"></i></button>`;
 
@@ -1164,9 +1164,129 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// ================= BULK ACTION MODAL (ID, ADMIT, BONAFIDE) =================
+window.currentBulkActionType = '';
+window.pendingAdmitCardStudents = [];
+
+window.openBulkActionModal = (type) => {
+    window.currentBulkActionType = type;
+    let title = "Batch Action";
+    if(type === 'id') title = "<i class='fas fa-id-badge'></i> Bulk Generate ID Cards";
+    if(type === 'admit') title = "<i class='fas fa-file-alt'></i> Bulk Generate Admit Cards";
+    if(type === 'bonafide') title = "<i class='fas fa-graduation-cap'></i> Bulk Generate Bonafide Certificates";
+    document.getElementById("bulk-modal-title").innerHTML = title;
+    document.getElementById("bulk-action-class").value = "All";
+    document.getElementById("bulk-select-all").checked = false;
+    window.renderBulkActionStudents();
+    document.getElementById("bulk-action-modal").style.display = "flex";
+};
+
+window.renderBulkActionStudents = () => {
+    const cls = document.getElementById("bulk-action-class").value;
+    let filtered = window.fetchedStudents.filter(s => s.status === 'Approved');
+    if(cls !== "All") filtered = filtered.filter(s => s.class === cls);
+    filtered.sort((a,b) => (Number(a.rollNo) || 999999) - (Number(b.rollNo) || 999999));
+
+    const tbody = document.getElementById("bulk-action-list");
+    if(filtered.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; padding:15px;'>No approved students found.</td></tr>";
+        return;
+    }
+    let html = "";
+    filtered.forEach(st => {
+        html += `<tr>
+            <td style="padding:10px;"><input type="checkbox" class="bulk-student-cb" value="${st.id}"></td>
+            <td style="padding:10px;">${st.rollNo || 'N/A'}</td>
+            <td style="padding:10px;">${st.name}</td>
+            <td style="padding:10px;">${st.class}</td>
+        </tr>`;
+    });
+    tbody.innerHTML = html;
+};
+
+window.toggleAllBulkStudents = (el) => {
+    document.querySelectorAll(".bulk-student-cb").forEach(cb => cb.checked = el.checked);
+};
+
+window.triggerBulkAction = () => {
+    const checked = document.querySelectorAll(".bulk-student-cb:checked");
+    if(checked.length === 0) return alert("Please select at least one student.");
+
+    const selectedIds = Array.from(checked).map(cb => cb.value);
+    const selectedStudents = window.fetchedStudents.filter(st => selectedIds.includes(st.id));
+
+    closeCustomModal('bulk-action-modal');
+
+    if(window.currentBulkActionType === 'id') {
+        window.generateBatchIDCards(selectedStudents);
+    } else if(window.currentBulkActionType === 'admit') {
+        const hasDefaulters = selectedStudents.some(st => st.dueBalance && st.dueBalance > 0);
+        if(hasDefaulters) {
+            window.pendingAdmitCardStudents = selectedStudents;
+            document.getElementById("defaulter-admit-modal").style.display = "flex";
+        } else {
+            window.pendingAdmitCardStudents = selectedStudents;
+            window.proceedAdmitCards('disable');
+        }
+    } else if(window.currentBulkActionType === 'bonafide') {
+        window.triggerBulkBonafide(selectedStudents);
+    }
+};
+
+window.triggerBulkBonafide = async (students) => {
+    document.getElementById("cert-modal").style.display = "flex";
+    document.getElementById("cert-printable").style.display = "none";
+    document.getElementById("cert-actions").style.display = "none";
+    document.getElementById("cert-generating-text").style.display = "block";
+    document.getElementById("cert-generating-text").innerText = "Compiling Batch Bonafide PDF...";
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('l', 'mm', 'a4');
+    let pageCount = 0;
+
+    for(let st of students) {
+        document.getElementById("cert-school-name").innerText = currentSchoolName;
+        document.getElementById("cert-school-name").style.color = currentThemeColor;
+        document.getElementById("cert-title").innerText = "BONAFIDE CERTIFICATE";
+        document.getElementById("cert-date").innerText = new Date().toLocaleDateString();
+        document.getElementById("cert-body").innerHTML = `This is to certify that <strong>${st.name}</strong>, son/daughter of <strong>${(st.parentage || st.fatherName) || 'N/A'}</strong>, is a bona fide student of this institution, currently studying in class <strong>${st.class}</strong> during the current academic session.`;
+
+        if(currentSignatureUrl && (!window.currentSigSettings || window.currentSigSettings.bonafide !== false)) {
+            document.getElementById("cert_sig").src = currentSignatureUrl;
+            document.getElementById("cert_sig").style.display = "block";
+        } else {
+            document.getElementById("cert_sig").style.display = "none";
+        }
+
+        document.getElementById("cert-printable").style.display = "flex";
+        await new Promise(r => setTimeout(r, 300));
+
+        const canvas = await html2canvas(document.getElementById("cert-printable"), { useCORS: true, scale: 2 });
+        const imgData = canvas.toDataURL("image/jpeg", 0.9);
+        document.getElementById("cert-printable").style.display = "none";
+
+        if(pageCount > 0) pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 10, 10, 277, 190);
+        pageCount++;
+    }
+
+    pdf.save("Batch_Bonafide_Certificates.pdf");
+    document.getElementById("cert-modal").style.display = "none";
+};
+
+window.downloadAllIdsAsPDF = () => {
+    const images = document.getElementById("bulk-id-grid").querySelectorAll("img");
+    if(images.length === 0) return alert("No ID cards generated yet.");
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    images.forEach((img, index) => {
+        if(index > 0) pdf.addPage();
+        pdf.addImage(img.src, 'PNG', 10, 10, 54, 86);
+    });
+    pdf.save("Batch_ID_Cards.pdf");
+};
+
 // ================= BULK ADMIT CARDS =================
-window.pendingAdmitCardStudents = [];
-window.pendingAdmitCardStudents = [];
 window.proceedAdmitCards = async (mode) => {
     document.getElementById("defaulter-admit-modal").style.display = "none";
     let students = window.pendingAdmitCardStudents;
@@ -1364,7 +1484,7 @@ window.loadFeeVerifications = async () => {
                 <td>${data.createdAt.toDate().toLocaleString()}</td>
                 <td><strong>${data.studentName}</strong><br><small>Reg: ${data.regNo}</small></td>
                 <td style="font-family: monospace;">${data.utr}</td>
-                <td><strong>â‚¹ ${data.amount}</strong></td>
+                <td><strong>&#8377; ${data.amount}</strong></td>
                 <td><a href="${data.screenshotUrl}" target="_blank" style="color:#3182ce; text-decoration:none;"><i class="fas fa-image"></i> View Proof</a></td>
                 <td style="${statusClass}">${btnHtml}</td>
             </tr>`;
@@ -1377,7 +1497,7 @@ window.loadFeeVerifications = async () => {
 };
 
 window.approveFeeVerification = async (verificationId, studentId, studentName, amount) => {
-    if(!confirm(`Approve â‚¹${amount} fee payment for ${studentName}? This will update the student's balance and ledger.`)) return;
+    if(!confirm(`Approve &#8377;${amount} fee payment for ${studentName}? This will update the student's balance and ledger.`)) return;
     
     try {
         const batch = writeBatch(db);
@@ -1471,10 +1591,12 @@ window.updateSchedulerDatalists = () => {
 };
 window.saveExamSchedule = async () => {
     const cls = document.getElementById("scheduler-class-select").value;
+    if(!currentSchoolId) return alert("School ID not found. Please re-login.");
+
     const dates = document.querySelectorAll(".sched-date");
     const subjs = document.querySelectorAll(".sched-subj");
     const times = document.querySelectorAll(".sched-time");
-    
+
     const schedule = [];
     for(let i=0; i<6; i++) {
         schedule.push({
@@ -1483,22 +1605,20 @@ window.saveExamSchedule = async () => {
             timing: times[i].value.trim()
         });
     }
-    
+
     try {
         if(cls === "All") {
             const allOptions = Array.from(document.getElementById("scheduler-class-select").options).map(o => o.value).filter(v => v !== "All");
-            const batch = writeBatch(db);
             for(let c of allOptions) {
-                batch.set(doc(db, "schools", currentSchoolId, "examSchedules", c), { schedule: schedule });
+                await setDoc(doc(db, "schools", currentSchoolId, "examSchedules", c), { schedule: schedule }, { merge: true });
             }
-            await batch.commit();
             alert("Schedule saved for ALL Classes!");
         } else {
-            await setDoc(doc(db, "schools", currentSchoolId, "examSchedules", cls), { schedule: schedule });
+            await setDoc(doc(db, "schools", currentSchoolId, "examSchedules", cls), { schedule: schedule }, { merge: true });
             alert("Schedule saved for Class " + cls);
         }
         window.lastExamScheduleCache = schedule;
-    } catch(e) { alert("Error saving schedule."); }
+    } catch(e) { console.error("Schedule save error:", e); alert("Error saving schedule: " + e.message); }
 };
 
 window.openGlobalBonafideModal = () => {
