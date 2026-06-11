@@ -469,27 +469,28 @@ window.initDashboardChart = () => {
         window.myDashboardChart.destroy();
     }
     
-    // Group students by class
-    const classCounts = {};
-    window.fetchedStudents.forEach(st => {
-        if (st.status === 'Approved') {
-            const cls = st.class || 'Unknown';
-            classCounts[cls] = (classCounts[cls] || 0) + 1;
+    // Calculate total income (Fee) and expenses (Salary, Expense)
+    let totalIncome = 0;
+    let totalExpenses = 0;
+    
+    (window.fetchedTransactions || []).forEach(t => {
+        const amt = parseFloat(t.amount) || 0;
+        if (t.type === 'Fee') {
+            totalIncome += amt;
+        } else if (t.type === 'Salary' || t.type === 'Expense') {
+            totalExpenses += amt;
         }
     });
-    
-    const labels = Object.keys(classCounts);
-    const data = Object.values(classCounts);
     
     window.myDashboardChart = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: labels,
+            labels: ['Total Income', 'Total Expenses'],
             datasets: [{
-                label: 'Total Students by Class',
-                data: data,
-                backgroundColor: 'rgba(139, 92, 246, 0.5)',
-                borderColor: '#8b5cf6',
+                label: 'Financial Analytics (₹)',
+                data: [totalIncome, totalExpenses],
+                backgroundColor: ['rgba(39, 174, 96, 0.5)', 'rgba(229, 62, 62, 0.5)'],
+                borderColor: ['#27ae60', '#e53e3e'],
                 borderWidth: 2,
                 borderRadius: 4
             }]
@@ -498,7 +499,7 @@ window.initDashboardChart = () => {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-                y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                y: { beginAtZero: true }
             }
         }
     });
@@ -739,11 +740,79 @@ window.renderTransactionsTable = () => {
         const typeColor = t.type === "Fee" ? "#27ae60" : (t.type === "Expense" ? "#e53e3e" : "#e67e22");
         const details = t.type === "Fee" ? `Class: ${t.class || 'N/A'}` : (t.type === "Expense" ? "School Expense" : "Staff Pay");
         const actionBtn = t.type === 'Salary' ? `<button class="action-btn btn-blue" style="padding:2px 5px; font-size:10px; margin-left:5px;" onclick="window.generatePayslip('${t.id}')"><i class="fas fa-download"></i> Slip</button>` : '';
-        html += `<tr><td>${t.date}</td><td><strong style="color:${typeColor}">${t.type}</strong></td><td>${t.personName || 'N/A'}</td><td>${details}</td><td style="font-weight:bold;">Rs. ${t.amount}</td><td>${t.mode} ${actionBtn}</td></tr>`;
+        html += `<tr><td>${t.date}</td><td><strong style="color:${typeColor}">${t.type}</strong></td><td>${t.personName || 'N/A'}</td><td>${details}</td><td style="font-weight:bold;">Rs. ${t.amount}</td><td>${t.mode} ${actionBtn}</td>
+        <td><button class="action-btn btn-red" onclick="window.requestTransactionDeletion('${t.id}')"><i class="fas fa-trash"></i></button></td></tr>`;
     });
     
-    tbody.innerHTML = html || "<tr><td colspan='6' style='text-align:center;'>No Financial Records Found.</td></tr>";
+    tbody.innerHTML = html || "<tr><td colspan='7' style='text-align:center;'>No Financial Records Found.</td></tr>";
 }
+
+window.requestTransactionDeletion = async (id) => {
+    const t = window.fetchedTransactions.find(x => x.id === id);
+    if (!t) return;
+    
+    if (confirm("Request Super Admin to delete this transaction?")) {
+        try {
+            await setDoc(doc(db, "pending_deletions", id), {
+                ...t,
+                requestDate: new Date().toISOString(),
+                status: "Pending"
+            });
+            alert("Deletion request sent to Super Admin for approval.");
+        } catch (e) {
+            console.error(e);
+            alert("Error sending deletion request.");
+        }
+    }
+};
+
+window.downloadLedgerPDF = () => {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('l', 'mm', 'a4');
+    
+    pdf.setFontSize(18);
+    pdf.text("Combined Financial Ledger", 14, 22);
+    
+    const nameSearch = document.getElementById("ledger-search-name").value.toLowerCase();
+    const classSearch = document.getElementById("ledger-search-class").value;
+    const staffSearch = document.getElementById("ledger-search-staff").value;
+    
+    let filtered = window.fetchedTransactions;
+    if(window.currentLedgerTab !== 'All') { filtered = filtered.filter(t => t.type === window.currentLedgerTab); }
+    if(classSearch) { filtered = filtered.filter(t => t.class === classSearch); }
+    if(staffSearch) { filtered = filtered.filter(t => t.personName === staffSearch); }
+    if(nameSearch) { filtered = filtered.filter(t => t.personName?.toLowerCase().includes(nameSearch)); }
+    
+    let y = 40;
+    pdf.setFontSize(10);
+    pdf.setFont(undefined, 'bold');
+    pdf.text("Date", 14, y);
+    pdf.text("Type", 40, y);
+    pdf.text("Name/Title", 70, y);
+    pdf.text("Details", 120, y);
+    pdf.text("Amount", 180, y);
+    pdf.text("Mode", 220, y);
+    
+    pdf.setFont(undefined, 'normal');
+    y += 10;
+    
+    filtered.forEach((t, i) => {
+        if (y > 190) {
+            pdf.addPage();
+            y = 20;
+        }
+        const details = t.type === "Fee" ? `Class: ${t.class || 'N/A'}` : (t.type === "Expense" ? "School Expense" : "Staff Pay");
+        pdf.text(t.date || '', 14, y);
+        pdf.text(t.type || '', 40, y);
+        pdf.text((t.personName || 'N/A').substring(0, 20), 70, y);
+        pdf.text(details.substring(0, 25), 120, y);
+        pdf.text("Rs. " + t.amount, 180, y);
+        pdf.text(t.mode || '', 220, y);
+        y += 10;
+    });
+    
+    pdf.save("Ledger_Report.pdf");
+};
 
 window.generatePayslip = async (id) => {
     const t = window.fetchedTransactions.find(x => x.id === id);
@@ -885,7 +954,6 @@ function renderStudentsTable(className, searchTerm = null, statusFilter = null) 
             ? `<button class="action-btn btn-green" onclick="updateStudentStatus('${safeId}')"><i class="fas fa-check"></i> Approve</button>`
             : `
             <button class="action-btn btn-blue" onclick="showIDCard('${safeId}')"><i class="fas fa-id-card"></i> ID</button>
-            <button class="action-btn" style="background:#10b981; color:white;" onclick="window.generateMarksheet('${safeId}')"><i class="fas fa-file-invoice"></i> Marksheet</button>
             <button class="action-btn" style="background:#3b82f6; color:white;" onclick="window.openDirectMessageModal('${safeId}', '${dt.name.replace(/'/g, "\\'")}')"><i class="fas fa-comment-dots"></i> Message</button>
             <button class="action-btn btn-purple" onclick="openStudentModal('${safeId}')"><i class="fas fa-edit"></i> Edit</button>
             ${lockBtn}`;
@@ -903,10 +971,66 @@ function renderStudentsTable(className, searchTerm = null, statusFilter = null) 
     tbody.innerHTML = html || "<tr><td colspan='7' style='text-align:center; padding:30px; color:#999;'>No Students Found.</td></tr>";
 }
 
-window.generateMarksheet = async (id) => {
-    const st = window.fetchedStudents.find(s => s.id === id);
-    if (!st) return;
+window.populateStudentsForMarks = () => {
+    const classVal = document.getElementById("marks_class").value;
+    const studentSelect = document.getElementById("marks_student");
+    studentSelect.innerHTML = '<option value="">-- Select Student --</option>';
+    if (!classVal) return;
     
+    const students = window.fetchedStudents.filter(s => s.class === classVal);
+    students.forEach(s => {
+        studentSelect.innerHTML += `<option value="${s.id}">${s.name} (${s.rollNo || 'N/A'})</option>`;
+    });
+    
+    const subjects = window.examSubjects || ['English', 'Mathematics', 'Science', 'Social Studies', 'Hindi/Local'];
+    const tbody = document.getElementById("marks_entry_table");
+    tbody.innerHTML = '';
+    
+    subjects.forEach((sub, idx) => {
+        tbody.innerHTML += `<tr>
+            <td style="padding:10px; border:1px solid #ccc;">${sub}</td>
+            <td style="padding:10px; border:1px solid #ccc; text-align:center;"><input type="number" id="marks_max_${idx}" value="100" class="input-premium" style="width:60px;"></td>
+            <td style="padding:10px; border:1px solid #ccc; text-align:center;"><input type="number" id="marks_min_${idx}" value="33" class="input-premium" style="width:60px;"></td>
+            <td style="padding:10px; border:1px solid #ccc; text-align:center;"><input type="number" id="marks_obt_${idx}" class="input-premium" style="width:80px;" placeholder="Marks"></td>
+        </tr>`;
+    });
+};
+
+window.saveStudentMarks = async () => {
+    const studentId = document.getElementById("marks_student").value;
+    if (!studentId) return alert("Please select a student.");
+    
+    const subjects = window.examSubjects || ['English', 'Mathematics', 'Science', 'Social Studies', 'Hindi/Local'];
+    const marksData = {};
+    
+    let totalObt = 0;
+    let totalMax = 0;
+    
+    subjects.forEach((sub, idx) => {
+        const max = parseFloat(document.getElementById(`marks_max_${idx}`).value) || 100;
+        const min = parseFloat(document.getElementById(`marks_min_${idx}`).value) || 33;
+        const obt = parseFloat(document.getElementById(`marks_obt_${idx}`).value) || 0;
+        totalMax += max;
+        totalObt += obt;
+        let grade = obt >= (0.9*max) ? 'A+' : (obt >= (0.8*max) ? 'A' : (obt >= (0.7*max) ? 'B' : (obt >= min ? 'C' : 'F')));
+        marksData[sub] = { max, min, obt, grade };
+    });
+    
+    try {
+        await setDoc(doc(db, "student_marks", studentId), {
+            marks: marksData,
+            totalMax,
+            totalObt,
+            updatedAt: new Date().toISOString()
+        });
+        alert("Marks saved successfully!");
+    } catch (e) {
+        console.error(e);
+        alert("Error saving marks.");
+    }
+};
+
+window.generateMarksheet = async (st, marksDoc) => {
     const slipDiv = document.createElement('div');
     slipDiv.style.position = 'absolute';
     slipDiv.style.top = '-9999px';
@@ -918,27 +1042,24 @@ window.generateMarksheet = async (id) => {
     slipDiv.style.fontFamily = 'Arial, sans-serif';
     
     const schoolName = currentSchoolName || 'School Name';
-    const subjects = window.examSubjects || ['English', 'Mathematics', 'Science', 'Social Studies', 'Hindi/Local'];
     
-    // Generate dummy marks for visual demonstration
     let rowsHtml = '';
-    let totalMarks = 0;
-    let maxTotal = subjects.length * 100;
+    let totalMarks = marksDoc.totalObt || 0;
+    let maxTotal = marksDoc.totalMax || 0;
     
-    subjects.forEach(sub => {
-        const mark = Math.floor(Math.random() * 40) + 60; // 60 to 99
-        totalMarks += mark;
-        let grade = mark >= 90 ? 'A+' : (mark >= 80 ? 'A' : (mark >= 70 ? 'B' : 'C'));
+    Object.keys(marksDoc.marks || {}).forEach(sub => {
+        const m = marksDoc.marks[sub];
         rowsHtml += `<tr>
             <td style="padding:10px; border:1px solid #ccc;">${sub}</td>
-            <td style="padding:10px; border:1px solid #ccc; text-align:center;">100</td>
-            <td style="padding:10px; border:1px solid #ccc; text-align:center;">33</td>
-            <td style="padding:10px; border:1px solid #ccc; text-align:center;">${mark}</td>
-            <td style="padding:10px; border:1px solid #ccc; text-align:center;">${grade}</td>
+            <td style="padding:10px; border:1px solid #ccc; text-align:center;">${m.max}</td>
+            <td style="padding:10px; border:1px solid #ccc; text-align:center;">${m.min}</td>
+            <td style="padding:10px; border:1px solid #ccc; text-align:center;">${m.obt}</td>
+            <td style="padding:10px; border:1px solid #ccc; text-align:center;">${m.grade}</td>
         </tr>`;
     });
     
-    const percentage = ((totalMarks / maxTotal) * 100).toFixed(2);
+    const percentage = maxTotal > 0 ? ((totalMarks / maxTotal) * 100).toFixed(2) : 0;
+    const finalResult = percentage >= 33 ? '<span style="color:#27ae60;">PASS</span>' : '<span style="color:#e53e3e;">FAIL</span>';
     
     slipDiv.innerHTML = `
         <div style="text-align:center; margin-bottom:20px; padding-bottom:10px; border-bottom:3px double #1e3c72;">
@@ -984,8 +1105,7 @@ window.generateMarksheet = async (id) => {
         
         <div style="display:flex; justify-content:space-between; margin-bottom:40px; padding:15px; background:#f9f9f9; border:1px solid #eee; border-radius:5px;">
             <div><strong>Overall Percentage:</strong> ${percentage}%</div>
-            <div><strong>Final Result:</strong> <span style="color:#27ae60;">PASS</span></div>
-            <div><strong>Rank in Class:</strong> ${Math.floor(Math.random() * 5) + 1}</div>
+            <div><strong>Final Result:</strong> ${finalResult}</div>
         </div>
         
         <div style="display:flex; justify-content:space-between; margin-top:60px;">
@@ -1000,21 +1120,51 @@ window.generateMarksheet = async (id) => {
     `;
     
     document.body.appendChild(slipDiv);
+    const canvas = await html2canvas(slipDiv, { scale: 2 });
+    const imgData = canvas.toDataURL('image/jpeg', 1.0);
+    document.body.removeChild(slipDiv);
+    return imgData;
+};
+
+window.generateBulkMarksheets = async (students) => {
+    document.getElementById("bulk-id-modal").style.display = "block";
+    document.getElementById("bulk-generating-text").style.display = "block";
+    document.getElementById("bulk-generating-text").innerText = "Fetching Real Marks and Generating Marksheets...";
+    document.getElementById("bulk-id-grid").innerHTML = "";
+
     try {
-        const canvas = await html2canvas(slipDiv, { scale: 2 });
-        const imgData = canvas.toDataURL('image/jpeg', 1.0);
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF('p', 'mm', 'a4');
-        const imgProps = pdf.getImageProperties(imgData);
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
-        pdf.save(`Marksheet_${st.name.replace(/\s+/g, '_')}_${st.rollNo || '0'}.pdf`);
+        let pdfAdded = false;
+
+        for (let st of students) {
+            const docSnap = await getDoc(doc(db, "student_marks", st.id));
+            if (!docSnap.exists()) {
+                console.warn(`No marks found for ${st.name}`);
+                continue; // Skip if no real data
+            }
+            
+            const imgData = await window.generateMarksheet(st, docSnap.data());
+            
+            if (pdfAdded) pdf.addPage();
+            
+            const imgProps = pdf.getImageProperties(imgData);
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+            pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+            pdfAdded = true;
+        }
+
+        if (pdfAdded) {
+            pdf.save("Batch_Marksheets.pdf");
+        } else {
+            alert("No real marks data found for any of the selected students. Please enter marks in Academic Veto first.");
+        }
     } catch (e) {
-        console.error(e);
-        alert('Error generating marksheet');
+        alert("Failed to generate Marksheets. Error: " + e.message);
     } finally {
-        document.body.removeChild(slipDiv);
+        document.getElementById("bulk-generating-text").style.display = "none";
+        closeCustomModal("bulk-action-modal");
     }
 };
 
@@ -1458,6 +1608,8 @@ window.triggerBulkAction = () => {
 
     if(window.currentBulkActionType === 'id') {
         window.generateBatchIDCards(selectedStudents);
+    } else if(window.currentBulkActionType === 'marksheet') {
+        window.generateBulkMarksheets(selectedStudents);
     } else if(window.currentBulkActionType === 'admit') {
         const hasDefaulters = selectedStudents.some(st => st.dueBalance && st.dueBalance > 0);
         if(hasDefaulters) {
