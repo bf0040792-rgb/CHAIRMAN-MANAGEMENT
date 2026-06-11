@@ -6,6 +6,7 @@
     <title>Chairman Portal | System Core</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -113,6 +114,11 @@
                         <div class="stat-card" style="border-bottom-color: #38a169; cursor: pointer;" onclick="switchTab('tab-staff')"><h3>Total Staff</h3><h2 id="count-staff">0</h2></div>
                         <div class="stat-card" style="border-bottom-color: #f39c12; cursor: pointer;" onclick="switchTab('tab-notices')"><h3>Active Notices</h3><h2 id="count-notices">0</h2></div>
                         <div class="stat-card" style="border-bottom-color: #27ae60; cursor: pointer;" onclick="switchTab('tab-finance')"><h3>Total Revenue</h3><h2 id="count-revenue" style="color:#27ae60">₹ 0</h2></div>
+                    </div>
+
+                    <div class="card" style="border-left: 4px solid #8b5cf6;">
+                        <h3><i class="fas fa-chart-pie"></i> Visual Analytics</h3>
+                        <canvas id="dashboardChart" style="max-height: 350px; width: 100%;"></canvas>
                     </div>
 
                     <div class="card" style="border-left: 4px solid #38b2ac;">
@@ -1022,10 +1028,11 @@
                 <span id="bulk-modal-title"><i class="fas fa-tasks"></i> Batch Action</span>
                 <button class="action-btn btn-red" onclick="closeCustomModal('bulk-action-modal')"><i class="fas fa-times"></i></button>
             </div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px; margin-bottom:15px;">
-                <label style="font-weight:bold;">Class Filter:</label>
-                <select id="bulk-action-class" class="input-premium" style="width:200px;" onchange="window.renderBulkActionStudents()">
-                    <option value="All">All Classes</option>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <label style="font-weight:bold;">Class Filter:</label>
+                    <select id="bulk-action-class" class="input-premium" style="width:150px;" onchange="window.renderBulkActionStudents()">
+                        <option value="All">All Classes</option>
                     <option value="Nursery">Nursery</option>
                     <option value="LKG">LKG</option>
                     <option value="UKG">UKG</option>
@@ -1042,6 +1049,15 @@
                     <option value="11th">11th</option>
                     <option value="12th">12th</option>
                 </select>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <label style="font-weight:bold;">Paper Size:</label>
+                    <select id="bulk-paper-size" class="input-premium" style="width:120px;">
+                        <option value="a4">A4</option>
+                        <option value="letter">Letter</option>
+                        <option value="legal">Legal</option>
+                    </select>
+                </div>
             </div>
             <div style="max-height: 350px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
                 <table style="width: 100%; border-collapse: collapse; text-align: left;">
