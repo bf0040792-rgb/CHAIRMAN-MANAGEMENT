@@ -474,7 +474,31 @@ window.initDashboardChart = () => {
     let totalIncome = 0;
     let totalExpenses = 0;
     
-    (window.fetchedTransactions || []).forEach(t => {
+    const filter = document.getElementById('chart-date-filter') ? document.getElementById('chart-date-filter').value : 'All Time';
+    const now = new Date();
+    
+    let filteredTransactions = window.fetchedTransactions || [];
+    
+    if (filter === 'This Month') {
+        filteredTransactions = filteredTransactions.filter(t => {
+            const d = new Date(t.date);
+            return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        });
+    } else if (filter === 'Last Month') {
+        filteredTransactions = filteredTransactions.filter(t => {
+            const d = new Date(t.date);
+            const lastMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+            const year = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+            return d.getMonth() === lastMonth && d.getFullYear() === year;
+        });
+    } else if (filter === 'This Year') {
+        filteredTransactions = filteredTransactions.filter(t => {
+            const d = new Date(t.date);
+            return d.getFullYear() === now.getFullYear();
+        });
+    }
+    
+    filteredTransactions.forEach(t => {
         const amt = parseFloat(t.amount) || 0;
         if (t.type === 'Fee') {
             totalIncome += amt;
@@ -678,9 +702,12 @@ async function loadTransactions() {
             if(t.type === "Expense") totalExpenses += Number(t.amount);
         });
         
-        document.getElementById("summary-fees").innerText = "Rs. " + totalFees;
-        document.getElementById("summary-salaries").innerText = "Rs. " + totalSalaries;
-        document.getElementById("summary-balance").innerText = "Rs. " + (totalFees - totalSalaries - totalExpenses);
+        document.getElementById("summary-fees").innerText = "₹ " + totalFees;
+        document.getElementById("summary-salaries").innerText = "₹ " + totalSalaries;
+        document.getElementById("summary-balance").innerText = "₹ " + (totalFees - (totalSalaries + totalExpenses));
+        
+        if(window.initDashboardChart) window.initDashboardChart();
+        window.renderTransactionsTable();
         document.getElementById("count-revenue").innerText = "Rs. " + (totalFees - totalSalaries - totalExpenses);
         
         const staffNames = new Set(window.fetchedTransactions.filter(t => t.type === "Salary" && t.personName).map(t => t.personName));
