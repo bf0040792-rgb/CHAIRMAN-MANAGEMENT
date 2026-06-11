@@ -622,10 +622,10 @@ async function loadTransactions() {
             if(t.type === "Expense") totalExpenses += Number(t.amount);
         });
         
-        document.getElementById("summary-fees").innerText = "\u20B9 " + totalFees;
-        document.getElementById("summary-salaries").innerText = "\u20B9 " + totalSalaries;
-        document.getElementById("summary-balance").innerText = "\u20B9 " + (totalFees - totalSalaries - totalExpenses);
-        document.getElementById("count-revenue").innerText = "\u20B9 " + (totalFees - totalSalaries - totalExpenses);
+        document.getElementById("summary-fees").innerText = "Rs. " + totalFees;
+        document.getElementById("summary-salaries").innerText = "Rs. " + totalSalaries;
+        document.getElementById("summary-balance").innerText = "Rs. " + (totalFees - totalSalaries - totalExpenses);
+        document.getElementById("count-revenue").innerText = "Rs. " + (totalFees - totalSalaries - totalExpenses);
         
         const staffNames = new Set(window.fetchedTransactions.filter(t => t.type === "Salary" && t.personName).map(t => t.personName));
         const staffDropdown = document.getElementById("ledger-search-staff");
@@ -694,7 +694,7 @@ window.renderTransactionsTable = () => {
     filtered.forEach(t => {
         const typeColor = t.type === "Fee" ? "#27ae60" : (t.type === "Expense" ? "#e53e3e" : "#e67e22");
         const details = t.type === "Fee" ? `Class: ${t.class || 'N/A'}` : (t.type === "Expense" ? "School Expense" : "Staff Pay");
-        html += `<tr><td>${t.date}</td><td><strong style="color:${typeColor}">${t.type}</strong></td><td>${t.personName || 'N/A'}</td><td>${details}</td><td style="font-weight:bold;">&#8377; ${t.amount}</td><td>${t.mode}</td></tr>`;
+        html += `<tr><td>${t.date}</td><td><strong style="color:${typeColor}">${t.type}</strong></td><td>${t.personName || 'N/A'}</td><td>${details}</td><td style="font-weight:bold;">Rs. ${t.amount}</td><td>${t.mode}</td></tr>`;
     });
     
     tbody.innerHTML = html || "<tr><td colspan='6' style='text-align:center;'>No Financial Records Found.</td></tr>";
@@ -757,7 +757,7 @@ function renderStudentsTable(className, searchTerm = null, statusFilter = null) 
 
     filtered.forEach(dt => {
         const safeId = dt.id.replace(/'/g, "\\'"); const locked = dt.lockedOut;
-        const statusColor = dt.status === 'Approved' ? '#27ae60' : (dt.status === 'Pending' ? '#e67e22' : '#e53e3e'); const statusIcon = dt.status === 'Approved' ? '\u2714' : '\u23F3';
+        const statusColor = dt.status === 'Approved' ? '#27ae60' : (dt.status === 'Pending' ? '#e67e22' : '#e53e3e'); const statusIcon = dt.status === 'Approved' ? '<i class="fas fa-check"></i>' : '<i class="fas fa-clock"></i>';
         
         const lockBtn = locked ? `<button class="action-btn btn-green" onclick="toggleStudentLock('${safeId}', false)" title="Unlock Account"><i class="fas fa-unlock"></i></button>` : `<button class="action-btn btn-dark" onclick="toggleStudentLock('${safeId}', true)" title="Lock Account"><i class="fas fa-lock"></i></button>`;
 
@@ -799,13 +799,14 @@ window.openStudentModal = (id = null) => {
         const st = window.fetchedStudents.find(s => s.id === id);
         document.getElementById("modal-student-id").value = id;
         document.getElementById("modal-student-name").value = st.name || "";
-        document.getElementById("modal-student-regNo").value = st.regNo || "";
-        document.getElementById("modal-student-rollNo").value = st.rollNo || "";
-        document.getElementById("modal-student-class").value = st.class || "";
-        document.getElementById("dob").value = st.dob || "";
         document.getElementById("modal-student-father").value = (st.parentage || st.fatherName) || "";
-        document.getElementById("modal-student-mobile").value = st.mobile || "";
+        document.getElementById("dob").value = st.dob || "";
+        document.getElementById("modal-student-class").value = st.class || "";
         document.getElementById("modal-student-address").value = st.address || "";
+        document.getElementById("modal-student-rollNo").value = st.rollNo || "";
+        document.getElementById("modal-student-regNo").value = st.regNo || "";
+        document.getElementById("modal-student-mobile").value = st.mobile || "";
+        document.getElementById("modal-student-emergency").value = st.emergencyNo || "";
         document.getElementById("modal-student-photo-url").value = st.photoUrl || "";
         if(st.photoUrl) {
             document.getElementById("modal-student-photo-preview").src = st.photoUrl;
@@ -817,13 +818,14 @@ window.openStudentModal = (id = null) => {
         document.getElementById("student-modal-title").innerText = "Add Student";
         document.getElementById("modal-student-id").value = "";
         document.getElementById("modal-student-name").value = "";
-        document.getElementById("modal-student-regNo").value = "";
-        document.getElementById("modal-student-rollNo").value = "";
-        document.getElementById("modal-student-class").value = "1st";
-        document.getElementById("dob").value = "";
         document.getElementById("modal-student-father").value = "";
-        document.getElementById("modal-student-mobile").value = "";
+        document.getElementById("dob").value = "";
+        document.getElementById("modal-student-class").value = "1st";
         document.getElementById("modal-student-address").value = "";
+        document.getElementById("modal-student-rollNo").value = "";
+        document.getElementById("modal-student-regNo").value = "";
+        document.getElementById("modal-student-mobile").value = "";
+        document.getElementById("modal-student-emergency").value = "";
         document.getElementById("modal-student-photo-url").value = "";
         document.getElementById("modal-student-photo-preview").style.display = "none";
     }
@@ -840,13 +842,14 @@ window.saveStudentModal = async () => {
 
     const data = {
         name: document.getElementById("modal-student-name").value.trim(),
-        regNo: document.getElementById("modal-student-regNo").value.trim(),
-        rollNo: document.getElementById("modal-student-rollNo").value.trim(),
-        class: document.getElementById("modal-student-class").value,
-        dob: document.getElementById("dob").value,
         parentage: document.getElementById("modal-student-father").value.trim(),
-        mobile: document.getElementById("modal-student-mobile").value.trim(),
+        dob: document.getElementById("dob").value,
         address: document.getElementById("modal-student-address").value.trim(),
+        class: document.getElementById("modal-student-class").value,
+        rollNo: document.getElementById("modal-student-rollNo").value.trim(),
+        regNo: document.getElementById("modal-student-regNo").value.trim(),
+        mobile: document.getElementById("modal-student-mobile").value.trim(),
+        emergencyNo: document.getElementById("modal-student-emergency").value.trim(),
         photoUrl: photoUrl.trim(),
         schoolId: currentSchoolId
     };
@@ -1320,12 +1323,19 @@ window.proceedAdmitCards = async (mode) => {
 
     const uniqueClasses = [...new Set(students.map(st => st.class))];
     const classSchedules = {};
+    const schoolSnap = await getDoc(doc(db, "schools", currentSchoolId));
+    const schoolData = schoolSnap.exists() ? schoolSnap.data() : {};
     for (let cls of uniqueClasses) {
         if(cls) {
-            try {
-                const snap = await getDoc(doc(db, "schools", currentSchoolId, "examSchedules", cls));
-                classSchedules[cls] = snap.exists() ? (snap.data().schedule || []) : [];
-            } catch(e) { classSchedules[cls] = []; }
+            const fieldKey = "examSchedule_" + cls;
+            if(schoolData[fieldKey] && Array.isArray(schoolData[fieldKey])) {
+                classSchedules[cls] = schoolData[fieldKey];
+            } else {
+                try {
+                    const snap = await getDoc(doc(db, "schools", currentSchoolId, "examSchedules", cls));
+                    classSchedules[cls] = snap.exists() ? (snap.data().schedule || []) : [];
+                } catch(e) { classSchedules[cls] = []; }
+            }
         }
     }
 
@@ -1484,7 +1494,7 @@ window.loadFeeVerifications = async () => {
                 <td>${data.createdAt.toDate().toLocaleString()}</td>
                 <td><strong>${data.studentName}</strong><br><small>Reg: ${data.regNo}</small></td>
                 <td style="font-family: monospace;">${data.utr}</td>
-                <td><strong>&#8377; ${data.amount}</strong></td>
+                <td><strong>Rs. ${data.amount}</strong></td>
                 <td><a href="${data.screenshotUrl}" target="_blank" style="color:#3182ce; text-decoration:none;"><i class="fas fa-image"></i> View Proof</a></td>
                 <td style="${statusClass}">${btnHtml}</td>
             </tr>`;
@@ -1497,7 +1507,7 @@ window.loadFeeVerifications = async () => {
 };
 
 window.approveFeeVerification = async (verificationId, studentId, studentName, amount) => {
-    if(!confirm(`Approve &#8377;${amount} fee payment for ${studentName}? This will update the student's balance and ledger.`)) return;
+    if(!confirm(`Approve Rs.${amount} fee payment for ${studentName}? This will update the student's balance and ledger.`)) return;
     
     try {
         const batch = writeBatch(db);
@@ -1540,18 +1550,27 @@ window.lastExamScheduleCache = null;
 
 window.loadExamSchedule = async () => {
     const cls = document.getElementById("scheduler-class-select").value;
+    const targetClass = (cls === "All") ? "Nursery" : cls;
     try {
-        const docSnap = await getDoc(doc(db, "schools", currentSchoolId, "examSchedules", cls));
+        const schoolSnap = await getDoc(doc(db, "schools", currentSchoolId));
+        if(schoolSnap.exists()) {
+            const schoolData = schoolSnap.data();
+            const fieldKey = "examSchedule_" + targetClass;
+            if(schoolData[fieldKey] && Array.isArray(schoolData[fieldKey])) {
+                populateSchedulerTable(schoolData[fieldKey]);
+                window.lastExamScheduleCache = schoolData[fieldKey];
+                return;
+            }
+        }
+        const docSnap = await getDoc(doc(db, "schools", currentSchoolId, "examSchedules", targetClass));
         if (docSnap.exists()) {
             const data = docSnap.data().schedule || [];
             populateSchedulerTable(data);
             window.lastExamScheduleCache = data;
+        } else if (window.lastExamScheduleCache) {
+            populateSchedulerTable(window.lastExamScheduleCache);
         } else {
-            if (window.lastExamScheduleCache) {
-                populateSchedulerTable(window.lastExamScheduleCache);
-            } else {
-                populateSchedulerTable([]);
-            }
+            populateSchedulerTable([]);
         }
     } catch(e) { console.error(e); }
 };
@@ -1608,17 +1627,21 @@ window.saveExamSchedule = async () => {
 
     try {
         if(cls === "All") {
-            const allOptions = Array.from(document.getElementById("scheduler-class-select").options).map(o => o.value).filter(v => v !== "All");
-            for(let c of allOptions) {
-                await setDoc(doc(db, "schools", currentSchoolId, "examSchedules", c), { schedule: schedule }, { merge: true });
-            }
+            const allClasses = ["Nursery","LKG","UKG","1st","2nd","3rd","4th","5th","6th","7th","8th","9th","10th","11th","12th"];
+            const scheduleMap = {};
+            allClasses.forEach(c => { scheduleMap["examSchedule_" + c] = schedule; });
+            await updateDoc(doc(db, "schools", currentSchoolId), scheduleMap);
             alert("Schedule saved for ALL Classes!");
         } else {
-            await setDoc(doc(db, "schools", currentSchoolId, "examSchedules", cls), { schedule: schedule }, { merge: true });
+            const fieldKey = "examSchedule_" + cls;
+            await updateDoc(doc(db, "schools", currentSchoolId), { [fieldKey]: schedule });
             alert("Schedule saved for Class " + cls);
         }
         window.lastExamScheduleCache = schedule;
-    } catch(e) { console.error("Schedule save error:", e); alert("Error saving schedule: " + e.message); }
+    } catch(e) {
+        console.error("Schedule save error:", e);
+        alert("Error: " + e.message);
+    }
 };
 
 window.openGlobalBonafideModal = () => {

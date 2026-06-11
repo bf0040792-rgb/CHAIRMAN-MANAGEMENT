@@ -743,15 +743,12 @@
             <input type="hidden" id="modal-student-id">
             <input type="hidden" id="modal-student-photo-url">
 
-            <div class="form-group"><label>Student Name</label><input type="text" id="modal-student-name" class="input-premium" placeholder="Full Name"></div>
+            <div class="form-group"><label>Student Name</label><input type="text" id="modal-student-name" placeholder="Full Name"></div>
+            <div class="form-group"><label>Parentage</label><input type="text" id="modal-student-father" placeholder="Father / Guardian Name"></div>
             <div class="form-row">
-                <div class="form-group"><label>Reg No.</label><input type="text" id="modal-student-regNo" class="input-premium" placeholder="e.g. 2026/001"></div>
-                <div class="form-group"><label>Roll No.</label><input type="number" id="modal-student-rollNo" class="input-premium"></div>
-            </div>
-            <div class="form-row">
-                <div class="form-group"><label>Date of Birth</label><input type="date" id="dob" class="input-premium"></div>
+                <div class="form-group"><label>Date of Birth</label><input type="date" id="dob"></div>
                 <div class="form-group"><label>Class</label>
-                    <select id="modal-student-class" class="input-premium">
+                    <select id="modal-student-class">
                         <option value="Nursery">Nursery</option>
                         <option value="LKG">LKG</option>
                         <option value="UKG">UKG</option>
@@ -762,11 +759,15 @@
                     </select>
                 </div>
             </div>
+            <div class="form-group"><label>Address</label><textarea id="modal-student-address" rows="2"></textarea></div>
             <div class="form-row">
-                <div class="form-group"><label>Parentage</label><input type="text" id="modal-student-father" class="input-premium"></div>
-                <div class="form-group"><label>Mobile No.</label><input type="tel" id="modal-student-mobile" class="input-premium"></div>
+                <div class="form-group"><label>Roll No.</label><input type="number" id="modal-student-rollNo"></div>
+                <div class="form-group"><label>Reg No.</label><input type="text" id="modal-student-regNo" placeholder="e.g. 2026/001"></div>
             </div>
-            <div class="form-group"><label>Address</label><textarea id="modal-student-address" class="input-premium" rows="2" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 4px; box-sizing: border-box;"></textarea></div>
+            <div class="form-row">
+                <div class="form-group"><label>Contact No.</label><input type="tel" id="modal-student-mobile" placeholder="10-digit Mobile"></div>
+                <div class="form-group"><label>Emergency No.</label><input type="tel" id="modal-student-emergency" placeholder="Emergency Contact"></div>
+            </div>
             <div class="form-group">
                 <label>Student Photo</label>
                 <input type="file" id="modal-student-photo-file" accept="image/*">
@@ -927,34 +928,34 @@
                 <tbody id="scheduler-tbody">
                     <!-- 6 rows for subjects -->
                     <tr>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="date" class="sched-date input-premium" style="width:100%;"></td>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="subjectsList" oninput="updateSchedulerDatalists()" class="sched-subj input-premium" style="width:100%;"></td>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="time" step="1" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time input-premium" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="date" class="sched-date" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="subjectsList" oninput="updateSchedulerDatalists()" class="sched-subj" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time" style="width:100%;" placeholder="e.g. 9:00 AM - 11:00 AM"></td>
                     </tr>
                     <tr>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="date" class="sched-date input-premium" style="width:100%;"></td>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="subjectsList" oninput="updateSchedulerDatalists()" class="sched-subj input-premium" style="width:100%;"></td>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="time" step="1" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time input-premium" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="date" class="sched-date" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="subjectsList" oninput="updateSchedulerDatalists()" class="sched-subj" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time" style="width:100%;" placeholder="e.g. 9:00 AM - 11:00 AM"></td>
                     </tr>
                     <tr>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="date" class="sched-date input-premium" style="width:100%;"></td>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="subjectsList" oninput="updateSchedulerDatalists()" class="sched-subj input-premium" style="width:100%;"></td>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="time" step="1" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time input-premium" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="date" class="sched-date" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="subjectsList" oninput="updateSchedulerDatalists()" class="sched-subj" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time" style="width:100%;" placeholder="e.g. 9:00 AM - 11:00 AM"></td>
                     </tr>
                     <tr>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="date" class="sched-date input-premium" style="width:100%;"></td>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="subjectsList" oninput="updateSchedulerDatalists()" class="sched-subj input-premium" style="width:100%;"></td>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="time" step="1" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time input-premium" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="date" class="sched-date" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="subjectsList" oninput="updateSchedulerDatalists()" class="sched-subj" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time" style="width:100%;" placeholder="e.g. 9:00 AM - 11:00 AM"></td>
                     </tr>
                     <tr>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="date" class="sched-date input-premium" style="width:100%;"></td>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="subjectsList" oninput="updateSchedulerDatalists()" class="sched-subj input-premium" style="width:100%;"></td>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="time" step="1" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time input-premium" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="date" class="sched-date" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="subjectsList" oninput="updateSchedulerDatalists()" class="sched-subj" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time" style="width:100%;" placeholder="e.g. 9:00 AM - 11:00 AM"></td>
                     </tr>
                     <tr>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="date" class="sched-date input-premium" style="width:100%;"></td>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="subjectsList" oninput="updateSchedulerDatalists()" class="sched-subj input-premium" style="width:100%;"></td>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="time" step="1" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time input-premium" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="date" class="sched-date" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="subjectsList" oninput="updateSchedulerDatalists()" class="sched-subj" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time" style="width:100%;" placeholder="e.g. 9:00 AM - 11:00 AM"></td>
                     </tr>
                 </tbody>
             </table>
