@@ -620,6 +620,13 @@ async function loadTransactions() {
         document.getElementById("summary-balance").innerText = "₹ " + (totalFees - totalSalaries - totalExpenses);
         document.getElementById("count-revenue").innerText = "₹ " + (totalFees - totalSalaries - totalExpenses);
         
+        const staffNames = new Set(window.fetchedTransactions.filter(t => t.type === "Salary" && t.personName).map(t => t.personName));
+        const staffDropdown = document.getElementById("ledger-search-staff");
+        staffDropdown.innerHTML = '<option value="">All Staff</option>';
+        staffNames.forEach(name => {
+            staffDropdown.innerHTML += `<option value="${name}">${name}</option>`;
+        });
+        
         window.renderTransactionsTable();
     } catch(e) {}
 }
@@ -631,8 +638,20 @@ window.switchLedgerTab = (tab, btnElement) => {
     
     // Toggle Search Inputs
     const classFilter = document.getElementById("ledger-search-class");
-    if(tab === 'Fee') classFilter.style.display = "block";
-    else { classFilter.style.display = "none"; classFilter.value = ""; }
+    const staffFilter = document.getElementById("ledger-search-staff");
+    
+    if(tab === 'Fee') {
+        classFilter.style.display = "block";
+        staffFilter.style.display = "none";
+        staffFilter.value = "";
+    } else if (tab === 'Salary') {
+        classFilter.style.display = "none";
+        classFilter.value = "";
+        staffFilter.style.display = "block";
+    } else {
+        classFilter.style.display = "none"; classFilter.value = "";
+        staffFilter.style.display = "none"; staffFilter.value = "";
+    }
     
     document.getElementById("ledger-search-name").value = "";
     document.getElementById("ledger-search-name").placeholder = tab === 'Fee' ? "Search by Student Name..." : (tab === 'Salary' ? "Search by Staff Name/ID..." : "Search by Name/Title...");
@@ -644,6 +663,7 @@ window.renderTransactionsTable = () => {
     const tbody = document.getElementById("transaction-table");
     const nameSearch = document.getElementById("ledger-search-name").value.toLowerCase();
     const classSearch = document.getElementById("ledger-search-class").value;
+    const staffSearch = document.getElementById("ledger-search-staff").value;
     
     let filtered = window.fetchedTransactions;
     
@@ -653,6 +673,10 @@ window.renderTransactionsTable = () => {
     
     if(classSearch) {
         filtered = filtered.filter(t => t.class === classSearch);
+    }
+    
+    if(staffSearch) {
+        filtered = filtered.filter(t => t.personName === staffSearch);
     }
     
     if(nameSearch) {
@@ -1458,6 +1482,25 @@ window.populateSchedulerTable = (data) => {
     }
 };
 
+window.updateSchedulerDatalists = () => {
+    const subjects = new Set();
+    const timings = new Set();
+    document.querySelectorAll(".sched-subj").forEach(el => {
+        if(el.value.trim()) subjects.add(el.value.trim());
+    });
+    document.querySelectorAll(".sched-time").forEach(el => {
+        if(el.value.trim()) timings.add(el.value.trim());
+    });
+    
+    const subjList = document.getElementById("subjectsList");
+    subjList.innerHTML = "";
+    subjects.forEach(val => subjList.innerHTML += `<option value="${val}"></option>`);
+    
+    const timeList = document.getElementById("timingsList");
+    timeList.innerHTML = "";
+    timings.forEach(val => timeList.innerHTML += `<option value="${val}"></option>`);
+};
+
 window.saveExamSchedule = async () => {
     const cls = document.getElementById("scheduler-class-select").value;
     const dates = document.querySelectorAll(".sched-date");
@@ -1474,8 +1517,61 @@ window.saveExamSchedule = async () => {
     }
     
     try {
-        await setDoc(doc(db, "schools", currentSchoolId, "examSchedules", cls), { schedule: schedule });
+        if(cls === "All") {
+            const allOptions = Array.from(document.getElementById("scheduler-class-select").options).map(o => o.value).filter(v => v !== "All");
+            const batch = writeBatch(db);
+            for(let c of allOptions) {
+                batch.set(doc(db, "schools", currentSchoolId, "examSchedules", c), { schedule: schedule });
+            }
+            await batch.commit();
+            alert("Schedule saved for ALL Classes!");
+        } else {
+            await setDoc(doc(db, "schools", currentSchoolId, "examSchedules", cls), { schedule: schedule });
+            alert("Schedule saved for Class " + cls);
+        }
         window.lastExamScheduleCache = schedule;
-        alert("Schedule saved for Class " + cls);
     } catch(e) { alert("Error saving schedule."); }
+};
+
+window.openGlobalBonafideModal = () => {
+    const sel = document.getElementById("global-bonafide-student");
+    sel.innerHTML = '<option value="">-- Select a Student --</option>';
+    window.fetchedStudents.forEach(st => {
+        sel.innerHTML += <option value=" + st.id + "> + st.name +  ( + st.class + )</option>;
+    });
+    document.getElementById("global-bonafide-modal").style.display = "flex";
+};
+
+window.triggerGlobalBonafide = () => {
+    const studentId = document.getElementById("global-bonafide-student").value;
+    if(!studentId) return alert("Please select a student first.");
+    closeCustomModal("global-bonafide-modal");
+    window.generateCertificate(studentId, 'bonafide');
+};
+
+let currentDMStudentId = null;
+window.openDirectMessageModal = (id, name) => {
+    currentDMStudentId = id;
+    document.getElementById("dm-student-name").innerText = name;
+    document.getElementById("dm-message-body").value = "";
+    document.getElementById("direct-message-modal").style.display = "flex";
+};
+
+window.sendDirectMessage = async () => {
+    const msg = document.getElementById("dm-message-body").value.trim();
+    if(!msg) return alert("Please type a message.");
+    try {
+        await addDoc(collection(db, "direct_messages"), {
+            schoolId: currentSchoolId,
+            studentId: currentDMStudentId,
+            message: msg,
+            sender: "Chairman",
+            timestamp: serverTimestamp(),
+            read: false
+        });
+        alert("Message sent successfully!");
+        closeCustomModal("direct-message-modal");
+    } catch(e) {
+        alert("Failed to send message: " + e.message);
+    }
 };

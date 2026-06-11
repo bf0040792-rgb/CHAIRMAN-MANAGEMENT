@@ -161,6 +161,7 @@
                                 <button id="bulk-id-btn" class="action-btn btn-blue" style="padding:10px 15px;" onclick="window.bulkGenerateIDCards()"><i class="fas fa-id-badge"></i> Generate ID Cards</button>
                                 <button id="exam-scheduler-btn" class="action-btn" style="background:#d97706; padding:10px 15px;" onclick="window.openExamScheduler()">📄 Routine Scheduler</button>
                                 <button id="bulk-admit-btn" class="action-btn btn-purple" style="padding:10px 15px;" onclick="window.bulkGenerateAdmitCards()"><i class="fas fa-file-alt"></i> Generate Admit Cards</button>
+                                <button class="action-btn btn-dark" style="background:#e67e22; padding:10px 15px;" onclick="window.openGlobalBonafideModal()">📄 Generate Bonafide</button>
                                 <button class="action-btn btn-dark" style="padding:10px 15px;" onclick="runDefaulterLockdown()"><i class="fas fa-lock"></i> Auto-Lock Defaulters</button>
                             </div>
                         </div>
@@ -320,6 +321,9 @@
                                 <option value="10th">10th</option>
                                 <option value="11th">11th</option>
                                 <option value="12th">12th</option>
+                            </select>
+                            <select id="ledger-search-staff" class="input-premium" onchange="renderTransactionsTable()" style="display:none; max-width:150px;">
+                                <option value="">All Staff</option>
                             </select>
                         </div>
 
@@ -872,6 +876,7 @@
                 <div style="display: flex; gap: 10px; align-items: center;">
                     <label style="font-weight: bold; color: #333;">Select Class:</label>
                     <select id="scheduler-class-select" class="input-premium" style="padding: 5px 10px; width: auto;" onchange="window.loadExamSchedule()">
+                        <option value="All">All Classes</option>
                         <option value="Nursery">Nursery</option>
                         <option value="LKG">LKG</option>
                         <option value="UKG">UKG</option>
@@ -904,37 +909,39 @@
                         <th style="padding: 10px; border: 1px solid #ccc;">Timing</th>
                     </tr>
                 </thead>
+                <datalist id="subjectsList"></datalist>
+                <datalist id="timingsList"></datalist>
                 <tbody id="scheduler-tbody">
                     <!-- 6 rows for subjects -->
                     <tr>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" class="sched-date input-premium" style="width:100%;"></td>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" class="sched-subj input-premium" style="width:100%;"></td>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" class="sched-time input-premium" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="date" class="sched-date input-premium" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="subjectsList" oninput="updateSchedulerDatalists()" class="sched-subj input-premium" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time input-premium" style="width:100%;"></td>
                     </tr>
                     <tr>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" class="sched-date input-premium" style="width:100%;"></td>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" class="sched-subj input-premium" style="width:100%;"></td>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" class="sched-time input-premium" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="date" class="sched-date input-premium" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="subjectsList" oninput="updateSchedulerDatalists()" class="sched-subj input-premium" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time input-premium" style="width:100%;"></td>
                     </tr>
                     <tr>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" class="sched-date input-premium" style="width:100%;"></td>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" class="sched-subj input-premium" style="width:100%;"></td>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" class="sched-time input-premium" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="date" class="sched-date input-premium" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="subjectsList" oninput="updateSchedulerDatalists()" class="sched-subj input-premium" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time input-premium" style="width:100%;"></td>
                     </tr>
                     <tr>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" class="sched-date input-premium" style="width:100%;"></td>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" class="sched-subj input-premium" style="width:100%;"></td>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" class="sched-time input-premium" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="date" class="sched-date input-premium" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="subjectsList" oninput="updateSchedulerDatalists()" class="sched-subj input-premium" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time input-premium" style="width:100%;"></td>
                     </tr>
                     <tr>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" class="sched-date input-premium" style="width:100%;"></td>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" class="sched-subj input-premium" style="width:100%;"></td>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" class="sched-time input-premium" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="date" class="sched-date input-premium" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="subjectsList" oninput="updateSchedulerDatalists()" class="sched-subj input-premium" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time input-premium" style="width:100%;"></td>
                     </tr>
                     <tr>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" class="sched-date input-premium" style="width:100%;"></td>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" class="sched-subj input-premium" style="width:100%;"></td>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" class="sched-time input-premium" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="date" class="sched-date input-premium" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="subjectsList" oninput="updateSchedulerDatalists()" class="sched-subj input-premium" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time input-premium" style="width:100%;"></td>
                     </tr>
                 </tbody>
             </table>
@@ -992,6 +999,40 @@
         </div>
         <!-- Watermark -->
         <div id="admit-watermark" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 55px; font-weight: 900; color: rgba(229, 62, 62, 0.4); border: 8px solid rgba(229, 62, 62, 0.4); padding: 20px; white-space: nowrap; display: none; z-index: 100; pointer-events: none;">FEE PENDING - CONTACT ADMIN</div>
+    </div>
+
+    <!-- Global Bonafide Modal -->
+    <div id="global-bonafide-modal" class="custom-modal-overlay">
+        <div class="custom-modal-box" style="max-width: 400px;">
+            <div class="custom-modal-header">
+                <span><i class="fas fa-certificate"></i> Select Student</span>
+                <button class="action-btn btn-red" onclick="closeCustomModal('global-bonafide-modal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="form-group" style="margin-top:15px;">
+                <label>Search & Select Student</label>
+                <select id="global-bonafide-student" class="input-premium" style="width:100%;"></select>
+            </div>
+            <div style="margin-top:20px; text-align:right;">
+                <button class="action-btn btn-dark" style="background:#e67e22;" onclick="window.triggerGlobalBonafide()"><i class="fas fa-print"></i> Generate</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Direct Message Modal -->
+    <div id="direct-message-modal" class="custom-modal-overlay">
+        <div class="custom-modal-box" style="max-width: 500px;">
+            <div class="custom-modal-header">
+                <span><i class="fas fa-comment-dots"></i> Direct Message</span>
+                <button class="action-btn btn-red" onclick="closeCustomModal('direct-message-modal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div style="margin-top:15px;">
+                <p style="font-size:14px; margin-bottom:10px;">Sending message to: <strong id="dm-student-name"></strong></p>
+                <textarea id="dm-message-body" class="input-premium" style="width:100%; height:120px; resize:none;" placeholder="Type your message here..."></textarea>
+            </div>
+            <div style="margin-top:20px; text-align:right;">
+                <button class="action-btn btn-blue" onclick="window.sendDirectMessage()"><i class="fas fa-paper-plane"></i> Send Message</button>
+            </div>
+        </div>
     </div>
 
     <!-- Scripts -->
