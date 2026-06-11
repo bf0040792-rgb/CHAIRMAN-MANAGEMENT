@@ -8,34 +8,33 @@ body { background-color: #f4f7f6; height: 100vh; overflow: hidden; display: flex
 #login-wrapper { 
     position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
     display: flex; justify-content: center; align-items: center; 
-    /* High-quality Cinematic Mountain Background with Teal & Pink Glow */
+    /* High-quality Cinematic Mountain Background matching image */
     background: url('https://images.unsplash.com/photo-1549880802-176f0695d259?q=80&w=1920&auto=format&fit=crop') center/cover no-repeat fixed !important; 
     z-index: 1000; 
 }
 
 .glass-login-box { 
-    background: rgba(0, 0, 0, 0.15) !important; /* Dark tint for glass */
-    backdrop-filter: blur(25px) !important; 
-    -webkit-backdrop-filter: blur(25px) !important; 
+    background: rgba(0, 0, 0, 0.1) !important; 
+    backdrop-filter: blur(15px) !important; 
+    -webkit-backdrop-filter: blur(15px) !important; 
     padding: 50px 40px; 
     border-radius: 20px !important; 
     width: 90%; max-width: 380px; 
-    /* Crisp thin white border */
     border: 1px solid rgba(255, 255, 255, 0.5) !important; 
-    box-shadow: 0 20px 40px rgba(0,0,0,0.5) !important;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5) !important;
     color: #fff !important;
     font-family: 'Inter', sans-serif !important;
 }
 
 .glass-login-box h2 { 
-    text-align: center; margin-bottom: 35px; font-size: 28px; 
-    font-weight: 500; letter-spacing: 1px; color: white !important;
+    text-align: center; margin-bottom: 35px; font-size: 32px; 
+    font-weight: 400; letter-spacing: 1px; color: white !important;
 }
 
 .glass-input-group { margin-bottom: 25px; position: relative; }
 .glass-input-group label { 
-    display: block; font-size: 13px; margin-bottom: 5px; 
-    color: rgba(255,255,255,0.7) !important; font-weight: 500;
+    display: block; font-size: 14px; margin-bottom: 5px; 
+    color: #fff !important; font-weight: 500;
 }
 
 /* FORCING TRANSPARENT INPUTS WITH BORDER-BOTTOM ONLY */
@@ -54,12 +53,32 @@ body { background-color: #f4f7f6; height: 100vh; overflow: hidden; display: flex
 }
 .glass-input-group input:focus { border-bottom: 2px solid #fff !important; }
 
-/* CUSTOM styled checkbox logic for reference image look */
-.glass-options { 
-    display: flex; justify-content: flex-start; align-items: center; 
-    font-size: 13px; margin-bottom: 30px; color: #fff; 
+/* Custom Checkbox exactly like image */
+.glass-options { margin-bottom: 35px; }
+.custom-checkbox-container {
+    display: flex; align-items: center; position: relative; padding-left: 28px; cursor: pointer; font-size: 14px; user-select: none; color: #fff; font-weight: 400;
 }
-.glass-options label { display: flex; align-items: center; gap: 8px; cursor: pointer; color: white !important; }
+.custom-checkbox-container input {
+    position: absolute; opacity: 0; cursor: pointer; height: 0; width: 0;
+}
+.custom-checkmark {
+    position: absolute; top: 0; left: 0; height: 18px; width: 18px; background-color: transparent;
+    border: 2px solid rgba(255,255,255,0.7); border-radius: 4px; transition: 0.2s;
+}
+.custom-checkbox-container input:checked ~ .custom-checkmark {
+    background-color: #1e5ddb; border-color: #1e5ddb; /* Blue like the image */
+}
+.custom-checkmark:after {
+    content: ""; position: absolute; display: none;
+}
+.custom-checkbox-container input:checked ~ .custom-checkmark:after {
+    display: block;
+}
+.custom-checkbox-container .custom-checkmark:after {
+    left: 5px; top: 1px; width: 4px; height: 9px;
+    border: solid white; border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
 
 /* THE EXACT PILL SHAPE BUTTON FROM IMAGE */
 .glass-login-btn { 
