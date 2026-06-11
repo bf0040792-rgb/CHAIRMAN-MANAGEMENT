@@ -741,13 +741,16 @@
                 <i class="fas fa-times" style="font-size: 20px; color: #a0aec0; cursor: pointer;" onclick="document.getElementById('student-modal').style.display='none'"></i>
             </div>
             <input type="hidden" id="modal-student-id">
-            <input type="hidden" id="modal-student-photo-url"> <!-- Store existing URL -->
+            <input type="hidden" id="modal-student-photo-url">
 
+            <div class="form-group"><label>Student Name</label><input type="text" id="modal-student-name" placeholder="Full Name"></div>
             <div class="form-row">
+                <div class="form-group"><label>Reg No.</label><input type="text" id="modal-student-regNo" placeholder="e.g. 2026/001"></div>
                 <div class="form-group"><label>Roll No.</label><input type="number" id="modal-student-rollNo"></div>
-                <div class="form-group"><label>Date of Birth</label><input type="date" id="dob"></div>
             </div>
-            <div class="form-group"><label>Class</label>
+            <div class="form-row">
+                <div class="form-group"><label>Date of Birth</label><input type="date" id="dob"></div>
+                <div class="form-group"><label>Class</label>
                     <select id="modal-student-class">
                         <option value="Nursery">Nursery</option>
                         <option value="LKG">LKG</option>

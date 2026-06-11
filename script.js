@@ -875,7 +875,6 @@ window.runDefaulterLockdown = () => { alert("Defaulter Lockdown Tool active! Cli
 // ====== CLEAN ID CARD & CERTIFICATES ======
 window.showIDCard = async (id) => {
     const st = window.fetchedStudents.find(s => s.id === id); if(!st) return;
-    if(!currentIdTemplateUrl) return alert("Please upload an ID Card Background Template in School Settings first!");
 
     // Setup UI for loading
     document.getElementById("printable-id").style.display = "none"; 
