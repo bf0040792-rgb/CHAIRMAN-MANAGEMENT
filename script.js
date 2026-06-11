@@ -1328,8 +1328,10 @@ window.generateBatchIDCards = async (students) => {
         }
     } catch (e) {
         alert("Failed to generate ID Cards. Error: " + e.message);
-    } finally {
-        document.getElementById("bulk-generating-text").style.display = "none";
+     } finally {
+      document.getElementById("bulk-generating-text").style.display = "none";
+ }
+};
     }
 };
 };
