@@ -290,6 +290,13 @@ async function checkAdmissionStatus() {
         } else {
             window.currentSigSettings = { idCard: true, bonafide: true, admit: true };
         }
+        
+        if(data.examSubjects && Array.isArray(data.examSubjects)) {
+            window.examSubjects = data.examSubjects;
+        } else {
+            window.examSubjects = [...(window.factoryDefaultSubjects || [])];
+        }
+
         if(data.themeColor) { currentThemeColor = data.themeColor; document.getElementById("school_theme_color").value = currentThemeColor; document.documentElement.style.setProperty('--theme-color', currentThemeColor); }
         if(data.emergencyTicker) { document.getElementById("ticker_input").value = data.emergencyTicker; }
         
@@ -1508,11 +1515,13 @@ window.updateSchedulerDatalists = () => {
     if(subjList) {
         subjList.innerHTML = "";
         subjects.forEach(val => subjList.innerHTML += `<option value="${val}"></option>`);
+    }
     
     const timeList = document.getElementById("timingsList");
     if(timeList) {
         timeList.innerHTML = "";
         timings.forEach(val => timeList.innerHTML += `<option value="${val}"></option>`);
+    }
 };
 window.saveExamSchedule = async () => {
     const cls = document.getElementById("scheduler-class-select").value;
