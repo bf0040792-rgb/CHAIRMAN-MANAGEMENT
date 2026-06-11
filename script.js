@@ -1331,11 +1331,7 @@ window.generateBatchIDCards = async (students) => {
      } finally {
       document.getElementById("bulk-generating-text").style.display = "none";
  }
-};
-    }
-};
-};
-
+ };
 // ==========================================
 // ZERO-COMMISSION FEE APPROVAL MODULE
 // ==========================================
