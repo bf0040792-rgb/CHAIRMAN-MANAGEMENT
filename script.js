@@ -283,12 +283,13 @@ async function checkAdmissionStatus() {
         if(data.sigSettings) {
             window.currentSigSettings = data.sigSettings;
             if(document.getElementById("sig_on_id")) {
+                if (document.getElementById("sig_on_marksheet")) document.getElementById("sig_on_marksheet").checked = data.sigSettings.marksheet !== false;
                 document.getElementById("sig_on_id").checked = data.sigSettings.idCard !== false;
                 document.getElementById("sig_on_bonafide").checked = data.sigSettings.bonafide !== false;
                 document.getElementById("sig_on_admit").checked = data.sigSettings.admit !== false;
             }
         } else {
-            window.currentSigSettings = { idCard: true, bonafide: true, admit: true };
+            window.currentSigSettings = { marksheet: true, idCard: true, bonafide: true, admit: true };
         }
         
         if(data.examSubjects && Array.isArray(data.examSubjects)) {
@@ -482,24 +483,33 @@ window.initDashboardChart = () => {
         }
     });
     
+    const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 400);
+    gradient.addColorStop(0, 'rgba(0, 240, 255, 0.5)'); // Neon Cyan
+    gradient.addColorStop(1, 'rgba(139, 92, 246, 0.1)'); // Neon Purple
+
     window.myDashboardChart = new Chart(ctx, {
-        type: 'bar',
+        type: 'line',
         data: {
             labels: ['Total Income', 'Total Expenses'],
             datasets: [{
                 label: 'Financial Analytics (₹)',
                 data: [totalIncome, totalExpenses],
-                backgroundColor: ['rgba(39, 174, 96, 0.5)', 'rgba(229, 62, 62, 0.5)'],
-                borderColor: ['#27ae60', '#e53e3e'],
+                backgroundColor: gradient,
+                borderColor: '#00F0FF',
                 borderWidth: 2,
-                borderRadius: 4
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: '#8b5cf6',
+                pointBorderColor: '#00F0FF',
+                pointRadius: 4
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-                y: { beginAtZero: true }
+                x: { grid: { color: 'rgba(255, 255, 255, 0.05)' } },
+                y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.05)' } }
             }
         }
     });
@@ -538,6 +548,7 @@ window.saveSignature = async () => {
     }
     
     const sigSettings = {
+        marksheet: document.getElementById("sig_on_marksheet") ? document.getElementById("sig_on_marksheet").checked : true,
         idCard: document.getElementById("sig_on_id").checked,
         bonafide: document.getElementById("sig_on_bonafide").checked,
         admit: document.getElementById("sig_on_admit").checked
@@ -999,6 +1010,7 @@ window.populateStudentsForMarks = () => {
 window.saveStudentMarks = async () => {
     const studentId = document.getElementById("marks_student").value;
     if (!studentId) return alert("Please select a student.");
+    const examTerm = document.getElementById("marks_exam_term") ? document.getElementById("marks_exam_term").value : "Annual Examination 2026";
     
     const subjects = window.examSubjects || ['English', 'Mathematics', 'Science', 'Social Studies', 'Hindi/Local'];
     const marksData = {};
@@ -1021,6 +1033,7 @@ window.saveStudentMarks = async () => {
             marks: marksData,
             totalMax,
             totalObt,
+            examTerm: examTerm,
             updatedAt: new Date().toISOString()
         });
         alert("Marks saved successfully!");
@@ -1042,6 +1055,7 @@ window.generateMarksheet = async (st, marksDoc) => {
     slipDiv.style.fontFamily = 'Arial, sans-serif';
     
     const schoolName = currentSchoolName || 'School Name';
+    const examTerm = marksDoc.examTerm || 'Annual Examination 2026';
     
     let rowsHtml = '';
     let totalMarks = marksDoc.totalObt || 0;
@@ -1064,8 +1078,7 @@ window.generateMarksheet = async (st, marksDoc) => {
     slipDiv.innerHTML = `
         <div style="text-align:center; margin-bottom:20px; padding-bottom:10px; border-bottom:3px double #1e3c72;">
             <h1 style="margin:0; font-size:28px; color:#1e3c72; text-transform:uppercase;">${schoolName}</h1>
-            <p style="margin:5px 0 0 0; font-size:16px; letter-spacing:2px; font-weight:bold;">ACADEMIC PERFORMANCE REPORT</p>
-            <p style="margin:5px 0 0 0; font-size:14px; color:#555;">Annual Examination 2026</p>
+            <p style="margin:5px 0 0 0; font-size:16px; letter-spacing:2px; font-weight:bold;">ACADEMIC PERFORMANCE REPORT - ${examTerm.toUpperCase()}</p>
         </div>
         
         <div style="display:flex; justify-content:space-between; margin-bottom:20px; border:1px solid #ccc; padding:15px; border-radius:5px;">
@@ -1107,13 +1120,17 @@ window.generateMarksheet = async (st, marksDoc) => {
             <div><strong>Overall Percentage:</strong> ${percentage}%</div>
             <div><strong>Final Result:</strong> ${finalResult}</div>
         </div>
-        
+    `;
+    
+    const renderSig = currentSignatureUrl && (!window.currentSigSettings || window.currentSigSettings.marksheet !== false);
+    
+    slipDiv.innerHTML += `
         <div style="display:flex; justify-content:space-between; margin-top:60px;">
             <div style="text-align:center; width:200px;">
                 <div style="border-top:1px solid #000; padding-top:5px;">Class Teacher</div>
             </div>
             <div style="text-align:center; width:200px;">
-                ${currentSignatureUrl ? `<img src="${currentSignatureUrl}" style="height:50px; margin-bottom:5px;">` : `<div style="height:50px;"></div>`}
+                ${renderSig ? `<img src="${currentSignatureUrl}" style="height:50px; margin-bottom:5px; mix-blend-mode: multiply;">` : `<div style="height:50px;"></div>`}
                 <div style="border-top:1px solid #000; padding-top:5px;">Principal Signatory</div>
             </div>
         </div>
