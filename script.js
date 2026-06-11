@@ -459,7 +459,7 @@ const uploadToCloudinary = async (fileInputId, btnId, defaultText) => {
     } catch (e) { btn.innerHTML = defaultText; return null; }
 };
 
-function loadAllData() { loadStudents(); loadStaff(); loadNotices(); loadInbox(); loadSentMail(); loadTransactions(); loadPendingResults(); window.initDashboardChart(); }
+function loadAllData() { loadStudents(); loadStaff(); loadNotices(); loadInbox(); loadSentMail(); loadTransactions(); loadPendingResults(); window.initDashboardChart(); window.loadTransportRoutes(); window.loadInventory(); }
 
 window.initDashboardChart = () => {
     const ctx = document.getElementById('dashboardChart');
@@ -945,7 +945,30 @@ async function loadStudents() {
         snap.forEach(d => { let dt = d.data(); dt.id = d.id; if(dt.status === "Pending") pendingCount++; window.fetchedStudents.push(dt); });
         document.getElementById("count-students").innerText = snap.size; document.getElementById("count-pending").innerText = pendingCount;
         
-        if(snap.size > 0) { const att = Math.floor(Math.random() * (98 - 85 + 1) + 85); document.getElementById("count-attendance").innerText = att + "%"; }
+        if(snap.size > 0) {
+            try {
+                const todayStr = new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD
+                const attSnap = await getDocs(query(collection(db, "attendance"), where("schoolId", "==", currentSchoolId), where("date", "==", todayStr)));
+                let totalStudentsRecorded = 0;
+                let totalPresent = 0;
+                attSnap.forEach(d => {
+                    const recs = d.data().records || {};
+                    for(let sid in recs) {
+                        totalStudentsRecorded++;
+                        if(recs[sid] === "Present") totalPresent++;
+                    }
+                });
+                let att = 0;
+                if(totalStudentsRecorded > 0) {
+                    att = Math.floor((totalPresent / totalStudentsRecorded) * 100);
+                } else {
+                    att = "N/A ";
+                }
+                document.getElementById("count-attendance").innerText = att + (att !== "N/A " ? "%" : "");
+            } catch(e) {
+                document.getElementById("count-attendance").innerText = "Err";
+            }
+        }
         
         renderClassFilters(); renderStudentsTable("All");
     } catch(e) {}
@@ -2334,4 +2357,141 @@ window.triggerGlobalBonafideBatch = async () => {
     
     pdf.save("Batch_Bonafide_Certificates.pdf");
     document.getElementById("cert-modal").style.display = "none";
+};
+
+// ================= PHASE 2: TRANSPORT MANAGER =================
+window.loadTransportRoutes = async () => {
+    try {
+        const snap = await getDocs(query(collection(db, "bus_routes"), where("schoolId", "==", currentSchoolId)));
+        let html = "";
+        snap.forEach(d => {
+            const dt = d.data();
+            html += `<tr class="hover-row">
+                <td><strong>${dt.routeName}</strong></td>
+                <td>${dt.driverName}</td>
+                <td>${dt.contact}</td>
+                <td>₹ ${dt.fee}</td>
+                <td><button class="action-btn" style="background:#e53e3e; padding:5px 10px;" onclick="deleteBusRoute('${d.id}')"><i class="fas fa-trash"></i></button></td>
+            </tr>`;
+        });
+        document.getElementById("transport-body").innerHTML = html || "<tr><td colspan='5' style='text-align:center;'>No routes found.</td></tr>";
+    } catch(e) { console.error(e); }
+};
+
+window.saveBusRoute = async () => {
+    const rn = document.getElementById("transportRouteName").value.trim();
+    const dn = document.getElementById("transportDriverName").value.trim();
+    const dc = document.getElementById("transportDriverContact").value.trim();
+    const fe = document.getElementById("transportBusFee").value.trim();
+    if(!rn || !dn || !dc || !fe) return alert("Fill all fields.");
+    try {
+        await addDoc(collection(db, "bus_routes"), {
+            schoolId: currentSchoolId, routeName: rn, driverName: dn, contact: dc, fee: Number(fe), createdAt: new Date().toISOString()
+        });
+        alert("Route saved!");
+        document.getElementById("transportRouteName").value = "";
+        document.getElementById("transportDriverName").value = "";
+        document.getElementById("transportDriverContact").value = "";
+        document.getElementById("transportBusFee").value = "";
+        loadTransportRoutes();
+    } catch(e) { alert("Error saving route"); }
+};
+
+window.deleteBusRoute = async (id) => {
+    if(!confirm("Delete this route?")) return;
+    try { await deleteDoc(doc(db, "bus_routes", id)); loadTransportRoutes(); } catch(e) { alert("Error deleting route."); }
+};
+
+// ================= PHASE 2: INVENTORY MANAGER =================
+window.loadInventory = async () => {
+    try {
+        const snap = await getDocs(query(collection(db, "inventory"), where("schoolId", "==", currentSchoolId)));
+        let html = "";
+        snap.forEach(d => {
+            const dt = d.data();
+            html += `<tr class="hover-row">
+                <td><strong>${dt.itemName}</strong></td>
+                <td><span class="status-badge" style="background:#3182ce;">${dt.category}</span></td>
+                <td>${dt.quantity}</td>
+                <td>${dt.dateAcquired}</td>
+                <td><button class="action-btn" style="background:#e53e3e; padding:5px 10px;" onclick="deleteAsset('${d.id}')"><i class="fas fa-trash"></i></button></td>
+            </tr>`;
+        });
+        document.getElementById("inventory-body").innerHTML = html || "<tr><td colspan='5' style='text-align:center;'>No assets found.</td></tr>";
+    } catch(e) { console.error(e); }
+};
+
+window.logAsset = async () => {
+    const iname = document.getElementById("inventoryItemName").value.trim();
+    const cat = document.getElementById("inventoryCategory").value;
+    const qty = document.getElementById("inventoryQuantity").value.trim();
+    const dt = document.getElementById("inventoryDate").value;
+    if(!iname || !qty || !dt) return alert("Fill all fields.");
+    try {
+        await addDoc(collection(db, "inventory"), {
+            schoolId: currentSchoolId, itemName: iname, category: cat, quantity: Number(qty), dateAcquired: dt, createdAt: new Date().toISOString()
+        });
+        alert("Asset saved!");
+        document.getElementById("inventoryItemName").value = "";
+        document.getElementById("inventoryQuantity").value = "";
+        document.getElementById("inventoryDate").value = "";
+        loadInventory();
+    } catch(e) { alert("Error saving asset"); }
+};
+
+window.deleteAsset = async (id) => {
+    if(!confirm("Delete this asset?")) return;
+    try { await deleteDoc(doc(db, "inventory", id)); loadInventory(); } catch(e) { alert("Error deleting asset."); }
+};
+
+// ================= PHASE 2: ATTENDANCE ENGINE =================
+window.loadClassForAttendance = () => {
+    const cls = document.getElementById("attendanceClassSelect").value;
+    const dt = document.getElementById("attendanceDateSelect").value;
+    if(!cls || !dt) return alert("Select both class and date.");
+    
+    document.getElementById("attendance-roster-panel").style.display = "block";
+    const stds = (window.fetchedStudents || []).filter(s => s.class === cls && s.status === "Approved");
+    
+    let html = "";
+    stds.forEach(st => {
+        html += `<tr class="hover-row">
+            <td>${st.rollNo || 'N/A'}</td>
+            <td><strong>${st.name}</strong></td>
+            <td>${(st.parentage || st.fatherName) || 'N/A'}</td>
+            <td style="text-align:center;">
+                <label style="margin-right:10px;"><input type="radio" name="att_${st.id}" value="Present" checked> Present</label>
+                <label><input type="radio" name="att_${st.id}" value="Absent"> Absent</label>
+            </td>
+        </tr>`;
+    });
+    document.getElementById("attendance-roster-body").innerHTML = html || "<tr><td colspan='4' style='text-align:center;'>No approved students in this class.</td></tr>";
+};
+
+window.saveDailyAttendance = async () => {
+    const cls = document.getElementById("attendanceClassSelect").value;
+    const dt = document.getElementById("attendanceDateSelect").value;
+    if(!cls || !dt) return alert("Select both class and date.");
+    
+    const stds = (window.fetchedStudents || []).filter(s => s.class === cls && s.status === "Approved");
+    if(stds.length === 0) return alert("No students to save.");
+    
+    let records = {};
+    stds.forEach(st => {
+        const selected = document.querySelector(`input[name="att_${st.id}"]:checked`);
+        records[st.id] = selected ? selected.value : "Absent";
+    });
+    
+    try {
+        const attId = currentSchoolId + "_" + cls + "_" + dt;
+        await setDoc(doc(db, "attendance", attId), {
+            schoolId: currentSchoolId,
+            class: cls,
+            date: dt,
+            records: records,
+            updatedAt: new Date().toISOString()
+        });
+        alert("Attendance saved!");
+        loadStudents();
+    } catch(e) { console.error(e); alert("Error saving attendance."); }
 };

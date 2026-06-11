@@ -95,6 +95,10 @@
                     <div id="module-qr-fee" class="menu-item" data-target="tab-qr-fee" style="display:none"><i class="fas fa-qrcode"></i> QR Fee Module</div>
                     <div id="module-admit-card" class="menu-item" data-target="tab-admit-card" style="display:none"><i class="fas fa-id-badge"></i> Admit Card Module</div>
                     <div id="module-whatsapp" class="menu-item" data-target="tab-whatsapp" style="display:none"><i class="fas fa-brands fa-whatsapp"></i> WhatsApp Module</div>
+                    
+                    <div class="menu-item" data-target="tab-transport"><i class="fas fa-bus"></i> Transport Manager</div>
+                    <div class="menu-item" data-target="tab-inventory"><i class="fas fa-boxes"></i> Inventory & Assets</div>
+                    <div class="menu-item" data-target="tab-daily-attendance"><i class="fas fa-clipboard-user"></i> Daily Attendance</div>
 
                     <div class="menu-item" data-target="tab-password"><i class="fas fa-key"></i> Change Password</div>
                     <div class="menu-item" data-target="tab-settings"><i class="fas fa-cogs"></i> School Settings</div>
@@ -684,6 +688,117 @@
                             <input type="text" id="upi_id_input" class="input-premium" placeholder="e.g. school@upi">
                         </div>
                         <button class="submit-btn" id="save_qr_btn" onclick="savePaymentSettings()"><i class="fas fa-save"></i> Save Payment Settings</button>
+                    </div>
+                </div>
+
+                <!-- TAB: TRANSPORT MANAGER -->
+                <div id="tab-transport" class="tab-content">
+                    <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
+                        <div class="glass-panel" style="flex: 1; min-width: 300px;">
+                            <h3><i class="fas fa-plus-circle"></i> Add Bus Route</h3>
+                            <input type="text" id="transportRouteName" placeholder="Route Name / Number" style="width: 100%; margin-bottom: 10px; padding: 10px; border-radius: 5px; border: none; background: rgba(255,255,255,0.1); color: #fff;">
+                            <input type="text" id="transportDriverName" placeholder="Driver Name" style="width: 100%; margin-bottom: 10px; padding: 10px; border-radius: 5px; border: none; background: rgba(255,255,255,0.1); color: #fff;">
+                            <input type="text" id="transportDriverContact" placeholder="Driver Contact No." style="width: 100%; margin-bottom: 10px; padding: 10px; border-radius: 5px; border: none; background: rgba(255,255,255,0.1); color: #fff;">
+                            <input type="number" id="transportBusFee" placeholder="Monthly Bus Fee (₹)" style="width: 100%; margin-bottom: 10px; padding: 10px; border-radius: 5px; border: none; background: rgba(255,255,255,0.1); color: #fff;">
+                            <button class="action-btn block-btn" onclick="saveBusRoute()"><i class="fas fa-save"></i> Save Route</button>
+                        </div>
+                        <div class="glass-panel" style="flex: 2; min-width: 300px;">
+                            <h3><i class="fas fa-route"></i> Active Routes</h3>
+                            <div class="table-container">
+                                <table class="data-table" id="transport-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Route</th>
+                                            <th>Driver Name</th>
+                                            <th>Contact</th>
+                                            <th>Fee (₹)</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="transport-body">
+                                        <!-- Fetched Routes -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: INVENTORY & ASSETS -->
+                <div id="tab-inventory" class="tab-content">
+                    <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
+                        <div class="glass-panel" style="flex: 1; min-width: 300px;">
+                            <h3><i class="fas fa-plus-circle"></i> Log New Asset</h3>
+                            <input type="text" id="inventoryItemName" placeholder="Item Name (e.g. Projector)" style="width: 100%; margin-bottom: 10px; padding: 10px; border-radius: 5px; border: none; background: rgba(255,255,255,0.1); color: #fff;">
+                            <select id="inventoryCategory" style="width: 100%; margin-bottom: 10px; padding: 10px; border-radius: 5px; border: none; background: #001220; color: #fff;">
+                                <option value="Library">Library</option>
+                                <option value="Computer Lab">Computer Lab</option>
+                                <option value="Sports">Sports</option>
+                                <option value="Office">Office & Admin</option>
+                            </select>
+                            <input type="number" id="inventoryQuantity" placeholder="Quantity" style="width: 100%; margin-bottom: 10px; padding: 10px; border-radius: 5px; border: none; background: rgba(255,255,255,0.1); color: #fff;">
+                            <input type="date" id="inventoryDate" style="width: 100%; margin-bottom: 10px; padding: 10px; border-radius: 5px; border: none; background: rgba(255,255,255,0.1); color: #fff;">
+                            <button class="action-btn block-btn" onclick="logAsset()"><i class="fas fa-save"></i> Save Asset</button>
+                        </div>
+                        <div class="glass-panel" style="flex: 2; min-width: 300px;">
+                            <h3><i class="fas fa-boxes"></i> Master Inventory</h3>
+                            <div class="table-container">
+                                <table class="data-table" id="inventory-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Item Name</th>
+                                            <th>Category</th>
+                                            <th>Qty</th>
+                                            <th>Date Acquired</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="inventory-body">
+                                        <!-- Fetched Assets -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: DAILY ATTENDANCE -->
+                <div id="tab-daily-attendance" class="tab-content">
+                    <div class="glass-panel" style="margin-bottom: 20px;">
+                        <h3 style="margin-bottom: 15px;"><i class="fas fa-calendar-day"></i> Select Class & Date</h3>
+                        <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
+                            <select id="attendanceClassSelect" style="padding: 10px; background: #001220; color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 5px; flex: 1;">
+                                <option value="">-- Select Class --</option>
+                                <option value="Pre-Nursery">Pre-Nursery</option><option value="Nursery">Nursery</option>
+                                <option value="LKG">LKG</option><option value="UKG">UKG</option>
+                                <option value="1st">1st</option><option value="2nd">2nd</option><option value="3rd">3rd</option>
+                                <option value="4th">4th</option><option value="5th">5th</option><option value="6th">6th</option>
+                                <option value="7th">7th</option><option value="8th">8th</option><option value="9th">9th</option>
+                                <option value="10th">10th</option><option value="11th">11th</option><option value="12th">12th</option>
+                            </select>
+                            <input type="date" id="attendanceDateSelect" style="padding: 10px; background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 5px; flex: 1;">
+                            <button class="action-btn" onclick="loadClassForAttendance()"><i class="fas fa-search"></i> Fetch Roster</button>
+                        </div>
+                    </div>
+                    <div class="glass-panel" id="attendance-roster-panel" style="display:none;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h3><i class="fas fa-users"></i> Class Roster</h3>
+                            <button class="action-btn" onclick="saveDailyAttendance()"><i class="fas fa-save"></i> Submit Attendance</button>
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Roll No</th>
+                                        <th>Student Name</th>
+                                        <th>Parentage</th>
+                                        <th style="text-align:center;">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="attendance-roster-body">
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
