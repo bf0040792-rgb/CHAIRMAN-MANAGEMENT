@@ -1077,23 +1077,20 @@ window.saveStudentMarks = async () => {
     }
 };
 
-window.transparentSigCache = null;
-window.getTransparentSignature = async (sigUrl) => {
-    if (!sigUrl) return "";
-    if (window.transparentSigCache) return window.transparentSigCache;
+async function getTransparentSignature(sigUrl) {
     try {
-        const res = await fetch("https://school-backend-zlgy.onrender.com/api/remove-sig-bg", {
-            method: "POST", headers: { "Content-Type": "application/json" },
+        // Assuming backend is running on the same domain or configure full URL
+        const res = await fetch('https://school-backend-zlgy.onrender.com/api/remove-sig-bg', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ imageUrl: sigUrl })
         });
         const data = await res.json();
-        if (data.success) {
-            window.transparentSigCache = data.base64;
-            return data.base64;
-        }
-    } catch (e) { console.error("Transparent sig error:", e); }
-    return sigUrl;
-};
+        return data.success ? data.base64 : sigUrl;
+    } catch (e) {
+        return sigUrl;
+    }
+}
 
 window.generateMarksheet = async (st, marksDoc) => {
     const slipDiv = document.createElement('div');
@@ -1176,7 +1173,7 @@ window.generateMarksheet = async (st, marksDoc) => {
     
     const renderSig = currentSignatureUrl && (!window.currentSigSettings || window.currentSigSettings.marksheet !== false);
     let finalSigSrc = "";
-    if (renderSig) finalSigSrc = await window.getTransparentSignature(currentSignatureUrl);
+    if (renderSig) finalSigSrc = await getTransparentSignature(currentSignatureUrl);
     
     slipDiv.innerHTML += `
         <div style="display:flex; justify-content:space-between; margin-top:60px;">
@@ -1189,10 +1186,9 @@ window.generateMarksheet = async (st, marksDoc) => {
             </div>
         </div>
     `;
-    
     document.body.appendChild(slipDiv);
     await new Promise(r => setTimeout(r, 500));
-    const canvas = await html2canvas(slipDiv, { scale: 2 });
+    const canvas = await html2canvas(slipDiv, { scale: 2, useCORS: true });
     const imgData = canvas.toDataURL('image/jpeg', 1.0);
     document.body.removeChild(slipDiv);
     return imgData;
@@ -1723,7 +1719,7 @@ window.triggerBulkBonafide = async (students) => {
         document.getElementById("cert-body").innerHTML = `This is to certify that <strong>${st.name}</strong>, son/daughter of <strong>${(st.parentage || st.fatherName) || 'N/A'}</strong>, is a bona fide student of this institution, currently studying in class <strong>${st.class}</strong> during the current academic session.`;
 
         if(currentSignatureUrl && (!window.currentSigSettings || window.currentSigSettings.bonafide !== false)) {
-            const finalSigSrc = await window.getTransparentSignature(currentSignatureUrl);
+            const finalSigSrc = await getTransparentSignature(currentSignatureUrl);
             document.getElementById("cert_sig").src = finalSigSrc;
             document.getElementById("cert_sig").style.mixBlendMode = "normal"; // override inline CSS
             document.getElementById("cert_sig").style.display = "block";
@@ -1732,7 +1728,8 @@ window.triggerBulkBonafide = async (students) => {
         }
 
         document.getElementById("cert-printable").style.display = "flex";
-        await new Promise(r => setTimeout(r, 300));
+
+        await new Promise(r => setTimeout(r, 500));
 
         const canvas = await html2canvas(document.getElementById("cert-printable"), { useCORS: true, scale: 2 });
         const imgData = canvas.toDataURL("image/jpeg", 0.9);
@@ -1800,7 +1797,7 @@ window.proceedAdmitCards = async (mode) => {
     if(logoUrl) document.getElementById("admit-logo").src = logoUrl;
     
     if (currentSignatureUrl && window.currentSigSettings && window.currentSigSettings.admit !== false) {
-        const finalSigSrc = await window.getTransparentSignature(currentSignatureUrl);
+        const finalSigSrc = await getTransparentSignature(currentSignatureUrl);
         document.getElementById("admit-sig").src = finalSigSrc;
         document.getElementById("admit-sig").style.mixBlendMode = "normal"; // override inline CSS
         document.getElementById("admit-sig").style.display = "block";

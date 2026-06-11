@@ -300,9 +300,9 @@ window.downloadMyAdmitCard = async () => {
         if (currentSchoolDoc.signatureUrl && (!currentSchoolDoc.sigSettings || currentSchoolDoc.sigSettings.admit !== false)) {
             finalSigBase64 = currentSchoolDoc.signatureUrl;
             try {
-                const res = await fetch("https://school-backend-zlgy.onrender.com/api/remove-sig-bg", {
+                const res = await fetch("https://school-backend-zlgy.onrender.com/api/get-transparent-signature", {
                     method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ imageUrl: currentSchoolDoc.signatureUrl })
+                    body: JSON.stringify({ signatureUrl: currentSchoolDoc.signatureUrl })
                 });
                 const data = await res.json();
                 if (data.success) finalSigBase64 = data.base64;
