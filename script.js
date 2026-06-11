@@ -1082,9 +1082,9 @@ window.getTransparentSignature = async (sigUrl) => {
     if (!sigUrl) return "";
     if (window.transparentSigCache) return window.transparentSigCache;
     try {
-        const res = await fetch("https://school-backend-zlgy.onrender.com/api/get-transparent-signature", {
+        const res = await fetch("https://school-backend-zlgy.onrender.com/api/remove-sig-bg", {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ signatureUrl: sigUrl })
+            body: JSON.stringify({ imageUrl: sigUrl })
         });
         const data = await res.json();
         if (data.success) {
@@ -1191,6 +1191,7 @@ window.generateMarksheet = async (st, marksDoc) => {
     `;
     
     document.body.appendChild(slipDiv);
+    await new Promise(r => setTimeout(r, 500));
     const canvas = await html2canvas(slipDiv, { scale: 2 });
     const imgData = canvas.toDataURL('image/jpeg', 1.0);
     document.body.removeChild(slipDiv);
