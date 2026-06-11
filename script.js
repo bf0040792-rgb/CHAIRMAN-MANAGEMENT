@@ -797,9 +797,11 @@ window.requestTransactionDeletion = async (id) => {
     if (!t) return;
     
     if (confirm("Request Super Admin to delete this transaction?")) {
-        try {
             await setDoc(doc(db, "pending_deletions", id), {
                 ...t,
+                targetDocId: id,
+                targetCollection: 'transactions',
+                schoolId: window.currentSchoolId || t.schoolId || 'UNKNOWN',
                 requestDate: new Date().toISOString(),
                 status: "Pending"
             });
