@@ -475,11 +475,14 @@ window.initDashboardChart = () => {
     let totalExpenses = 0;
     
     const filter = document.getElementById('chart-date-filter') ? document.getElementById('chart-date-filter').value : 'All Time';
+    const specificDate = document.getElementById('chart-specific-date') ? document.getElementById('chart-specific-date').value : '';
     const now = new Date();
     
     let filteredTransactions = window.fetchedTransactions || [];
     
-    if (filter === 'This Month') {
+    if (specificDate) {
+        filteredTransactions = filteredTransactions.filter(t => t.date === specificDate);
+    } else if (filter === 'This Month') {
         filteredTransactions = filteredTransactions.filter(t => {
             const d = new Date(t.date);
             return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
@@ -506,6 +509,10 @@ window.initDashboardChart = () => {
             totalExpenses += amt;
         }
     });
+
+    if (document.getElementById("count-revenue")) {
+        document.getElementById("count-revenue").innerText = "₹ " + (totalIncome - totalExpenses);
+    }
     
     const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 400);
     gradient.addColorStop(0, 'rgba(0, 240, 255, 0.5)'); // Neon Cyan
@@ -1158,7 +1165,7 @@ window.generateMarksheet = async (st, marksDoc) => {
             </div>
             <div style="text-align:center; width:200px;">
                 ${renderSig ? `<img src="${currentSignatureUrl}" style="height:50px; margin-bottom:5px; mix-blend-mode: multiply;">` : `<div style="height:50px;"></div>`}
-                <div style="border-top:1px solid #000; padding-top:5px;">Principal Signatory</div>
+                <div style="border-top:1px solid #000; padding-top:5px;">Principal Signature</div>
             </div>
         </div>
     `;
@@ -1171,10 +1178,12 @@ window.generateMarksheet = async (st, marksDoc) => {
 };
 
 window.generateBulkMarksheets = async (students) => {
-    document.getElementById("bulk-id-modal").style.display = "block";
-    document.getElementById("bulk-generating-text").style.display = "block";
-    document.getElementById("bulk-generating-text").innerText = "Fetching Real Marks and Generating Marksheets...";
-    document.getElementById("bulk-id-grid").innerHTML = "";
+    document.getElementById("cert-modal").style.display = "flex";
+    if (document.getElementById("cert-printable")) document.getElementById("cert-printable").style.display = "none";
+    if (document.getElementById("cert-preview-frame")) document.getElementById("cert-preview-frame").style.display = "none";
+    if (document.getElementById("cert-actions")) document.getElementById("cert-actions").style.display = "none";
+    document.getElementById("cert-generating-text").style.display = "block";
+    document.getElementById("cert-generating-text").innerText = "Fetching Real Marks and Generating Marksheets...";
 
     try {
         const { jsPDF } = window.jspdf;
@@ -1200,15 +1209,20 @@ window.generateBulkMarksheets = async (students) => {
         }
 
         if (pdfAdded) {
-            pdf.save("Batch_Marksheets.pdf");
+            window.currentGeneratedPDF = pdf;
+            window.currentGeneratedFileName = "Batch_Marksheets.pdf";
+            const blobUrl = pdf.output('bloburl');
+            document.getElementById("cert-preview-frame").src = blobUrl;
+            document.getElementById("cert-preview-frame").style.display = "block";
+            document.getElementById("cert-generating-text").style.display = "none";
+            document.getElementById("cert-actions").style.display = "flex";
         } else {
             alert("No real marks data found for any of the selected students. Please enter marks in Academic Veto first.");
+            closeCustomModal("cert-modal");
         }
     } catch (e) {
         alert("Failed to generate Marksheets. Error: " + e.message);
-    } finally {
-        document.getElementById("bulk-generating-text").style.display = "none";
-        closeCustomModal("bulk-action-modal");
+        closeCustomModal("cert-modal");
     }
 };
 
@@ -1670,8 +1684,9 @@ window.triggerBulkAction = () => {
 
 window.triggerBulkBonafide = async (students) => {
     document.getElementById("cert-modal").style.display = "flex";
-    document.getElementById("cert-printable").style.display = "none";
-    document.getElementById("cert-actions").style.display = "none";
+    if (document.getElementById("cert-printable")) document.getElementById("cert-printable").style.display = "none";
+    if (document.getElementById("cert-preview-frame")) document.getElementById("cert-preview-frame").style.display = "none";
+    if (document.getElementById("cert-actions")) document.getElementById("cert-actions").style.display = "none";
     document.getElementById("cert-generating-text").style.display = "block";
     document.getElementById("cert-generating-text").innerText = "Compiling Batch Bonafide PDF...";
 
@@ -1705,8 +1720,23 @@ window.triggerBulkBonafide = async (students) => {
         pageCount++;
     }
 
-    pdf.save("Batch_Bonafide_Certificates.pdf");
-    document.getElementById("cert-modal").style.display = "none";
+    if (pageCount > 0) {
+        window.currentGeneratedPDF = pdf;
+        window.currentGeneratedFileName = "Batch_Bonafide_Certificates.pdf";
+        const blobUrl = pdf.output('bloburl');
+        document.getElementById("cert-preview-frame").src = blobUrl;
+        document.getElementById("cert-preview-frame").style.display = "block";
+        document.getElementById("cert-generating-text").style.display = "none";
+        document.getElementById("cert-actions").style.display = "flex";
+    } else {
+        closeCustomModal("cert-modal");
+    }
+};
+
+window.downloadCertPDF = () => {
+    if(window.currentGeneratedPDF) {
+        window.currentGeneratedPDF.save(window.currentGeneratedFileName || "Document.pdf");
+    }
 };
 
 window.downloadAllIdsAsPDF = () => {

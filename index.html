@@ -119,12 +119,15 @@
                     <div class="card" style="border-left: 4px solid #8b5cf6;">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
                             <h3 style="margin:0;"><i class="fas fa-chart-pie"></i> Visual Analytics</h3>
-                            <select id="chart-date-filter" class="input-premium" style="padding: 5px 10px; font-size: 12px; width: auto;" onchange="window.initDashboardChart()">
-                                <option value="All Time">All Time</option>
-                                <option value="This Month">This Month</option>
-                                <option value="Last Month">Last Month</option>
-                                <option value="This Year">This Year</option>
-                            </select>
+                            <div style="display:flex; gap:10px;">
+                                <input type="date" id="chart-specific-date" class="input-premium" style="padding: 5px 10px; font-size: 12px; width: auto;" onchange="window.initDashboardChart()">
+                                <select id="chart-date-filter" class="input-premium" style="padding: 5px 10px; font-size: 12px; width: auto;" onchange="window.initDashboardChart()">
+                                    <option value="All Time">All Time</option>
+                                    <option value="This Month">This Month</option>
+                                    <option value="Last Month">Last Month</option>
+                                    <option value="This Year">This Year</option>
+                                </select>
+                            </div>
                         </div>
                         <canvas id="dashboardChart" style="max-height: 350px; width: 100%; margin-top: 15px;"></canvas>
                     </div>
@@ -913,9 +916,10 @@
             </div>
         </div>
         <p id="cert-generating-text" style="color:white; font-weight:bold; margin:10px 0;"><i class="fas fa-spinner fa-spin"></i> Generating Document...</p>
-        <img id="final-cert-image" src="" alt="Certificate">
-        <div class="id-action-buttons" id="cert-actions" style="display:none; justify-content:center; width:100%;">
-            <button class="submit-btn" style="background:#3498db;" onclick="shareImage('final-cert-image', 'Certificate.png')"><i class="fas fa-download"></i> Share / Save</button>
+        <iframe id="cert-preview-frame" style="width:90%; height:70vh; display:none; border:none; background:white; margin:10px auto; border-radius:5px;"></iframe>
+        <img id="final-cert-image" src="" alt="Certificate" style="display:none;">
+        <div class="id-action-buttons" id="cert-actions" style="display:none; justify-content:center; width:100%; gap:10px; margin-top:10px;">
+            <button class="submit-btn" style="background:#3498db;" onclick="window.downloadCertPDF()"><i class="fas fa-download"></i> Download PDF</button>
             <button class="submit-btn" style="background:#e53e3e;" onclick="closeCustomModal('cert-modal')"><i class="fas fa-times"></i> Close</button>
         </div>
     </div>
@@ -1090,7 +1094,7 @@
         <div style="display: flex; justify-content: space-between; margin-top: 50px;">
             <div style="text-align: center; border-top: 1px solid #333; padding-top: 5px; width: 200px;">Student Signature</div>
             <div style="text-align: center; border-top: 1px solid #333; padding-top: 5px; width: 200px; position:relative;">
-                <img id="admit-sig" src="" style="position:absolute; bottom:25px; left:50%; transform:translateX(-50%); max-height:40px; display:none;">
+                <img id="admit-sig" src="" style="position:absolute; bottom:25px; left:50%; transform:translateX(-50%); max-height:40px; display:none; mix-blend-mode: multiply;">
                 Principal Signature
             </div>
         </div>
