@@ -5,39 +5,78 @@ body { background-color: #f4f7f6; height: 100vh; overflow: hidden; display: flex
 #auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a1a2e; z-index: 99999; display: flex; justify-content: center; align-items: center; color: white; font-size: 20px; transition: 0.5s; }
 
 /* ================= REDESIGNED PREMIUM GLASS LOGIN SECTION ================= */
-#login-wrapper { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; background: url('https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80') center/cover no-repeat; z-index: 1000; }
+#login-wrapper { 
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; 
+    justify-content: center; align-items: center; 
+    /* High-quality vibrant aesthetic sunset/mountain landscape */
+    background: url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80') center/cover no-repeat; 
+    z-index: 1000; 
+}
 
 .glass-login-box { 
-    background: rgba(255, 255, 255, 0.1); 
-    backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); 
+    background: rgba(255, 255, 255, 0.05); 
+    backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); 
     padding: 50px 40px; border-radius: 20px; 
     width: 90%; max-width: 400px; 
-    border: 1px solid rgba(255,255,255,0.3);
-    box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
     color: #fff;
 }
 
-.glass-login-box h2 { text-align: center; margin-bottom: 40px; font-size: 32px; font-weight: 500; letter-spacing: 1px; }
+.glass-login-box h2 { 
+    text-align: center; margin-bottom: 40px; font-size: 32px; font-weight: 500; letter-spacing: 1px; color: #fff; 
+}
 
 .glass-input-group { margin-bottom: 30px; position: relative; }
-.glass-input-group label { display: block; font-size: 14px; margin-bottom: 5px; color: rgba(255,255,255,0.9); font-weight: 500;}
+.glass-input-group label { 
+    display: block; font-size: 14px; margin-bottom: 8px; color: #fff; font-weight: 500;
+}
 .glass-input-group input { 
-    width: 100%; padding: 10px 0; 
-    background: transparent; border: none; border-bottom: 2px solid rgba(255,255,255,0.5); 
+    width: 100%; padding: 5px 0 10px 0; 
+    background: transparent; border: none; border-bottom: 2px solid #fff; 
     color: #fff; font-size: 16px; outline: none; transition: 0.3s;
 }
-.glass-input-group input:focus { border-bottom: 2px solid #fff; }
+.glass-input-group input:focus { border-bottom-color: #38b2ac; }
 
-.glass-options { display: flex; justify-content: flex-start; align-items: center; font-size: 14px; margin-bottom: 35px; color: #fff; }
-.glass-options label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.glass-options { display: flex; justify-content: flex-start; align-items: center; margin-bottom: 35px; color: #fff; }
+
+/* Custom Checkbox Aesthetics */
+.custom-checkbox-container {
+    display: flex; align-items: center; position: relative; padding-left: 28px; cursor: pointer; font-size: 14px; user-select: none; color: #fff;
+}
+.custom-checkbox-container input {
+    position: absolute; opacity: 0; cursor: pointer; height: 0; width: 0;
+}
+.custom-checkmark {
+    position: absolute; top: 0; left: 0; height: 18px; width: 18px; background-color: transparent;
+    border: 2px solid rgba(255,255,255,0.7); border-radius: 4px; transition: 0.2s;
+}
+.custom-checkbox-container input:checked ~ .custom-checkmark {
+    background-color: #1e5ddb; border-color: #1e5ddb;
+}
+.custom-checkmark:after {
+    content: ""; position: absolute; display: none;
+}
+.custom-checkbox-container input:checked ~ .custom-checkmark:after {
+    display: block;
+}
+.custom-checkbox-container .custom-checkmark:after {
+    left: 5px; top: 1px; width: 4px; height: 9px;
+    border: solid white; border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
 
 .glass-login-btn { 
-    width: 100%; padding: 14px; background: #fff; color: #333; 
-    border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; 
+    width: 100%; padding: 14px; background: #fff; color: #000; 
+    border: none; border-radius: 50px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; 
 }
-.glass-login-btn:hover { background: #eee; transform: translateY(-2px); }
+.glass-login-btn:hover { 
+    background: #f0f0f0; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(255,255,255,0.2); 
+}
 
-.error-msg { color: #fff; margin-top: 15px; font-size: 13px; display: none; background: rgba(229, 62, 62, 0.9); padding: 10px; border-radius: 5px; font-weight: bold; text-align: center; }
+.error-msg { 
+    color: #fff; margin-top: 15px; font-size: 13px; display: none; background: rgba(229, 62, 62, 0.9); padding: 10px; border-radius: 5px; font-weight: bold; text-align: center; 
+}
 
 /* ================= DASHBOARD SECTION ================= */
 #school-ticker-container { display: none; background: #e53e3e; color: white; padding: 6px; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; flex-shrink: 0;}
