@@ -133,13 +133,13 @@ form.addEventListener("submit", async (e) => {
     const dob = document.getElementById("student-dob").value;
     const rollNo = document.getElementById("roll-no").value.trim();
     const studentClass = document.getElementById("student-class").value;
-    const fatherName = document.getElementById("father-name").value.trim();
+    const parentage = document.getElementById("parentage").value.trim();
     const motherName = document.getElementById("mother-name").value.trim();
     const mobile = document.getElementById("mobile").value.trim();
     const address = document.getElementById("address").value.trim();
     const photoFile = document.getElementById("photo").files[0];
 
-    if (!name || !studentClass || !fatherName || !motherName || !mobile || !address || !photoFile) {
+    if (!name || !studentClass || !parentage || !motherName || !mobile || !address || !photoFile) {
         alert("Please fill in all required fields and upload a photo.");
         return;
     }
@@ -165,7 +165,7 @@ form.addEventListener("submit", async (e) => {
             dob: dob,
             rollNo: rollNo,
             class: studentClass,
-            fatherName: fatherName,
+            parentage: parentage,
             motherName: motherName,
             mobile: mobile,
             address: address,

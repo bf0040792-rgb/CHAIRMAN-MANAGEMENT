@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="style.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body class="light-mode">
     <div id="loader" class="loader-overlay" style="display:flex;"><div class="spinner"></div></div>
@@ -53,6 +55,22 @@
                 </div>
                 
                 <button id="show-payment-btn" class="submit-btn" onclick="showPaymentSection()" style="font-size: 18px; padding: 15px 30px; background: #10b981;"><i class="fas fa-qrcode"></i> Pay Now (Zero Commission)</button>
+            </div>
+
+            <!-- New Documents Section -->
+            <div style="display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap;">
+                <div class="card" style="flex: 1; text-align: center; min-width: 300px; padding: 30px;">
+                    <i class="fas fa-id-badge" style="font-size: 40px; color: #1e3c72; margin-bottom: 15px;"></i>
+                    <h3 style="color: #1e3c72; margin-bottom: 10px;">My Digital ID Card</h3>
+                    <p style="color: #64748b; font-size: 14px; margin-bottom: 20px;">Download your official digital student ID card instantly.</p>
+                    <button id="btn-download-id" class="action-btn btn-blue" onclick="window.downloadMyIDCard()" style="width: 100%; padding: 12px; font-size: 16px;"><i class="fas fa-download"></i> Print / Save as PDF</button>
+                </div>
+                <div class="card" style="flex: 1; text-align: center; min-width: 300px; padding: 30px;">
+                    <i class="fas fa-calendar-alt" style="font-size: 40px; color: #e67e22; margin-bottom: 15px;"></i>
+                    <h3 style="color: #e67e22; margin-bottom: 10px;">My Exam Admit Card</h3>
+                    <p style="color: #64748b; font-size: 14px; margin-bottom: 20px;">Download your upcoming examination schedule & admit card.</p>
+                    <button id="btn-download-admit" class="action-btn btn-yellow" onclick="window.downloadMyAdmitCard()" style="width: 100%; padding: 12px; font-size: 16px; background:#e67e22; color:white;"><i class="fas fa-download"></i> Print / Save as PDF</button>
+                </div>
             </div>
 
             <div id="payment-section" class="card" style="display: none; text-align: center;">

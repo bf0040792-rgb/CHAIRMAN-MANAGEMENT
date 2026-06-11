@@ -201,3 +201,171 @@ window.logoutStudent = () => {
 };
 
 window.onload = init;
+
+// --- PDF DOWNLOADS ---
+window.downloadMyIDCard = async () => {
+    if (!currentStudent || !currentSchoolDoc) return;
+    
+    // Check defaulter lock
+    if (currentStudent.dueBalance > 0) {
+        return alert("Digital ID Card is locked due to pending fees. Please clear your dues first.");
+    }
+    
+    const btn = document.getElementById("btn-download-id");
+    const originalText = btn.innerHTML;
+    btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Generating ID...";
+    btn.disabled = true;
+    
+    try {
+        const response = await fetch("https://school-backend-zlgy.onrender.com/api/generate-id-card", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                studentData: {
+                    id: currentStudent.id || currentStudent.regNo,
+                    name: currentStudent.name,
+                    class: currentStudent.class,
+                    dob: currentStudent.dob || "N/A",
+                    parentage: (currentStudent.parentage || currentStudent.fatherName) || "N/A",
+                    mobile: currentStudent.mobile || "N/A",
+                    address: currentStudent.address || "N/A",
+                    photoUrl: currentStudent.photoUrl || "https://via.placeholder.com/150"
+                },
+                themeColor: currentSchoolDoc.themeColor || "#1e3c72",
+                secondaryColor: currentSchoolDoc.secondaryColor || "#ffffff",
+                templateStyle: currentSchoolDoc.idTemplateStyle || "wave",
+                schoolName: currentSchoolDoc.schoolName || "SCHOOL NAME",
+                schoolEmergency: currentSchoolDoc.emergencyMobile || "N/A",
+                signatureUrl: (currentSchoolDoc.sigSettings && currentSchoolDoc.sigSettings.idCard === false) ? "" : (currentSchoolDoc.signatureUrl || "")
+            })
+        });
+
+        const data = await response.json();
+        if(data.success && data.idCardUrl) {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            pdf.addImage(data.idCardUrl, 'PNG', 10, 10, 54, 86);
+            pdf.save(`${currentStudent.name}_ID_Card.pdf`);
+        } else {
+            alert("Could not generate ID card at this moment.");
+        }
+    } catch (e) {
+        console.error(e);
+        alert("Failed to generate ID card.");
+    }
+    
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+};
+
+window.downloadMyAdmitCard = async () => {
+    if (!currentStudent || !currentSchoolDoc) return;
+    
+    // Check defaulter lock
+    if (currentStudent.dueBalance > 0) {
+        return alert("Admit Card is locked due to pending fees. Please clear your dues first.");
+    }
+    
+    const btn = document.getElementById("btn-download-admit");
+    const originalText = btn.innerHTML;
+    btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Generating Admit Card...";
+    btn.disabled = true;
+    
+    try {
+        // Fetch exam schedule
+        const snap = await getDoc(doc(db, "schools", currentSchoolId, "examSchedules", currentStudent.class));
+        const sched = snap.exists() ? (snap.data().schedule || []) : [];
+        
+        if (sched.length === 0) {
+            alert("No exam routine published for your class yet.");
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            return;
+        }
+        
+        // Create hidden printable div
+        const printable = document.createElement("div");
+        printable.style.width = "800px";
+        printable.style.padding = "20px";
+        printable.style.background = "#fff";
+        printable.style.color = "#000";
+        printable.style.position = "absolute";
+        printable.style.left = "-9999px";
+        printable.style.top = "0";
+        printable.style.border = "2px solid #000";
+        
+        let logoHtml = currentSchoolDoc.schoolLogoUrl ? `<img src="${currentSchoolDoc.schoolLogoUrl}" style="width:80px; height:80px; object-fit:contain; position:absolute; left:20px; top:20px;">` : '';
+        let sigHtml = (currentSchoolDoc.signatureUrl && (!currentSchoolDoc.sigSettings || currentSchoolDoc.sigSettings.admit !== false)) ? `<img src="${currentSchoolDoc.signatureUrl}" style="height:50px; mix-blend-mode: multiply;">` : '';
+        
+        let tbodyHtml = "";
+        for (let i = 0; i < 6; i++) {
+            let dStr = sched[i]?.date || "";
+            if (dStr && dStr.includes("-")) {
+                let parts = dStr.split("-");
+                if(parts.length === 3) dStr = `${parts[2]}/${parts[1]}/${parts[0]}`;
+            }
+            tbodyHtml += `<tr>
+                <td style="border:1px solid #000; padding:8px;">${dStr}</td>
+                <td style="border:1px solid #000; padding:8px;">${sched[i]?.subject || ""}</td>
+                <td style="border:1px solid #000; padding:8px;">${sched[i]?.timing || ""}</td>
+            </tr>`;
+        }
+
+        printable.innerHTML = `
+            <div style="position:relative; text-align:center; margin-bottom:20px; border-bottom:2px solid #000; padding-bottom:10px;">
+                ${logoHtml}
+                <h2 style="margin:0; font-size:24px;">${(currentSchoolDoc.schoolName || "SCHOOL NAME").toUpperCase()}</h2>
+                <h3 style="margin:5px 0 0; font-size:18px;">EXAMINATION ADMIT CARD</h3>
+            </div>
+            
+            <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
+                <div style="flex:1;">
+                    <p><strong>Student Name:</strong> ${currentStudent.name}</p>
+                    <p><strong>Class:</strong> ${currentStudent.class}</p>
+                    <p><strong>Parentage:</strong> ${(currentStudent.parentage || currentStudent.fatherName)}</p>
+                </div>
+                <div style="flex:1; text-align:right;">
+                    <p><strong>Roll No:</strong> ${currentStudent.rollNo || "N/A"}</p>
+                    <p><strong>Reg No:</strong> ${currentStudent.regNo || "N/A"}</p>
+                    <p><strong>DOB:</strong> ${currentStudent.dob || "N/A"}</p>
+                </div>
+            </div>
+            
+            <table style="width:100%; border-collapse:collapse; text-align:left; margin-bottom:30px;">
+                <thead>
+                    <tr>
+                        <th style="border:1px solid #000; padding:8px; background:#f0f0f0;">Date</th>
+                        <th style="border:1px solid #000; padding:8px; background:#f0f0f0;">Subject</th>
+                        <th style="border:1px solid #000; padding:8px; background:#f0f0f0;">Timing</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tbodyHtml}
+                </tbody>
+            </table>
+            
+            <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+                <div><p>_______________________<br>Student Signature</p></div>
+                <div style="text-align:right;">${sigHtml}<br><p>_______________________<br>Principal/Controller Signature</p></div>
+            </div>
+        `;
+        
+        document.body.appendChild(printable);
+        
+        const canvas = await html2canvas(printable, { scale: 2, useCORS: true });
+        const imgData = canvas.toDataURL("image/jpeg", 0.9);
+        document.body.removeChild(printable);
+        
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('l', 'mm', 'a4');
+        pdf.addImage(imgData, 'JPEG', 10, 10, 277, 130);
+        pdf.save(`${currentStudent.name}_Admit_Card.pdf`);
+        
+    } catch (e) {
+        console.error(e);
+        alert("Failed to generate Admit Card.");
+    }
+    
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+};

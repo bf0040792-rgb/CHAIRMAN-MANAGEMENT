@@ -761,7 +761,7 @@
                 </div>
             </div>
             <div class="form-row">
-                <div class="form-group"><label>Father's Name</label><input type="text" id="modal-student-father"></div>
+                <div class="form-group"><label>Parentage</label><input type="text" id="modal-student-father"></div>
                 <div class="form-group"><label>Mobile No.</label><input type="tel" id="modal-student-mobile"></div>
             </div>
             <div class="form-group"><label>Address</label><textarea id="modal-student-address" rows="2" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 4px; box-sizing: border-box;"></textarea></div>
@@ -787,7 +787,7 @@
             <div class="id-photo-container"><img src="" id="print_photo" class="id-photo-circle" crossorigin="anonymous"></div>
             <div class="id-name-text" id="print_name">STUDENT NAME</div>
             <div class="id-details-box">
-                <div class="id-row"><span class="id-label">Father</span>: <span class="id-val" id="print_father" style="margin-left:5px;">N/A</span></div>
+                <div class="id-row"><span class="id-label">Parentage</span>: <span class="id-val" id="print_father" style="margin-left:5px;">N/A</span></div>
                 <div class="id-row"><span class="id-label">Mother</span>: <span class="id-val" id="print_mother" style="margin-left:5px;">N/A</span></div>
                 <div class="id-row"><span class="id-label">Address</span>: <span class="id-val" id="print_address" style="margin-left:5px; font-size:10px; line-height:1.3;">N/A</span></div>
                 <div class="id-row"><span class="id-label">Mobile</span>: <span class="id-val" id="print_mobile" style="margin-left:5px;">N/A</span></div>
@@ -840,7 +840,7 @@
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
                 <h2 style="margin:0; color: #333;"><i class="fas fa-id-badge" style="color: #2563eb;"></i> Bulk Generated ID Cards</h2>
                 <div style="display: flex; gap: 10px;">
-                    <button class="submit-btn" style="background:#10b981; padding: 10px 20px; border: none; border-radius: 5px; color: white; cursor: pointer;" onclick="window.downloadAllIdsAsZip()"><i class="fas fa-file-archive"></i> Download All as ZIP</button>
+                    <button class="submit-btn" style="background:#10b981; padding: 10px 20px; border: none; border-radius: 5px; color: white; cursor: pointer;" onclick="window.downloadAllIdsAsPDF()"><i class="fas fa-file-archive"></i> Download as PDF</button>
                     <button class="submit-btn" style="background:#e53e3e; padding: 10px 20px; border: none; border-radius: 5px; color: white; cursor: pointer;" onclick="closeCustomModal('bulk-id-modal')"><i class="fas fa-times"></i> Close</button>
                 </div>
             </div>
@@ -874,9 +874,10 @@
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1e3c72; padding-bottom: 15px; margin-bottom: 20px;">
                 <h2 style="color: #1e3c72; margin: 0;"><i class="fas fa-calendar-alt"></i> Exam Routine Scheduler</h2>
                 <div style="display: flex; gap: 10px; align-items: center;">
+                    <button class="action-btn btn-dark" style="background:#64748b; padding:5px 10px;" onclick="window.toggleSubjectSettings()"><i class="fas fa-cog"></i> Subjects</button>
                     <label style="font-weight: bold; color: #333;">Select Class:</label>
                     <select id="scheduler-class-select" class="input-premium" style="padding: 5px 10px; width: auto;" onchange="window.loadExamSchedule()">
-                        <option value="All">All Classes</option>
+                        <option value="All" style="font-weight:bold; color:#1e3c72;">All Classes</option>
                         <option value="Nursery">Nursery</option>
                         <option value="LKG">LKG</option>
                         <option value="UKG">UKG</option>
@@ -901,6 +902,16 @@
                 <p style="margin: 0; color: #475569; font-size: 14px;"><i class="fas fa-info-circle"></i> <strong>Smart Inheritance:</strong> Changes here will clone to the next class you select to save typing. Make sure to click "Save Schedule" for each class!</p>
             </div>
 
+            <div id="subject-settings-panel" style="display: none; background: #fff; padding: 15px; border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 20px;">
+                <h4 style="margin-top: 0; color: #1e3c72;">Master Subjects</h4>
+                <div id="master-subjects-list" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;"></div>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="new-custom-subject" class="input-premium" placeholder="New Subject Name" style="flex:1;">
+                    <button class="action-btn btn-green" onclick="window.addMasterSubject()"><i class="fas fa-plus"></i> Add</button>
+                    <button class="action-btn btn-red" onclick="window.resetMasterSubjects()"><i class="fas fa-undo"></i> Reset Default</button>
+                </div>
+            </div>
+
             <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; text-align: left;">
                 <thead>
                     <tr style="background: #1e3c72; color: white;">
@@ -916,32 +927,32 @@
                     <tr>
                         <td style="padding: 5px; border: 1px solid #ccc;"><input type="date" class="sched-date input-premium" style="width:100%;"></td>
                         <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="subjectsList" oninput="updateSchedulerDatalists()" class="sched-subj input-premium" style="width:100%;"></td>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time input-premium" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="time" step="1" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time input-premium" style="width:100%;"></td>
                     </tr>
                     <tr>
                         <td style="padding: 5px; border: 1px solid #ccc;"><input type="date" class="sched-date input-premium" style="width:100%;"></td>
                         <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="subjectsList" oninput="updateSchedulerDatalists()" class="sched-subj input-premium" style="width:100%;"></td>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time input-premium" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="time" step="1" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time input-premium" style="width:100%;"></td>
                     </tr>
                     <tr>
                         <td style="padding: 5px; border: 1px solid #ccc;"><input type="date" class="sched-date input-premium" style="width:100%;"></td>
                         <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="subjectsList" oninput="updateSchedulerDatalists()" class="sched-subj input-premium" style="width:100%;"></td>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time input-premium" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="time" step="1" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time input-premium" style="width:100%;"></td>
                     </tr>
                     <tr>
                         <td style="padding: 5px; border: 1px solid #ccc;"><input type="date" class="sched-date input-premium" style="width:100%;"></td>
                         <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="subjectsList" oninput="updateSchedulerDatalists()" class="sched-subj input-premium" style="width:100%;"></td>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time input-premium" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="time" step="1" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time input-premium" style="width:100%;"></td>
                     </tr>
                     <tr>
                         <td style="padding: 5px; border: 1px solid #ccc;"><input type="date" class="sched-date input-premium" style="width:100%;"></td>
                         <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="subjectsList" oninput="updateSchedulerDatalists()" class="sched-subj input-premium" style="width:100%;"></td>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time input-premium" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="time" step="1" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time input-premium" style="width:100%;"></td>
                     </tr>
                     <tr>
                         <td style="padding: 5px; border: 1px solid #ccc;"><input type="date" class="sched-date input-premium" style="width:100%;"></td>
                         <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="subjectsList" oninput="updateSchedulerDatalists()" class="sched-subj input-premium" style="width:100%;"></td>
-                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time input-premium" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="time" step="1" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time input-premium" style="width:100%;"></td>
                     </tr>
                 </tbody>
             </table>
@@ -964,7 +975,7 @@
                 <p><strong>Student Name:</strong> <span id="admit-name"></span></p>
                 <p><strong>Class:</strong> <span id="admit-class"></span></p>
                 <p><strong>Roll No:</strong> <span id="admit-roll"></span></p>
-                <p><strong>Father's Name:</strong> <span id="admit-fname"></span></p>
+                <p><strong>Parentage:</strong> <span id="admit-fname"></span></p>
                 <p><strong>Mother's Name:</strong> <span id="admit-mname"></span></p>
                 <p><strong>DOB:</strong> <span id="admit-dob"></span></p>
             </div>
@@ -1003,17 +1014,47 @@
 
     <!-- Global Bonafide Modal -->
     <div id="global-bonafide-modal" class="custom-modal-overlay">
-        <div class="custom-modal-box" style="max-width: 400px;">
+        <div class="custom-modal-box" style="max-width: 600px;">
             <div class="custom-modal-header">
-                <span><i class="fas fa-certificate"></i> Select Student</span>
+                <span><i class="fas fa-certificate"></i> Batch Generate Bonafide Certificates</span>
                 <button class="action-btn btn-red" onclick="closeCustomModal('global-bonafide-modal')"><i class="fas fa-times"></i></button>
             </div>
-            <div class="form-group" style="margin-top:15px;">
-                <label>Search & Select Student</label>
-                <select id="global-bonafide-student" class="input-premium" style="width:100%;"></select>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px; margin-bottom:15px;">
+                <label style="font-weight:bold;">Class Filter:</label>
+                <select id="global-bonafide-class" class="input-premium" style="width:200px;" onchange="window.renderGlobalBonafideStudents()">
+                    <option value="All">All Classes</option>
+                    <option value="Nursery">Nursery</option>
+                    <option value="LKG">LKG</option>
+                    <option value="UKG">UKG</option>
+                    <option value="1st">1st</option>
+                    <option value="2nd">2nd</option>
+                    <option value="3rd">3rd</option>
+                    <option value="4th">4th</option>
+                    <option value="5th">5th</option>
+                    <option value="6th">6th</option>
+                    <option value="7th">7th</option>
+                    <option value="8th">8th</option>
+                    <option value="9th">9th</option>
+                    <option value="10th">10th</option>
+                    <option value="11th">11th</option>
+                    <option value="12th">12th</option>
+                </select>
+            </div>
+            <div style="max-height: 300px; overflow-y: auto; border: 1px solid #ccc; border-radius: 5px;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                    <thead style="background: #1e3c72; color: white; position: sticky; top: 0;">
+                        <tr>
+                            <th style="padding: 10px;"><input type="checkbox" id="global-bonafide-select-all" onclick="window.toggleAllBonafideStudents(this)"></th>
+                            <th style="padding: 10px;">Name</th>
+                            <th style="padding: 10px;">Class</th>
+                            <th style="padding: 10px;">Roll No</th>
+                        </tr>
+                    </thead>
+                    <tbody id="global-bonafide-tbody"></tbody>
+                </table>
             </div>
             <div style="margin-top:20px; text-align:right;">
-                <button class="action-btn btn-dark" style="background:#e67e22;" onclick="window.triggerGlobalBonafide()"><i class="fas fa-print"></i> Generate</button>
+                <button class="action-btn btn-dark" style="background:#e67e22;" onclick="window.triggerGlobalBonafideBatch()"><i class="fas fa-print"></i> Generate Selected</button>
             </div>
         </div>
     </div>
@@ -1038,6 +1079,7 @@
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script type="module" src="script.js"></script>
 </body>
