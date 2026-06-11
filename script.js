@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs, query, where, deleteDoc, serverTimestamp, deleteField, onSnapshot, orderBy, limit, addDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs, query, where, deleteDoc, serverTimestamp, deleteField, onSnapshot, orderBy, limit, addDoc, writeBatch, increment } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 // --- ADDED RECAPTCHA V3 IMPORTS ---
 import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app-check.js";
@@ -242,7 +242,7 @@ window.generateRegistrationLink = () => {
 
 window.copyToClipboard = () => {
     const link = document.getElementById("short-link-input").value;
-    if(link) { navigator.clipboard.writeText(link).then(() => alert("✅ Link Copied!")); }
+    if(link) { navigator.clipboard.writeText(link).then(() => alert("âœ… Link Copied!")); }
 };
 
 function populateClassDropdowns() {
@@ -443,7 +443,7 @@ window.clearEmergencyTicker = async () => {
 };
 
 document.getElementById("admissionToggle").addEventListener("change", async (e) => {
-    try { await updateDoc(doc(db, "schools", currentSchoolId), { admissionOpen: e.target.checked }); alert(e.target.checked ? "🟢 Admissions OPEN." : "🔴 Admissions CLOSED."); } 
+    try { await updateDoc(doc(db, "schools", currentSchoolId), { admissionOpen: e.target.checked }); alert(e.target.checked ? "ðŸŸ¢ Admissions OPEN." : "ðŸ”´ Admissions CLOSED."); } 
     catch(err) { e.target.checked = !e.target.checked; }
 });
 
@@ -622,10 +622,10 @@ async function loadTransactions() {
             if(t.type === "Expense") totalExpenses += Number(t.amount);
         });
         
-        document.getElementById("summary-fees").innerText = "₹ " + totalFees;
-        document.getElementById("summary-salaries").innerText = "₹ " + totalSalaries;
-        document.getElementById("summary-balance").innerText = "₹ " + (totalFees - totalSalaries - totalExpenses);
-        document.getElementById("count-revenue").innerText = "₹ " + (totalFees - totalSalaries - totalExpenses);
+        document.getElementById("summary-fees").innerText = "â‚¹ " + totalFees;
+        document.getElementById("summary-salaries").innerText = "â‚¹ " + totalSalaries;
+        document.getElementById("summary-balance").innerText = "â‚¹ " + (totalFees - totalSalaries - totalExpenses);
+        document.getElementById("count-revenue").innerText = "â‚¹ " + (totalFees - totalSalaries - totalExpenses);
         
         const staffNames = new Set(window.fetchedTransactions.filter(t => t.type === "Salary" && t.personName).map(t => t.personName));
         const staffDropdown = document.getElementById("ledger-search-staff");
@@ -694,7 +694,7 @@ window.renderTransactionsTable = () => {
     filtered.forEach(t => {
         const typeColor = t.type === "Fee" ? "#27ae60" : (t.type === "Expense" ? "#e53e3e" : "#e67e22");
         const details = t.type === "Fee" ? `Class: ${t.class || 'N/A'}` : (t.type === "Expense" ? "School Expense" : "Staff Pay");
-        html += `<tr><td>${t.date}</td><td><strong style="color:${typeColor}">${t.type}</strong></td><td>${t.personName || 'N/A'}</td><td>${details}</td><td style="font-weight:bold;">₹ ${t.amount}</td><td>${t.mode}</td></tr>`;
+        html += `<tr><td>${t.date}</td><td><strong style="color:${typeColor}">${t.type}</strong></td><td>${t.personName || 'N/A'}</td><td>${details}</td><td style="font-weight:bold;">â‚¹ ${t.amount}</td><td>${t.mode}</td></tr>`;
     });
     
     tbody.innerHTML = html || "<tr><td colspan='6' style='text-align:center;'>No Financial Records Found.</td></tr>";
@@ -757,7 +757,7 @@ function renderStudentsTable(className, searchTerm = null, statusFilter = null) 
 
     filtered.forEach(dt => {
         const safeId = dt.id.replace(/'/g, "\\'"); const locked = dt.lockedOut;
-        const statusColor = dt.status === 'Approved' ? '#27ae60' : (dt.status === 'Pending' ? '#e67e22' : '#e53e3e'); const statusIcon = dt.status === 'Approved' ? '✓' : '⏳';
+        const statusColor = dt.status === 'Approved' ? '#27ae60' : (dt.status === 'Pending' ? '#e67e22' : '#e53e3e'); const statusIcon = dt.status === 'Approved' ? 'âœ“' : 'â³';
         
         const lockBtn = locked ? `<button class="action-btn btn-green" onclick="toggleStudentLock('${safeId}', false)" title="Unlock Account"><i class="fas fa-unlock"></i></button>` : `<button class="action-btn btn-dark" onclick="toggleStudentLock('${safeId}', true)" title="Lock Account"><i class="fas fa-lock"></i></button>`;
 
@@ -765,7 +765,7 @@ function renderStudentsTable(className, searchTerm = null, statusFilter = null) 
             ? `<button class="action-btn btn-green" onclick="updateStudentStatus('${safeId}')"><i class="fas fa-check"></i> Approve</button>`
             : `
             <button class="action-btn btn-blue" onclick="showIDCard('${safeId}')"><i class="fas fa-id-card"></i> ID</button>
-            <button class="action-btn btn-dark" style="background:#e67e22;" onclick="window.generateCertificate('${safeId}', 'bonafide')"><i class="fas fa-certificate"></i> Bonafide</button>
+            <button class="action-btn" style="background:#3b82f6; color:white;" onclick="window.openDirectMessageModal('${safeId}', '${dt.name.replace(/'/g, "\\'")}')"><i class="fas fa-comment-dots"></i> Message</button>
             <button class="action-btn btn-purple" onclick="openStudentModal('${safeId}')"><i class="fas fa-edit"></i> Edit</button>
             ${lockBtn}`;
         
@@ -774,7 +774,7 @@ function renderStudentsTable(className, searchTerm = null, statusFilter = null) 
             <td><strong style="display:block; font-size:13px;">${dt.name || 'N/A'} ${locked ? '<i class="fas fa-lock" style="color:#e53e3e"></i>' : ''}</strong><small style="color:#7f8c8d;">${dt.mobile || 'No Mobile'}</small></td>
             <td><span style="font-weight:bold; font-size:13px; color:#333;">${dt.rollNo || 'N/A'}</span></td>
             <td><span style="background:#eaf4ff; color:#2c7be5; padding:3px 8px; border-radius:12px; font-size:12px; font-weight:bold;">Class: ${dt.class || 'N/A'}</span></td>
-            <td><span style="font-size:12px; display:block;"><b>F:</b> ${dt.fatherName || 'N/A'}</span><span style="font-size:12px; display:block;"><b>M:</b> ${dt.motherName || 'N/A'}</span></td>
+            <td><span style="font-size:12px; display:block;"><b>P:</b> ${(dt.parentage || dt.fatherName) || 'N/A'}</span><span style="font-size:12px; display:block;"><b>M:</b> ${dt.motherName || 'N/A'}</span></td>
             <td><span style="color:${statusColor}; font-weight:bold; font-size:13px;">${statusIcon} ${dt.status || 'N/A'}</span></td>
             <td style="white-space:nowrap;">${actionBtns} <button class="action-btn btn-red" onclick="deleteStudent('${safeId}')"><i class="fas fa-trash"></i></button></td>
         </tr>`;
@@ -1167,34 +1167,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // ================= BULK ADMIT CARDS =================
 window.pendingAdmitCardStudents = [];
-window.bulkGenerateAdmitCards = async () => {
-    let approvedStudents = window.fetchedStudents;
-    if (!approvedStudents || approvedStudents.length === 0) return alert("No students available for Admit Card generation.");
-
-    const selectedClass = document.getElementById("bulk_class_select")?.value;
-    if (selectedClass && selectedClass !== "ALL") {
-        approvedStudents = approvedStudents.filter(st => st.class === selectedClass);
-        if (approvedStudents.length === 0) return alert("No students found in the selected class.");
-    }
-
-    // Defaulter Check
-    const defaulters = approvedStudents.filter(st => (st.dueBalance && st.dueBalance > 0));
-    window.pendingAdmitCardStudents = approvedStudents;
-    
-    if (defaulters.length > 0) {
-        document.getElementById("defaulter-admit-modal").style.display = "flex";
-    } else {
-        // Proceed normally if no defaulters
-        window.proceedAdmitCards('enable');
-    }
-};
-
+window.pendingAdmitCardStudents = [];
 window.proceedAdmitCards = async (mode) => {
     document.getElementById("defaulter-admit-modal").style.display = "none";
     let students = window.pendingAdmitCardStudents;
     
     if (mode === 'disable') {
-        // Filter out defaulters
         students = students.filter(st => !(st.dueBalance && st.dueBalance > 0));
         if (students.length === 0) return alert("No paid students available to generate admit cards.");
     }
@@ -1204,13 +1182,16 @@ window.proceedAdmitCards = async (mode) => {
     document.getElementById("bulk-generating-text").innerText = "Generating Admit Cards... Please wait";
     document.getElementById("bulk-id-grid").innerHTML = "";
 
-    window.lastGeneratedAdmitCards = [];
     let schoolName = currentSchoolName || document.getElementById('school-name')?.innerText || "SCHOOL NAME";
-    let logoUrl = document.getElementById('school-logo')?.src || "https://via.placeholder.com/80";
-
+    let logoUrl = document.getElementById('school-logo')?.src || "";
+    
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p', 'mm', 'a4');
     const template = document.getElementById("admit-card-template");
+    
     document.getElementById("admit-school").innerText = schoolName.toUpperCase();
-    document.getElementById("admit-logo").src = logoUrl;
+    if(logoUrl) document.getElementById("admit-logo").src = logoUrl;
+    
     if (currentSignatureUrl && window.currentSigSettings && window.currentSigSettings.admit !== false) {
         document.getElementById("admit-sig").src = currentSignatureUrl;
         document.getElementById("admit-sig").style.display = "block";
@@ -1237,8 +1218,10 @@ window.proceedAdmitCards = async (mode) => {
             document.getElementById("admit-roll").innerText = st.rollNo || "N/A";
             document.getElementById("admit-fname").innerText = (st.parentage || st.fatherName) || "N/A";
             document.getElementById("admit-mname").innerText = st.motherName || "N/A";
-            document.getElementById("admit-dob").innerText = st.dob || "N/A"; // May be N/A if not collected
-            document.getElementById("admit-photo").src = st.photoUrl || "https://via.placeholder.com/120x140?text=Photo";
+            document.getElementById("admit-dob").innerText = st.dob || "N/A";
+            
+            const fallbackImg = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+            document.getElementById("admit-photo").src = st.photoUrl || fallbackImg;
 
             const watermark = document.getElementById("admit-watermark");
             if (mode === 'enable' && st.dueBalance && st.dueBalance > 0) {
@@ -1254,25 +1237,23 @@ window.proceedAdmitCards = async (mode) => {
                 let dStr = sched[j]?.date || "";
                 if (dStr && dStr.includes("-")) {
                     let parts = dStr.split("-");
-                    if (parts.length === 3) dStr = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                    if (parts.length === 3) dStr = parts[2] + '/' + parts[1] + '/' + parts[0];
                 }
                 tds[0].innerText = dStr;
                 tds[1].innerText = sched[j]?.subject || "";
                 tds[2].innerText = sched[j]?.timing || "";
             }
 
-            // Ensure images are loaded before canvas capture
             await new Promise(r => setTimeout(r, 200)); 
 
             const canvas = await html2canvas(template, { useCORS: true, scale: 2 });
-            const base64Data = canvas.toDataURL("image/jpeg").split(',')[1];
+            const imgData = canvas.toDataURL("image/jpeg");
             
-            const studentNameStr = st.name.replace(/[^a-z0-9]/gi, '_');
-            folder.file(`Admit_Card_${studentNameStr}.jpg`, base64Data, {base64: true});
+            if (i > 0) pdf.addPage();
+            pdf.addImage(imgData, 'JPEG', 10, 10, 190, 260);
 
-            // Add to grid preview
             const imgElement = document.createElement("img");
-            imgElement.src = canvas.toDataURL("image/jpeg");
+            imgElement.src = imgData;
             imgElement.style.width = "100%";
             imgElement.style.borderRadius = "8px";
             imgElement.style.boxShadow = "0 4px 6px rgba(0,0,0,0.1)";
@@ -1280,9 +1261,7 @@ window.proceedAdmitCards = async (mode) => {
         }
 
         document.getElementById("bulk-generating-text").style.display = "none";
-        zip.generateAsync({type:"blob"}).then(function(content) {
-            saveAs(content, "Bulk_Admit_Cards.zip");
-        });
+        pdf.save("Batch_Admit_Cards.pdf");
 
     } catch(e) {
         document.getElementById("bulk-generating-text").style.display = "none";
@@ -1290,24 +1269,16 @@ window.proceedAdmitCards = async (mode) => {
     }
 };
 
-// ================= BULK ID GENERATION =================
-window.bulkGenerateIDCards = async () => {
-    let approvedStudents = window.fetchedStudents;
-    if (!approvedStudents || approvedStudents.length === 0) return alert("No students available for ID generation.");
-
-    const selectedClass = document.getElementById("bulk_class_select")?.value;
-    if (selectedClass && selectedClass !== "ALL") {
-        approvedStudents = approvedStudents.filter(st => st.class === selectedClass);
-        if (approvedStudents.length === 0) return alert("No students found in the selected class.");
-    }
-
+window.generateBatchIDCards = async (students) => {
     document.getElementById("bulk-id-modal").style.display = "block";
     document.getElementById("bulk-generating-text").style.display = "block";
+    document.getElementById("bulk-generating-text").innerText = "Generating ID Cards...";
     document.getElementById("bulk-id-grid").innerHTML = "";
 
     try {
         let schoolName = currentSchoolName || document.getElementById('school-name')?.innerText || "ABC SCHOOL NAME";
         const templateStyle = currentTemplateStyle || "wave";
+        const fallbackImg = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 
         const response = await fetch("https://school-backend-zlgy.onrender.com/api/bulk-generate-id-cards", {
             method: "POST",
@@ -1319,8 +1290,8 @@ window.bulkGenerateIDCards = async () => {
                 schoolName: schoolName,
                 schoolEmergency: document.getElementById("school_emergency").value || "N/A",
                 emergencyMobile: document.getElementById("school_emergency_mobile")?.value || "N/A",
-                signatureUrl: (window.currentSigSettings && window.currentSigSettings.idCard === false) ? "" : currentSignatureUrl,
-                students: approvedStudents.map(st => ({
+                signatureUrl: (window.currentSigSettings && window.currentSigSettings.idCard === false) ? "" : (currentSignatureUrl || ""),
+                students: students.map(st => ({
                     id: st.id || st.regNo,
                     regNo: st.regNo || "N/A",
                     rollNo: st.rollNo || "N/A",
@@ -1330,59 +1301,37 @@ window.bulkGenerateIDCards = async () => {
                     parentage: (st.parentage || st.fatherName) || "N/A",
                     mobile: st.mobile || "N/A",
                     address: st.address || "N/A",
-                    photoUrl: st.photoUrl || "https://via.placeholder.com/150"
+                    photoUrl: st.photoUrl || fallbackImg
                 }))
             })
         });
 
         const data = await response.json();
-        document.getElementById("bulk-generating-text").style.display = "none";
-
         if(data.success && data.images) {
-            window.lastGeneratedBulkIds = data.images;
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            
             data.images.forEach((imgBase64, index) => {
+                if (index > 0) pdf.addPage();
+                pdf.addImage(imgBase64, 'PNG', 10, 10, 54, 86);
+
                 const imgElement = document.createElement("img");
                 imgElement.src = imgBase64;
                 imgElement.style.width = "100%";
                 imgElement.style.borderRadius = "8px";
-                imgElement.style.boxShadow = "0 4px 6px rgba(0,0,0,0.1)";
                 document.getElementById("bulk-id-grid").appendChild(imgElement);
             });
+            
+            pdf.save("Batch_ID_Cards.pdf");
         } else {
             alert("API Error: " + data.error);
         }
     } catch (e) {
+        alert("Failed to generate ID Cards. Error: " + e.message);
+    } finally {
         document.getElementById("bulk-generating-text").style.display = "none";
-        alert("Failed to generate IDs. Check backend status.");
     }
 };
-
-window.downloadAllIdsAsPDF = async () => {
-    if (!window.lastGeneratedBulkIds || window.lastGeneratedBulkIds.length === 0) {
-        return alert("No ID cards to download.");
-    }
-    document.getElementById("bulk-generating-text").style.display = "block";
-    document.getElementById("bulk-generating-text").innerText = "Generating PDF...";
-    
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    
-    // A4 is 210 x 297 mm
-    // Standard CR80 ID Card is approx 54mm x 86mm. 
-    // Wait, the backend already generates an A4 grid of 3x3 cards if multiple students, 
-    // or maybe the backend just generates individual cards? 
-    // Wait, bulkGenerateIDCards loops over data.images array. It means backend returns array of individual card base64s.
-    
-    for (let i = 0; i < window.lastGeneratedBulkIds.length; i++) {
-        if (i > 0) pdf.addPage();
-        // Add full page image or centered image
-        const img = window.lastGeneratedBulkIds[i];
-        // Calculate aspect ratio. Assuming ID card is portrait 54x86
-        pdf.addImage(img, 'PNG', 10, 10, 54, 86);
-    }
-    
-    pdf.save("Student_ID_Cards.pdf");
-    document.getElementById("bulk-generating-text").style.display = "none";
 };
 
 // ==========================================
@@ -1418,7 +1367,7 @@ window.loadFeeVerifications = async () => {
                 <td>${data.createdAt.toDate().toLocaleString()}</td>
                 <td><strong>${data.studentName}</strong><br><small>Reg: ${data.regNo}</small></td>
                 <td style="font-family: monospace;">${data.utr}</td>
-                <td><strong>₹ ${data.amount}</strong></td>
+                <td><strong>â‚¹ ${data.amount}</strong></td>
                 <td><a href="${data.screenshotUrl}" target="_blank" style="color:#3182ce; text-decoration:none;"><i class="fas fa-image"></i> View Proof</a></td>
                 <td style="${statusClass}">${btnHtml}</td>
             </tr>`;
@@ -1431,7 +1380,7 @@ window.loadFeeVerifications = async () => {
 };
 
 window.approveFeeVerification = async (verificationId, studentId, studentName, amount) => {
-    if(!confirm(`Approve ₹${amount} fee payment for ${studentName}? This will update the student's balance and ledger.`)) return;
+    if(!confirm(`Approve â‚¹${amount} fee payment for ${studentName}? This will update the student's balance and ledger.`)) return;
     
     try {
         const batch = writeBatch(db);

@@ -158,10 +158,10 @@
                                     <option value="12th">12th</option>
                                 </select>
                                 <input type="text" id="searchStudentInput" class="input-premium" placeholder="Search Student..." onkeyup="searchStudent()" style="padding: 8px 10px; width: 200px;">
-                                <button id="bulk-id-btn" class="action-btn btn-blue" style="padding:10px 15px;" onclick="window.bulkGenerateIDCards()"><i class="fas fa-id-badge"></i> Generate ID Cards</button>
-                                <button id="exam-scheduler-btn" class="action-btn" style="background:#d97706; padding:10px 15px;" onclick="window.openExamScheduler()">📄 Routine Scheduler</button>
-                                <button id="bulk-admit-btn" class="action-btn btn-purple" style="padding:10px 15px;" onclick="window.bulkGenerateAdmitCards()"><i class="fas fa-file-alt"></i> Generate Admit Cards</button>
-                                <button class="action-btn btn-dark" style="background:#e67e22; padding:10px 15px;" onclick="window.openGlobalBonafideModal()">📄 Generate Bonafide</button>
+                                <button id="bulk-id-btn" class="action-btn btn-blue" style="padding:10px 15px;" onclick="window.openBulkActionModal('id')"><i class="fas fa-id-badge"></i> Generate ID Cards</button>
+                                <button id="exam-scheduler-btn" class="action-btn" style="background:#d97706; padding:10px 15px;" onclick="window.openExamScheduler()">📅 Routine Scheduler</button>
+                                <button id="bulk-admit-btn" class="action-btn btn-purple" style="padding:10px 15px;" onclick="window.openBulkActionModal('admit')"><i class="fas fa-file-alt"></i> Generate Admit Cards</button>
+                                <button class="action-btn btn-dark" style="background:#e67e22; padding:10px 15px;" onclick="window.openBulkActionModal('bonafide')">🎓 Generate Bonafide</button>
                                 <button class="action-btn btn-dark" style="padding:10px 15px;" onclick="runDefaulterLockdown()"><i class="fas fa-lock"></i> Auto-Lock Defaulters</button>
                             </div>
                         </div>
@@ -369,7 +369,8 @@
                             <select id="n_target"><option value="All">All Users</option><option value="Staff">Staff Only</option><option value="Students">Students Only</option></select>
                         </div>
                         <div class="form-group"><label>Notice Title</label><input type="text" id="n_title"></div>
-                        <div class="form-group"><label>Message Details</label><textarea id="n_body" rows="4"></textarea></div>
+                        <div class="form-group"><label>Message Details</label><textarea id="n_body" rows="4"></textarea>
+                    </div>
                         <button class="submit-btn" onclick="saveNotice()">Publish Notice</button>
                     </div>
                     <div class="card">
@@ -741,14 +742,12 @@
             </div>
             <input type="hidden" id="modal-student-id">
             <input type="hidden" id="modal-student-photo-url"> <!-- Store existing URL -->
-            <div class="form-row">
-                <div class="form-group"><label>Mobile No</label><input type="tel" id="mobile" required></div>
-                <div class="form-group"><label>Date of Birth</label><input type="date" id="dob" required></div>
-                <div class="form-group"><label>Address</label><input type="text" id="address" required></div>
-            </div>
+
             <div class="form-row">
                 <div class="form-group"><label>Roll No.</label><input type="number" id="modal-student-rollNo"></div>
-                <div class="form-group"><label>Class</label>
+                <div class="form-group"><label>Date of Birth</label><input type="date" id="dob"></div>
+            </div>
+            <div class="form-group"><label>Class</label>
                     <select id="modal-student-class">
                         <option value="Nursery">Nursery</option>
                         <option value="LKG">LKG</option>
@@ -1012,16 +1011,16 @@
         <div id="admit-watermark" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 55px; font-weight: 900; color: rgba(229, 62, 62, 0.4); border: 8px solid rgba(229, 62, 62, 0.4); padding: 20px; white-space: nowrap; display: none; z-index: 100; pointer-events: none;">FEE PENDING - CONTACT ADMIN</div>
     </div>
 
-    <!-- Global Bonafide Modal -->
-    <div id="global-bonafide-modal" class="custom-modal-overlay">
+    <!-- Bulk Action Modal -->
+    <div id="bulk-action-modal" class="custom-modal-overlay">
         <div class="custom-modal-box" style="max-width: 600px;">
             <div class="custom-modal-header">
-                <span><i class="fas fa-certificate"></i> Batch Generate Bonafide Certificates</span>
-                <button class="action-btn btn-red" onclick="closeCustomModal('global-bonafide-modal')"><i class="fas fa-times"></i></button>
+                <span id="bulk-modal-title"><i class="fas fa-tasks"></i> Batch Action</span>
+                <button class="action-btn btn-red" onclick="closeCustomModal('bulk-action-modal')"><i class="fas fa-times"></i></button>
             </div>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px; margin-bottom:15px;">
                 <label style="font-weight:bold;">Class Filter:</label>
-                <select id="global-bonafide-class" class="input-premium" style="width:200px;" onchange="window.renderGlobalBonafideStudents()">
+                <select id="bulk-action-class" class="input-premium" style="width:200px;" onchange="window.renderBulkActionStudents()">
                     <option value="All">All Classes</option>
                     <option value="Nursery">Nursery</option>
                     <option value="LKG">LKG</option>
@@ -1040,21 +1039,21 @@
                     <option value="12th">12th</option>
                 </select>
             </div>
-            <div style="max-height: 300px; overflow-y: auto; border: 1px solid #ccc; border-radius: 5px;">
+            <div style="max-height: 350px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
                 <table style="width: 100%; border-collapse: collapse; text-align: left;">
-                    <thead style="background: #1e3c72; color: white; position: sticky; top: 0;">
-                        <tr>
-                            <th style="padding: 10px;"><input type="checkbox" id="global-bonafide-select-all" onclick="window.toggleAllBonafideStudents(this)"></th>
-                            <th style="padding: 10px;">Name</th>
-                            <th style="padding: 10px;">Class</th>
-                            <th style="padding: 10px;">Roll No</th>
+                    <thead>
+                        <tr style="background:#f8fafc; border-bottom:2px solid #e2e8f0;">
+                            <th style="padding:10px;"><input type="checkbox" id="bulk-select-all" onclick="window.toggleAllBulkStudents(this)"></th>
+                            <th style="padding:10px;">Roll No</th>
+                            <th style="padding:10px;">Name</th>
+                            <th style="padding:10px;">Class</th>
                         </tr>
                     </thead>
-                    <tbody id="global-bonafide-tbody"></tbody>
+                    <tbody id="bulk-action-list"></tbody>
                 </table>
             </div>
-            <div style="margin-top:20px; text-align:right;">
-                <button class="action-btn btn-dark" style="background:#e67e22;" onclick="window.triggerGlobalBonafideBatch()"><i class="fas fa-print"></i> Generate Selected</button>
+            <div style="margin-top:20px; display:flex; gap:10px;">
+                <button class="action-btn btn-blue" id="bulk-trigger-btn" style="flex:1; padding:12px; font-size:16px;" onclick="window.triggerBulkAction()">Generate PDFs</button>
             </div>
         </div>
     </div>
