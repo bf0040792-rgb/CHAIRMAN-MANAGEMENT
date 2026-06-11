@@ -1537,7 +1537,7 @@ window.openGlobalBonafideModal = () => {
     const sel = document.getElementById("global-bonafide-student");
     sel.innerHTML = '<option value="">-- Select a Student --</option>';
     window.fetchedStudents.forEach(st => {
-        sel.innerHTML += <option value=" + st.id + "> + st.name +  ( + st.class + )</option>;
+        sel.innerHTML += `<option value="${st.id}">${st.name} (${st.class})</option>`;
     });
     document.getElementById("global-bonafide-modal").style.display = "flex";
 };
