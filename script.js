@@ -1128,7 +1128,7 @@ window.saveStudentMarks = async () => {
 async function getTransparentSignature(sigUrl) {
     try {
         // Assuming backend is running on the same domain or configure full URL
-        const res = await fetch('https://school-backend-zlgy.onrender.com/api/remove-sig-bg', {
+        const res = await fetch('https://school-backend-zlgy.onrender.com/api/remove-bg', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ imageUrl: sigUrl })
@@ -1340,12 +1340,53 @@ window.openStudentModal = (id = null) => {
     }
 };
 
+const uploadStudentPhotoWithBgRemoval = async (fileInputId, btnId, defaultText) => {
+    const file = document.getElementById(fileInputId).files[0]; 
+    if (!file) return null;
+    
+    const btn = document.getElementById(btnId); 
+    btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Processing Photo...";
+    
+    try {
+        let base64Image = await convertToBase64(file);
+        
+        // 1. Pre-process: Remove Background
+        try {
+            const bgRes = await fetch("https://school-backend-zlgy.onrender.com/api/remove-bg", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ imageUrl: base64Image })
+            });
+            const bgData = await bgRes.json();
+            if (bgData.success && bgData.base64) {
+                base64Image = bgData.base64;
+            }
+        } catch (e) {
+            console.warn("Remove BG API Failed, falling back to original photo.", e);
+        }
+        
+        // 2. Upload transparent image to Cloudinary
+        btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Uploading...";
+        const res = await fetch("https://api.cloudinary.com/v1_1/disgtvs6f/image/upload", { 
+            method: "POST", 
+            headers: { "Content-Type": "application/json" }, 
+            body: JSON.stringify({ file: base64Image, upload_preset: "ml_default" }) 
+        });
+        const data = await res.json(); 
+        btn.innerHTML = defaultText; 
+        return data.secure_url || null;
+    } catch (e) { 
+        btn.innerHTML = defaultText; 
+        return null; 
+    }
+};
+
 window.saveStudentModal = async () => {
     const id = document.getElementById("modal-student-id").value;
     
     let photoUrl = document.getElementById("modal-student-photo-url").value;
     if (document.getElementById("modal-student-photo-file").files.length > 0) {
-        let uploadedUrl = await uploadToCloudinary("modal-student-photo-file", "modal-save-btn", "<i class='fas fa-save'></i> Save");
+        let uploadedUrl = await uploadStudentPhotoWithBgRemoval("modal-student-photo-file", "modal-save-btn", "<i class='fas fa-save'></i> Save");
         if(uploadedUrl) photoUrl = uploadedUrl;
     }
 
