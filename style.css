@@ -551,4 +551,4 @@ input:checked + .slider:before { transform: translateX(26px); }
 }
 body.force-desktop { min-width: 1100px; overflow-x: auto; }
 .locked-row { opacity: 0.6; background: #ffebeb !important; }
-img[src*="signature"], .id-signature, .cert-sig { mix-blend-mode: multiply !important; background-color: transparent !important; }
+img[src*="signature"], .id-signature, .cert-sig, .transparent-sig { mix-blend-mode: multiply !important; background-color: transparent !important; filter: contrast(1.2) !important; }
