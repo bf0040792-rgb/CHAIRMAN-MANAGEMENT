@@ -178,44 +178,8 @@
             <button class="glass-login-btn" id="doLoginBtn">
                 <span>Authenticate</span> <i class="fas fa-arrow-right"></i>
             </button>
-            <div class="neural-log visible" id="neuralLog"></div>
             <p class="error-msg" id="loginErrorMsg"></p>
         </div>
-    </div>
-
-    <!-- HUD Access Approved Overlay -->
-    <div class="hud-overlay" id="hudOverlay">
-        <div class="hud-greeting">
-            <h1>ACCESS GRANTED</h1>
-            <p>[ BOARD CHAIRMAN ] // SECURE SESSION INITIALIZED</p>
-        </div>
-        <div class="hud-grid">
-            <div class="hud-card">
-                <h4>UPTIME</h4>
-                <div class="hud-value" id="hudUptime">99.7%</div>
-            </div>
-            <div class="hud-card">
-                <h4>LATENCY</h4>
-                <div class="hud-value" id="hudLatency">12ms</div>
-            </div>
-            <div class="hud-card">
-                <h4>SECTOR</h4>
-                <div class="hud-value">EDU-07</div>
-            </div>
-            <div class="hud-card">
-                <h4>NODES</h4>
-                <div class="hud-value">142</div>
-            </div>
-            <div class="hud-card">
-                <h4>THREAT LVL</h4>
-                <div class="hud-value" style="color: var(--fuji-glow-cyan);">LOW</div>
-            </div>
-            <div class="hud-card">
-                <h4>SYNC STATUS</h4>
-                <div class="hud-value" style="color: #34d399;">LIVE</div>
-            </div>
-        </div>
-        <div class="hud-status-bar">SYS.CORE v4.2.1 // SESSION_KEY: <span id="hudSessionKey">--</span> // ENCRYPTION: AES-256-GCM</div>
     </div>
 
     <script>
@@ -246,38 +210,6 @@
         if (pwd.type === 'password') { pwd.type = 'text'; this.classList.replace('fa-eye', 'fa-eye-slash'); }
         else { pwd.type = 'password'; this.classList.replace('fa-eye-slash', 'fa-eye'); }
     });
-
-    // === NEURAL LOG (Always Active) ===
-    (function() {
-        const log = document.getElementById('neuralLog');
-        if (!log) return;
-        const msgs = [
-            '> Secure tunnel established...',
-            '> Biometric subsystem: READY',
-            '> Key rotation: AES-256-GCM',
-            '> Node mesh: 142 active peers',
-            '> Threat analysis: NOMINAL',
-            '> Quantum telemetry: SYNCED',
-            '> Awaiting credential input...'
-        ];
-        let i = 0;
-        const interval = setInterval(() => {
-            if (i >= msgs.length) { clearInterval(interval); return; }
-            log.innerHTML += '<span>' + msgs[i] + '</span>\n';
-            log.scrollTop = log.scrollHeight;
-            i++;
-        }, 600);
-    })();
-
-    // === HUD OVERLAY ===
-    window.showHUDTransition = function() {
-        const hud = document.getElementById('hudOverlay');
-        if (!hud) return;
-        const key = Math.random().toString(36).substring(2, 10).toUpperCase();
-        document.getElementById('hudSessionKey').textContent = key;
-        hud.classList.add('active');
-        setTimeout(() => { hud.classList.remove('active'); }, 2800);
-    };
     </script>
 
     <!-- PIN SCREEN (ULTRA-PREMIUM FUJI THEME) -->
