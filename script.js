@@ -82,7 +82,8 @@ if (urlParams.get('impersonate') === 'true') {
 // --- CHAIRMAN PIN UNLOCK LOGIC ---
 window.unlockChairmanDashboard = () => {
     document.getElementById("pin-wrapper").style.display = "none";
-    dashboardWrapper.style.display = "flex";
+    if (window.showHUDTransition) window.showHUDTransition();
+    setTimeout(() => { dashboardWrapper.style.display = "flex"; }, 2800);
 };
 
 window.saveChairmanPin = async () => {

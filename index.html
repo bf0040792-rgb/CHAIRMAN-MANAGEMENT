@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chairman Portal | System Core</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="style.css">
@@ -20,60 +21,235 @@
         <p style="font-size: 16px; color: #a0aec0; max-width: 550px; line-height: 1.6;">Access Denied: Your School's License has Expired or is Invalid. Please contact CoreEdu Tech to renew your subscription.</p>
     </div>
 
-    <!-- FUJI SUNSET GLASSMORPHIC LOGIN -->
+    <!-- ULTRA-PREMIUM FUJI GLASSMORPHIC LOGIN -->
     <div id="login-wrapper">
-        <!-- Floating Orbs -->
-        <div class="fuji-orb fuji-orb-1"></div>
-        <div class="fuji-orb fuji-orb-2"></div>
-        <div class="fuji-orb fuji-orb-3"></div>
-        <div class="fuji-orb fuji-orb-4"></div>
+        <!-- SVG Mt. Fuji Scene -->
+        <svg class="fuji-scene" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#030b10"/>
+                    <stop offset="30%" stop-color="#051419"/>
+                    <stop offset="50%" stop-color="#0a1e28"/>
+                    <stop offset="68%" stop-color="#1a1525"/>
+                    <stop offset="78%" stop-color="#3d1a2a"/>
+                    <stop offset="88%" stop-color="#7a2840"/>
+                    <stop offset="94%" stop-color="#c4703a"/>
+                    <stop offset="100%" stop-color="#e8a44c"/>
+                </linearGradient>
+                <linearGradient id="fujiGrad" x1="50%" y1="0%" x2="50%" y2="100%">
+                    <stop offset="0%" stop-color="#0a1520"/>
+                    <stop offset="100%" stop-color="#061018"/>
+                </linearGradient>
+                <linearGradient id="snowGrad" x1="50%" y1="0%" x2="50%" y2="100%">
+                    <stop offset="0%" stop-color="#ffffff"/>
+                    <stop offset="60%" stop-color="#e8ecf4"/>
+                    <stop offset="100%" stop-color="#c8d0dc"/>
+                </linearGradient>
+                <filter id="glowFilter">
+                    <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                    <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+            </defs>
+            <rect width="1440" height="900" fill="url(#skyGrad)"/>
+            <!-- Mountain Body -->
+            <polygon points="720,380 420,750 1020,750" fill="url(#fujiGrad)" opacity="0.95"/>
+            <!-- Foothill Left -->
+            <polygon points="0,680 300,580 550,750 0,750" fill="#04101a" opacity="0.8"/>
+            <!-- Foothill Right -->
+            <polygon points="1440,680 1140,590 900,750 1440,750" fill="#04101a" opacity="0.8"/>
+            <!-- Snow Cap -->
+            <polygon points="720,380 680,430 760,430" fill="url(#snowGrad)" filter="url(#glowFilter)"/>
+            <polygon points="680,430 665,450 735,450 760,430" fill="url(#snowGrad)" opacity="0.6"/>
+            <!-- Horizon Glow Line -->
+            <rect x="0" y="740" width="1440" height="2" fill="rgba(232, 164, 76, 0.3)"/>
+            <!-- Ground -->
+            <rect x="0" y="750" width="1440" height="150" fill="#020a0f"/>
+        </svg>
 
-        <div class="glass-login-box">
+        <!-- Atmospheric Orbs -->
+        <div class="atmo-orb atmo-orb--teal"></div>
+        <div class="atmo-orb atmo-orb--copper"></div>
+        <div class="atmo-orb atmo-orb--magenta"></div>
+        <div class="atmo-orb atmo-orb--gold"></div>
+
+        <!-- Floating Particles -->
+        <div class="particle-field" id="particleField"></div>
+
+        <!-- Glass Login Card -->
+        <div class="glass-login-box" id="loginCard">
+            <div class="laser-sweep"></div>
             <div class="pro-icon-container">
                 <i class="fas fa-fingerprint"></i>
             </div>
             <h2 class="glass-login-title">login</h2>
             <div class="glass-input-group">
                 <div class="input-wrapper">
-                    <input type="text" id="loginId" placeholder="Username">
+                    <input type="text" id="loginId" placeholder="Username" autocomplete="username">
                     <i class="fas fa-user pro-input-icon"></i>
                 </div>
             </div>
             <div class="glass-input-group">
                 <div class="input-wrapper">
-                    <input type="password" id="loginPassword" placeholder="Password">
-                    <i class="fas fa-lock pro-input-icon"></i>
+                    <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password">
+                    <i class="fas fa-eye pro-input-icon eye-toggle-icon" id="eyeToggle"></i>
                 </div>
             </div>
             <div class="glass-options">
                 <label class="custom-checkbox-container">
                     <input type="checkbox" checked id="rememberMe">
                     <span class="custom-checkmark"></span>
-                    Remember me
+                    Remember
                 </label>
+                <div class="ai-toggle-container">
+                    <span>Neural Sync</span>
+                    <div class="ai-toggle" id="aiToggle"></div>
+                </div>
             </div>
             <button class="glass-login-btn" id="doLoginBtn">
-                <span>Sign In</span> <i class="fas fa-arrow-right"></i>
+                <span>Authenticate</span> <i class="fas fa-arrow-right"></i>
             </button>
+            <div class="neural-log" id="neuralLog"></div>
             <p class="error-msg" id="loginErrorMsg"></p>
         </div>
     </div>
 
-    <!-- PIN SCREEN FOR CHAIRMAN (FUJI THEME) -->
+    <!-- HUD Access Approved Overlay -->
+    <div class="hud-overlay" id="hudOverlay">
+        <div class="hud-greeting">
+            <h1>ACCESS GRANTED</h1>
+            <p>[ BOARD CHAIRMAN ] // SECURE SESSION INITIALIZED</p>
+        </div>
+        <div class="hud-grid">
+            <div class="hud-card">
+                <h4>UPTIME</h4>
+                <div class="hud-value" id="hudUptime">99.7%</div>
+            </div>
+            <div class="hud-card">
+                <h4>LATENCY</h4>
+                <div class="hud-value" id="hudLatency">12ms</div>
+            </div>
+            <div class="hud-card">
+                <h4>SECTOR</h4>
+                <div class="hud-value">EDU-07</div>
+            </div>
+            <div class="hud-card">
+                <h4>NODES</h4>
+                <div class="hud-value">142</div>
+            </div>
+            <div class="hud-card">
+                <h4>THREAT LVL</h4>
+                <div class="hud-value" style="color: var(--fuji-glow-cyan);">LOW</div>
+            </div>
+            <div class="hud-card">
+                <h4>SYNC STATUS</h4>
+                <div class="hud-value" style="color: #34d399;">LIVE</div>
+            </div>
+        </div>
+        <div class="hud-status-bar">SYS.CORE v4.2.1 // SESSION_KEY: <span id="hudSessionKey">--</span> // ENCRYPTION: AES-256-GCM</div>
+    </div>
+
+    <script>
+    // === PARTICLE GENERATOR ===
+    (function() {
+        const field = document.getElementById('particleField');
+        if (!field) return;
+        for (let i = 0; i < 30; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            const size = Math.random() * 3 + 1;
+            const colors = ['rgba(14,246,204,0.4)', 'rgba(232,164,76,0.3)', 'rgba(217,70,168,0.3)', 'rgba(255,255,255,0.2)'];
+            p.style.cssText = `
+                width: ${size}px; height: ${size}px;
+                left: ${Math.random() * 100}%;
+                background: ${colors[Math.floor(Math.random() * colors.length)]};
+                animation-duration: ${Math.random() * 15 + 10}s;
+                animation-delay: ${Math.random() * 10}s;
+                box-shadow: 0 0 ${size * 2}px currentColor;
+            `;
+            field.appendChild(p);
+        }
+    })();
+
+    // === EYE TOGGLE ===
+    document.getElementById('eyeToggle')?.addEventListener('click', function() {
+        const pwd = document.getElementById('loginPassword');
+        if (pwd.type === 'password') { pwd.type = 'text'; this.classList.replace('fa-eye', 'fa-eye-slash'); }
+        else { pwd.type = 'password'; this.classList.replace('fa-eye-slash', 'fa-eye'); }
+    });
+
+    // === AI NEURAL SYNC TOGGLE ===
+    document.getElementById('aiToggle')?.addEventListener('click', function() {
+        this.classList.toggle('active');
+        const card = document.getElementById('loginCard');
+        const log = document.getElementById('neuralLog');
+        if (this.classList.contains('active')) {
+            card.classList.add('ai-active');
+            log.classList.add('visible');
+            runNeuralLog();
+        } else {
+            card.classList.remove('ai-active');
+            log.classList.remove('visible');
+            log.innerHTML = '';
+        }
+    });
+
+    function runNeuralLog() {
+        const log = document.getElementById('neuralLog');
+        const msgs = [
+            '> Initializing neural handshake...',
+            '> Biometric scan: STANDBY',
+            '> Cryptographic key rotation: OK',
+            '> Secure tunnel: AES-256-GCM',
+            '> Node mesh: 142 active peers',
+            '> Threat analysis: NOMINAL',
+            '> Awaiting credential input...'
+        ];
+        log.innerHTML = '';
+        let i = 0;
+        const interval = setInterval(() => {
+            if (i >= msgs.length || !log.classList.contains('visible')) { clearInterval(interval); return; }
+            log.innerHTML += msgs[i] + '\n';
+            log.scrollTop = log.scrollHeight;
+            i++;
+        }, 500);
+    }
+
+    // === HUD OVERLAY (called after successful login before dashboard loads) ===
+    window.showHUDTransition = function() {
+        const hud = document.getElementById('hudOverlay');
+        if (!hud) return;
+        const key = Math.random().toString(36).substring(2, 10).toUpperCase();
+        document.getElementById('hudSessionKey').textContent = key;
+        hud.classList.add('active');
+        setTimeout(() => { hud.classList.remove('active'); }, 2800);
+    };
+    </script>
+
+    <!-- PIN SCREEN (ULTRA-PREMIUM FUJI THEME) -->
     <div id="pin-wrapper" style="display: none;">
-        <div class="fuji-orb fuji-orb-1"></div>
-        <div class="fuji-orb fuji-orb-2"></div>
-        <div class="fuji-orb fuji-orb-3"></div>
-        <div class="fuji-orb fuji-orb-4"></div>
+        <svg class="fuji-scene" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="skyGrad2" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#030b10"/><stop offset="30%" stop-color="#051419"/>
+                    <stop offset="50%" stop-color="#0a1e28"/><stop offset="68%" stop-color="#1a1525"/>
+                    <stop offset="78%" stop-color="#3d1a2a"/><stop offset="88%" stop-color="#7a2840"/>
+                    <stop offset="94%" stop-color="#c4703a"/><stop offset="100%" stop-color="#e8a44c"/>
+                </linearGradient>
+            </defs>
+            <rect width="1440" height="900" fill="url(#skyGrad2)"/>
+            <polygon points="720,380 420,750 1020,750" fill="#0a1520" opacity="0.95"/>
+            <polygon points="720,380 680,430 760,430" fill="#e8ecf4" opacity="0.8"/>
+            <rect x="0" y="750" width="1440" height="150" fill="#020a0f"/>
+        </svg>
+        <div class="atmo-orb atmo-orb--teal"></div>
+        <div class="atmo-orb atmo-orb--copper"></div>
 
         <div class="glass-login-box" id="create-pin-box" style="display:none;">
-            <div class="pro-icon-container">
-                <i class="fas fa-key"></i>
-            </div>
-            <h2 class="glass-login-title" style="font-size:1.5rem; letter-spacing:6px;">set pin</h2>
+            <div class="pro-icon-container"><i class="fas fa-key"></i></div>
+            <h2 class="glass-login-title" style="font-size:1.4rem; letter-spacing:6px;">set pin</h2>
             <div class="glass-input-group">
                 <div class="input-wrapper" style="justify-content:center;">
-                    <input type="password" id="c_newPin" maxlength="4" placeholder="----" style="text-align:center; font-size:28px; letter-spacing:12px; padding:15px 5px !important;">
+                    <input type="password" id="c_newPin" maxlength="4" placeholder="----" style="text-align:center; font-size:28px; letter-spacing:14px; padding:14px 5px !important; font-family:'JetBrains Mono',monospace;">
                 </div>
             </div>
             <button class="glass-login-btn" onclick="saveChairmanPin()">
@@ -82,20 +258,18 @@
         </div>
 
         <div class="glass-login-box" id="enter-pin-box" style="display:none;">
-            <div class="pro-icon-container">
-                <i class="fas fa-unlock-alt"></i>
-            </div>
-            <h2 class="glass-login-title" style="font-size:1.5rem; letter-spacing:6px;">unlock</h2>
+            <div class="pro-icon-container"><i class="fas fa-unlock-alt"></i></div>
+            <h2 class="glass-login-title" style="font-size:1.4rem; letter-spacing:6px;">unlock</h2>
             <div class="glass-input-group">
                 <div class="input-wrapper" style="justify-content:center;">
-                    <input type="password" id="c_loginPin" maxlength="4" placeholder="----" style="text-align:center; font-size:28px; letter-spacing:12px; padding:15px 5px !important;">
+                    <input type="password" id="c_loginPin" maxlength="4" placeholder="----" style="text-align:center; font-size:28px; letter-spacing:14px; padding:14px 5px !important; font-family:'JetBrains Mono',monospace;">
                 </div>
             </div>
             <button class="glass-login-btn" onclick="verifyChairmanPin()">
                 <span>Unlock</span> <i class="fas fa-unlock"></i>
             </button>
             <p class="error-msg" id="c_pinErrorMsg">Incorrect PIN!</p>
-            <button class="glass-login-btn" style="margin-top:20px; background: rgba(255,255,255,0.1) !important; color: rgba(255,255,255,0.8) !important; box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important; border: 1px solid rgba(255,255,255,0.15) !important;" onclick="logoutFromPin()">
+            <button class="glass-login-btn" style="margin-top:16px; background: rgba(255,255,255,0.06) !important; color: rgba(255,255,255,0.6) !important; box-shadow: none !important; border: 1px solid rgba(255,255,255,0.08) !important;" onclick="logoutFromPin()">
                 <span>Logout</span> <i class="fas fa-sign-out-alt"></i>
             </button>
         </div>
