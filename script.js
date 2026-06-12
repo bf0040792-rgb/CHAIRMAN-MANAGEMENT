@@ -27,7 +27,7 @@ const appCheck = initializeAppCheck(app, {
 });
 
 let currentSchoolId = ""; let currentSchoolName = ""; let currentSignatureUrl = ""; let currentThemeColor = "#1e3c72"; let currentSecondaryColor = "#ffffff"; let currentTemplateStyle = "wave"; let currentIdTemplateUrl = "";
-let currentSchoolNameColor = "#ffffff"; let currentStudentNameColor = "#d32f2f"; let currentDetailsColor = "#333333";
+let currentSchoolNameColor = "#ffffff"; let currentStudentNameColor = "#d32f2f"; let currentDetailsColor = "#333333"; let currentPhotoBgColor = "#ffffff";
 window.fetchedStudents = []; window.fetchedStaff =[]; let currentEditStaffId = null;
 
 const overlay = document.getElementById('auth-overlay');
@@ -303,6 +303,7 @@ async function checkAdmissionStatus() {
         if(data.schoolNameColor) { currentSchoolNameColor = data.schoolNameColor; if(document.getElementById("idSchoolNameColor")) document.getElementById("idSchoolNameColor").value = currentSchoolNameColor; }
         if(data.studentNameColor) { currentStudentNameColor = data.studentNameColor; if(document.getElementById("idStudentNameColor")) document.getElementById("idStudentNameColor").value = currentStudentNameColor; }
         if(data.detailsColor) { currentDetailsColor = data.detailsColor; if(document.getElementById("idDetailsColor")) document.getElementById("idDetailsColor").value = currentDetailsColor; }
+        if(data.photoBgColor) { currentPhotoBgColor = data.photoBgColor; if(document.getElementById("idPhotoBgColor")) document.getElementById("idPhotoBgColor").value = currentPhotoBgColor; }
         if(data.emergencyTicker) { document.getElementById("ticker_input").value = data.emergencyTicker; }
         
         // Authority Enforcement: Hide restricted modules
@@ -576,14 +577,16 @@ window.saveIDColorSettings = async () => {
     const scColor = document.getElementById("idSchoolNameColor")?.value || currentSchoolNameColor;
     const stColor = document.getElementById("idStudentNameColor")?.value || currentStudentNameColor;
     const dColor = document.getElementById("idDetailsColor")?.value || currentDetailsColor;
+    const pbColor = document.getElementById("idPhotoBgColor")?.value || currentPhotoBgColor;
     try {
-        await updateDoc(doc(db, "schools", currentSchoolId), { schoolNameColor: scColor, studentNameColor: stColor, detailsColor: dColor });
+        await updateDoc(doc(db, "schools", currentSchoolId), { schoolNameColor: scColor, studentNameColor: stColor, detailsColor: dColor, photoBgColor: pbColor });
         currentSchoolNameColor = scColor;
         currentStudentNameColor = stColor;
         currentDetailsColor = dColor;
-        alert("ID Card Text Colors Saved Successfully!");
+        currentPhotoBgColor = pbColor;
+        alert("ID Card Text & Photo Colors Saved Successfully!");
     } catch(e) {
-        alert("Failed to save text colors: " + e.message);
+        alert("Failed to save colors: " + e.message);
     }
 };
 window.saveEmergency = async () => {
@@ -1419,7 +1422,8 @@ window.showIDCard = async (id) => {
                 schoolLogoUrl: document.getElementById('print_school_logo')?.src || document.getElementById('school-logo')?.src || "",
                 schoolNameColor: currentSchoolNameColor || "#ffffff",
                 studentNameColor: currentStudentNameColor || "#d32f2f",
-                detailsColor: currentDetailsColor || "#333333"
+                detailsColor: currentDetailsColor || "#333333",
+                photoBgColor: currentPhotoBgColor || "#ffffff"
             })
         });
 
@@ -1957,6 +1961,7 @@ window.generateBatchIDCards = async (students) => {
                 schoolNameColor: currentSchoolNameColor || "#ffffff",
                 studentNameColor: currentStudentNameColor || "#d32f2f",
                 detailsColor: currentDetailsColor || "#333333",
+                photoBgColor: currentPhotoBgColor || "#ffffff",
                 students: students.map(st => ({
                     id: st.id || st.regNo,
                     regNo: st.regNo || "N/A",
