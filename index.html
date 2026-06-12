@@ -23,47 +23,121 @@
 
     <!-- ULTRA-PREMIUM FUJI GLASSMORPHIC LOGIN -->
     <div id="login-wrapper">
-        <!-- SVG Mt. Fuji Scene -->
+        <!-- SVG Mt. Fuji Sunset Scene (Enhanced) -->
         <svg class="fuji-scene" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
             <defs>
                 <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stop-color="#030b10"/>
-                    <stop offset="30%" stop-color="#051419"/>
-                    <stop offset="50%" stop-color="#0a1e28"/>
-                    <stop offset="68%" stop-color="#1a1525"/>
-                    <stop offset="78%" stop-color="#3d1a2a"/>
-                    <stop offset="88%" stop-color="#7a2840"/>
-                    <stop offset="94%" stop-color="#c4703a"/>
-                    <stop offset="100%" stop-color="#e8a44c"/>
+                    <stop offset="0%" stop-color="#020810"/>
+                    <stop offset="18%" stop-color="#041218"/>
+                    <stop offset="35%" stop-color="#071a24"/>
+                    <stop offset="48%" stop-color="#0c2230"/>
+                    <stop offset="58%" stop-color="#14192e"/>
+                    <stop offset="67%" stop-color="#2e1528"/>
+                    <stop offset="75%" stop-color="#5c1a2a"/>
+                    <stop offset="82%" stop-color="#8b2a3a"/>
+                    <stop offset="88%" stop-color="#b84830"/>
+                    <stop offset="93%" stop-color="#d4763a"/>
+                    <stop offset="97%" stop-color="#e8a44c"/>
+                    <stop offset="100%" stop-color="#f0c060"/>
                 </linearGradient>
-                <linearGradient id="fujiGrad" x1="50%" y1="0%" x2="50%" y2="100%">
-                    <stop offset="0%" stop-color="#0a1520"/>
-                    <stop offset="100%" stop-color="#061018"/>
+                <linearGradient id="fujiBody" x1="50%" y1="0%" x2="50%" y2="100%">
+                    <stop offset="0%" stop-color="#0c1820"/>
+                    <stop offset="100%" stop-color="#050e14"/>
                 </linearGradient>
-                <linearGradient id="snowGrad" x1="50%" y1="0%" x2="50%" y2="100%">
+                <linearGradient id="snowCap" x1="50%" y1="0%" x2="50%" y2="100%">
                     <stop offset="0%" stop-color="#ffffff"/>
-                    <stop offset="60%" stop-color="#e8ecf4"/>
-                    <stop offset="100%" stop-color="#c8d0dc"/>
+                    <stop offset="40%" stop-color="#f0f4fa"/>
+                    <stop offset="80%" stop-color="#d8e0ec"/>
+                    <stop offset="100%" stop-color="#b0c0d4"/>
                 </linearGradient>
-                <filter id="glowFilter">
-                    <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-                    <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                <radialGradient id="sunGlow" cx="50%" cy="82%" r="25%">
+                    <stop offset="0%" stop-color="rgba(240, 180, 80, 0.4)"/>
+                    <stop offset="50%" stop-color="rgba(200, 100, 50, 0.15)"/>
+                    <stop offset="100%" stop-color="transparent"/>
+                </radialGradient>
+                <filter id="softGlow">
+                    <feGaussianBlur stdDeviation="4" result="blur"/>
+                    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+                <filter id="heavyGlow">
+                    <feGaussianBlur stdDeviation="8"/>
                 </filter>
             </defs>
+            <!-- Sky -->
             <rect width="1440" height="900" fill="url(#skyGrad)"/>
+            <!-- Sun Glow -->
+            <ellipse cx="720" cy="720" rx="350" ry="180" fill="url(#sunGlow)"/>
+            <!-- Distant Haze -->
+            <rect x="0" y="660" width="1440" height="100" fill="rgba(200, 120, 60, 0.04)" filter="url(#heavyGlow)"/>
             <!-- Mountain Body -->
-            <polygon points="720,380 420,750 1020,750" fill="url(#fujiGrad)" opacity="0.95"/>
-            <!-- Foothill Left -->
-            <polygon points="0,680 300,580 550,750 0,750" fill="#04101a" opacity="0.8"/>
-            <!-- Foothill Right -->
-            <polygon points="1440,680 1140,590 900,750 1440,750" fill="#04101a" opacity="0.8"/>
-            <!-- Snow Cap -->
-            <polygon points="720,380 680,430 760,430" fill="url(#snowGrad)" filter="url(#glowFilter)"/>
-            <polygon points="680,430 665,450 735,450 760,430" fill="url(#snowGrad)" opacity="0.6"/>
-            <!-- Horizon Glow Line -->
-            <rect x="0" y="740" width="1440" height="2" fill="rgba(232, 164, 76, 0.3)"/>
+            <polygon points="720,350 380,750 1060,750" fill="url(#fujiBody)" opacity="0.97"/>
+            <!-- Mountain Ridges -->
+            <polyline points="720,350 680,400 640,460 580,540 520,620" stroke="rgba(255,255,255,0.02)" stroke-width="1" fill="none"/>
+            <polyline points="720,350 760,400 800,460 860,540 920,620" stroke="rgba(255,255,255,0.02)" stroke-width="1" fill="none"/>
+            <!-- Foothills -->
+            <polygon points="0,690 250,580 480,700 0,750" fill="#040d14" opacity="0.85"/>
+            <polygon points="1440,690 1190,585 960,700 1440,750" fill="#040d14" opacity="0.85"/>
+            <polygon points="200,750 500,660 700,750" fill="#030a10" opacity="0.6"/>
+            <polygon points="1240,750 940,665 740,750" fill="#030a10" opacity="0.6"/>
+            <!-- Snow Cap (Radiant) -->
+            <polygon points="720,350 685,395 755,395" fill="url(#snowCap)" filter="url(#softGlow)"/>
+            <polygon points="685,395 668,420 752,420 755,395" fill="url(#snowCap)" opacity="0.5"/>
+            <!-- Snow Glow -->
+            <ellipse cx="720" cy="375" rx="30" ry="15" fill="rgba(255,255,255,0.12)" filter="url(#heavyGlow)"/>
+            <!-- Horizon Line -->
+            <rect x="0" y="748" width="1440" height="1.5" fill="rgba(240, 180, 80, 0.25)"/>
             <!-- Ground -->
-            <rect x="0" y="750" width="1440" height="150" fill="#020a0f"/>
+            <rect x="0" y="750" width="1440" height="150" fill="#020709"/>
+        </svg>
+
+        <!-- Cherry Blossom Branch LEFT -->
+        <svg class="sakura-branch sakura-left" viewBox="0 0 200 800" xmlns="http://www.w3.org/2000/svg">
+            <!-- Main Branch -->
+            <path d="M-10,800 Q30,650 20,500 Q10,400 40,300 Q55,220 45,140 Q40,80 55,20" stroke="#1a0f14" stroke-width="4" fill="none" opacity="0.8"/>
+            <path d="M20,500 Q50,460 70,420" stroke="#1a0f14" stroke-width="2.5" fill="none" opacity="0.7"/>
+            <path d="M40,300 Q70,280 90,250" stroke="#1a0f14" stroke-width="2" fill="none" opacity="0.7"/>
+            <path d="M45,140 Q75,130 95,100" stroke="#1a0f14" stroke-width="1.8" fill="none" opacity="0.6"/>
+            <!-- Blossoms -->
+            <circle cx="70" cy="420" r="6" fill="rgba(220, 120, 140, 0.7)" filter="url(#softGlow)"/>
+            <circle cx="78" cy="410" r="4" fill="rgba(255, 180, 190, 0.6)"/>
+            <circle cx="62" cy="428" r="3.5" fill="rgba(240, 150, 160, 0.5)"/>
+            <circle cx="90" cy="250" r="7" fill="rgba(230, 130, 150, 0.65)" filter="url(#softGlow)"/>
+            <circle cx="100" cy="240" r="4.5" fill="rgba(255, 190, 200, 0.5)"/>
+            <circle cx="82" cy="258" r="3" fill="rgba(200, 100, 120, 0.5)"/>
+            <circle cx="95" cy="100" r="5.5" fill="rgba(220, 120, 140, 0.6)" filter="url(#softGlow)"/>
+            <circle cx="105" cy="92" r="3.5" fill="rgba(255, 180, 190, 0.5)"/>
+            <circle cx="88" cy="108" r="3" fill="rgba(240, 150, 160, 0.4)"/>
+            <circle cx="55" cy="20" r="5" fill="rgba(232, 140, 160, 0.55)"/>
+            <circle cx="48" cy="12" r="3" fill="rgba(255, 190, 200, 0.4)"/>
+            <!-- Amber accent petals -->
+            <circle cx="35" cy="340" r="4" fill="rgba(232, 164, 76, 0.4)"/>
+            <circle cx="25" cy="550" r="3.5" fill="rgba(200, 120, 60, 0.35)"/>
+            <circle cx="50" cy="180" r="3" fill="rgba(232, 164, 76, 0.3)"/>
+        </svg>
+
+        <!-- Cherry Blossom Branch RIGHT -->
+        <svg class="sakura-branch sakura-right" viewBox="0 0 200 800" xmlns="http://www.w3.org/2000/svg">
+            <!-- Main Branch -->
+            <path d="M210,800 Q170,640 180,490 Q190,380 160,280 Q145,200 155,120 Q160,60 145,10" stroke="#1a0f14" stroke-width="4" fill="none" opacity="0.8"/>
+            <path d="M180,490 Q150,450 130,410" stroke="#1a0f14" stroke-width="2.5" fill="none" opacity="0.7"/>
+            <path d="M160,280 Q130,260 110,230" stroke="#1a0f14" stroke-width="2" fill="none" opacity="0.7"/>
+            <path d="M155,120 Q125,108 105,85" stroke="#1a0f14" stroke-width="1.8" fill="none" opacity="0.6"/>
+            <!-- Blossoms -->
+            <circle cx="130" cy="410" r="6.5" fill="rgba(220, 120, 140, 0.7)" filter="url(#softGlow)"/>
+            <circle cx="120" cy="400" r="4" fill="rgba(255, 180, 190, 0.55)"/>
+            <circle cx="138" cy="420" r="3.5" fill="rgba(240, 150, 160, 0.5)"/>
+            <circle cx="110" cy="230" r="7" fill="rgba(230, 130, 150, 0.65)" filter="url(#softGlow)"/>
+            <circle cx="100" cy="222" r="4.5" fill="rgba(255, 190, 200, 0.5)"/>
+            <circle cx="118" cy="240" r="3.5" fill="rgba(200, 100, 120, 0.45)"/>
+            <circle cx="105" cy="85" r="5.5" fill="rgba(220, 120, 140, 0.6)" filter="url(#softGlow)"/>
+            <circle cx="95" cy="78" r="3.5" fill="rgba(255, 180, 190, 0.5)"/>
+            <circle cx="112" cy="94" r="3" fill="rgba(240, 150, 160, 0.4)"/>
+            <circle cx="145" cy="10" r="5" fill="rgba(232, 140, 160, 0.55)"/>
+            <circle cx="152" cy="4" r="3" fill="rgba(255, 190, 200, 0.4)"/>
+            <!-- Amber accent petals -->
+            <circle cx="165" cy="340" r="4" fill="rgba(232, 164, 76, 0.4)"/>
+            <circle cx="175" cy="550" r="3.5" fill="rgba(200, 120, 60, 0.35)"/>
+            <circle cx="150" cy="170" r="3" fill="rgba(232, 164, 76, 0.3)"/>
         </svg>
 
         <!-- Atmospheric Orbs -->
@@ -76,7 +150,7 @@
         <div class="particle-field" id="particleField"></div>
 
         <!-- Glass Login Card -->
-        <div class="glass-login-box" id="loginCard">
+        <div class="glass-login-box ai-active" id="loginCard">
             <div class="laser-sweep"></div>
             <div class="pro-icon-container">
                 <i class="fas fa-fingerprint"></i>
@@ -100,15 +174,11 @@
                     <span class="custom-checkmark"></span>
                     Remember
                 </label>
-                <div class="ai-toggle-container">
-                    <span>Neural Sync</span>
-                    <div class="ai-toggle" id="aiToggle"></div>
-                </div>
             </div>
             <button class="glass-login-btn" id="doLoginBtn">
                 <span>Authenticate</span> <i class="fas fa-arrow-right"></i>
             </button>
-            <div class="neural-log" id="neuralLog"></div>
+            <div class="neural-log visible" id="neuralLog"></div>
             <p class="error-msg" id="loginErrorMsg"></p>
         </div>
     </div>
@@ -153,17 +223,17 @@
     (function() {
         const field = document.getElementById('particleField');
         if (!field) return;
-        for (let i = 0; i < 30; i++) {
+        for (let i = 0; i < 35; i++) {
             const p = document.createElement('div');
             p.className = 'particle';
             const size = Math.random() * 3 + 1;
-            const colors = ['rgba(14,246,204,0.4)', 'rgba(232,164,76,0.3)', 'rgba(217,70,168,0.3)', 'rgba(255,255,255,0.2)'];
+            const colors = ['rgba(14,246,204,0.35)', 'rgba(232,164,76,0.25)', 'rgba(220,120,140,0.3)', 'rgba(255,255,255,0.15)'];
             p.style.cssText = `
                 width: ${size}px; height: ${size}px;
                 left: ${Math.random() * 100}%;
                 background: ${colors[Math.floor(Math.random() * colors.length)]};
-                animation-duration: ${Math.random() * 15 + 10}s;
-                animation-delay: ${Math.random() * 10}s;
+                animation-duration: ${Math.random() * 18 + 12}s;
+                animation-delay: ${Math.random() * 12}s;
                 box-shadow: 0 0 ${size * 2}px currentColor;
             `;
             field.appendChild(p);
@@ -177,44 +247,29 @@
         else { pwd.type = 'password'; this.classList.replace('fa-eye-slash', 'fa-eye'); }
     });
 
-    // === AI NEURAL SYNC TOGGLE ===
-    document.getElementById('aiToggle')?.addEventListener('click', function() {
-        this.classList.toggle('active');
-        const card = document.getElementById('loginCard');
+    // === NEURAL LOG (Always Active) ===
+    (function() {
         const log = document.getElementById('neuralLog');
-        if (this.classList.contains('active')) {
-            card.classList.add('ai-active');
-            log.classList.add('visible');
-            runNeuralLog();
-        } else {
-            card.classList.remove('ai-active');
-            log.classList.remove('visible');
-            log.innerHTML = '';
-        }
-    });
-
-    function runNeuralLog() {
-        const log = document.getElementById('neuralLog');
+        if (!log) return;
         const msgs = [
-            '> Initializing neural handshake...',
-            '> Biometric scan: STANDBY',
-            '> Cryptographic key rotation: OK',
-            '> Secure tunnel: AES-256-GCM',
+            '> Secure tunnel established...',
+            '> Biometric subsystem: READY',
+            '> Key rotation: AES-256-GCM',
             '> Node mesh: 142 active peers',
             '> Threat analysis: NOMINAL',
+            '> Quantum telemetry: SYNCED',
             '> Awaiting credential input...'
         ];
-        log.innerHTML = '';
         let i = 0;
         const interval = setInterval(() => {
-            if (i >= msgs.length || !log.classList.contains('visible')) { clearInterval(interval); return; }
-            log.innerHTML += msgs[i] + '\n';
+            if (i >= msgs.length) { clearInterval(interval); return; }
+            log.innerHTML += '<span>' + msgs[i] + '</span>\n';
             log.scrollTop = log.scrollHeight;
             i++;
-        }, 500);
-    }
+        }, 600);
+    })();
 
-    // === HUD OVERLAY (called after successful login before dashboard loads) ===
+    // === HUD OVERLAY ===
     window.showHUDTransition = function() {
         const hud = document.getElementById('hudOverlay');
         if (!hud) return;

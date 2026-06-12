@@ -88,6 +88,48 @@ body { background-color: #f4f7f6; height: 100vh; overflow: hidden; display: flex
     100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
 }
 
+/* ===== CHERRY BLOSSOM SVG BRANCHES ===== */
+.sakura-branch {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    width: 140px;
+    z-index: 3;
+    pointer-events: none;
+    opacity: 0.85;
+    filter: drop-shadow(0 0 12px rgba(255, 130, 180, 0.2));
+    animation: sakuraSway 8s ease-in-out infinite;
+}
+.sakura-left {
+    left: 0;
+}
+.sakura-right {
+    right: 0;
+    transform: scaleX(-1);
+}
+@keyframes sakuraSway {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    25% { transform: translateY(-3px) rotate(0.3deg); }
+    50% { transform: translateY(2px) rotate(-0.2deg); }
+    75% { transform: translateY(-1px) rotate(0.1deg); }
+}
+.sakura-right {
+    animation: sakuraSwayRight 8s ease-in-out infinite;
+}
+@keyframes sakuraSwayRight {
+    0%, 100% { transform: scaleX(-1) translateY(0) rotate(0deg); }
+    25% { transform: scaleX(-1) translateY(-3px) rotate(0.3deg); }
+    50% { transform: scaleX(-1) translateY(2px) rotate(-0.2deg); }
+    75% { transform: scaleX(-1) translateY(-1px) rotate(0.1deg); }
+}
+
+@media (max-width: 768px) {
+    .sakura-branch { width: 80px; opacity: 0.6; }
+}
+@media (max-width: 480px) {
+    .sakura-branch { width: 50px; opacity: 0.4; }
+}
+
 /* ===== GLASSMORPHISM PANEL ===== */
 .glass-login-box {
     position: relative;
