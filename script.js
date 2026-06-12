@@ -27,6 +27,7 @@ const appCheck = initializeAppCheck(app, {
 });
 
 let currentSchoolId = ""; let currentSchoolName = ""; let currentSignatureUrl = ""; let currentThemeColor = "#1e3c72"; let currentSecondaryColor = "#ffffff"; let currentTemplateStyle = "wave"; let currentIdTemplateUrl = "";
+let currentSchoolNameColor = "#ffffff"; let currentStudentNameColor = "#d32f2f"; let currentDetailsColor = "#333333";
 window.fetchedStudents = []; window.fetchedStaff =[]; let currentEditStaffId = null;
 
 const overlay = document.getElementById('auth-overlay');
@@ -299,6 +300,9 @@ async function checkAdmissionStatus() {
         }
 
         if(data.themeColor) { currentThemeColor = data.themeColor; document.getElementById("school_theme_color").value = currentThemeColor; document.documentElement.style.setProperty('--theme-color', currentThemeColor); }
+        if(data.schoolNameColor) { currentSchoolNameColor = data.schoolNameColor; if(document.getElementById("idSchoolNameColor")) document.getElementById("idSchoolNameColor").value = currentSchoolNameColor; }
+        if(data.studentNameColor) { currentStudentNameColor = data.studentNameColor; if(document.getElementById("idStudentNameColor")) document.getElementById("idStudentNameColor").value = currentStudentNameColor; }
+        if(data.detailsColor) { currentDetailsColor = data.detailsColor; if(document.getElementById("idDetailsColor")) document.getElementById("idDetailsColor").value = currentDetailsColor; }
         if(data.emergencyTicker) { document.getElementById("ticker_input").value = data.emergencyTicker; }
         
         // Authority Enforcement: Hide restricted modules
@@ -564,7 +568,22 @@ window.saveThemeSettings = async () => {
         document.documentElement.style.setProperty('--theme-color', currentThemeColor); 
         alert("ID Card Design & Theme Color Saved Successfully!"); 
     } catch(e) {
-        alert("Error saving design settings.");
+        alert("Failed to save theme: " + e.message);
+    }
+};
+
+window.saveIDColorSettings = async () => {
+    const scColor = document.getElementById("idSchoolNameColor")?.value || currentSchoolNameColor;
+    const stColor = document.getElementById("idStudentNameColor")?.value || currentStudentNameColor;
+    const dColor = document.getElementById("idDetailsColor")?.value || currentDetailsColor;
+    try {
+        await updateDoc(doc(db, "schools", currentSchoolId), { schoolNameColor: scColor, studentNameColor: stColor, detailsColor: dColor });
+        currentSchoolNameColor = scColor;
+        currentStudentNameColor = stColor;
+        currentDetailsColor = dColor;
+        alert("ID Card Text Colors Saved Successfully!");
+    } catch(e) {
+        alert("Failed to save text colors: " + e.message);
     }
 };
 window.saveEmergency = async () => {
@@ -1396,7 +1415,11 @@ window.showIDCard = async (id) => {
                 templateStyle: templateStyle,
                 schoolName: schoolName,
                 schoolEmergency: document.getElementById("school_emergency").value || "N/A",
-                signatureUrl: (window.currentSigSettings && window.currentSigSettings.idCard === false) ? "" : currentSignatureUrl
+                signatureUrl: (window.currentSigSettings && window.currentSigSettings.idCard === false) ? "" : currentSignatureUrl,
+                schoolLogoUrl: document.getElementById('print_school_logo')?.src || document.getElementById('school-logo')?.src || "",
+                schoolNameColor: currentSchoolNameColor || "#ffffff",
+                studentNameColor: currentStudentNameColor || "#d32f2f",
+                detailsColor: currentDetailsColor || "#333333"
             })
         });
 
@@ -1931,6 +1954,9 @@ window.generateBatchIDCards = async (students) => {
                 emergencyMobile: document.getElementById("school_emergency_mobile")?.value || "N/A",
                 signatureUrl: (window.currentSigSettings && window.currentSigSettings.idCard === false) ? "" : (currentSignatureUrl || ""),
                 schoolLogoUrl: document.getElementById('print_school_logo')?.src || document.getElementById('school-logo')?.src || "",
+                schoolNameColor: currentSchoolNameColor || "#ffffff",
+                studentNameColor: currentStudentNameColor || "#d32f2f",
+                detailsColor: currentDetailsColor || "#333333",
                 students: students.map(st => ({
                     id: st.id || st.regNo,
                     regNo: st.regNo || "N/A",

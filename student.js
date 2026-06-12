@@ -237,7 +237,10 @@ window.downloadMyIDCard = async () => {
                 schoolName: currentSchoolDoc.schoolName || "SCHOOL NAME",
                 schoolEmergency: currentSchoolDoc.emergencyMobile || "N/A",
                 signatureUrl: (currentSchoolDoc.sigSettings && currentSchoolDoc.sigSettings.idCard === false) ? "" : (currentSchoolDoc.signatureUrl || ""),
-                schoolLogoUrl: currentSchoolDoc.logoUrl || ""
+                schoolLogoUrl: currentSchoolDoc.logoUrl || "",
+                schoolNameColor: currentSchoolDoc.schoolNameColor || "#ffffff",
+                studentNameColor: currentSchoolDoc.studentNameColor || "#d32f2f",
+                detailsColor: currentSchoolDoc.detailsColor || "#333333"
             })
         });
 
