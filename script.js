@@ -1420,10 +1420,10 @@ window.showIDCard = async (id) => {
                 schoolEmergency: document.getElementById("school_emergency").value || "N/A",
                 signatureUrl: (window.currentSigSettings && window.currentSigSettings.idCard === false) ? "" : currentSignatureUrl,
                 schoolLogoUrl: document.getElementById('print_school_logo')?.src || document.getElementById('school-logo')?.src || "",
-                schoolNameColor: currentSchoolNameColor || "#ffffff",
-                studentNameColor: currentStudentNameColor || "#d32f2f",
-                detailsColor: currentDetailsColor || "#333333",
-                photoBgColor: currentPhotoBgColor || "#ffffff"
+                schoolNameColor: document.getElementById('idSchoolNameColor')?.value || currentSchoolNameColor || "#ffffff",
+                studentNameColor: document.getElementById('idStudentNameColor')?.value || currentStudentNameColor || "#d32f2f",
+                detailsColor: document.getElementById('idDetailsColor')?.value || currentDetailsColor || "#333333",
+                photoBgColor: document.getElementById('idPhotoBgColor')?.value || currentPhotoBgColor || "#ffffff"
             })
         });
 
@@ -1958,10 +1958,10 @@ window.generateBatchIDCards = async (students) => {
                 emergencyMobile: document.getElementById("school_emergency_mobile")?.value || "N/A",
                 signatureUrl: (window.currentSigSettings && window.currentSigSettings.idCard === false) ? "" : (currentSignatureUrl || ""),
                 schoolLogoUrl: document.getElementById('print_school_logo')?.src || document.getElementById('school-logo')?.src || "",
-                schoolNameColor: currentSchoolNameColor || "#ffffff",
-                studentNameColor: currentStudentNameColor || "#d32f2f",
-                detailsColor: currentDetailsColor || "#333333",
-                photoBgColor: currentPhotoBgColor || "#ffffff",
+                schoolNameColor: document.getElementById('idSchoolNameColor')?.value || currentSchoolNameColor || "#ffffff",
+                studentNameColor: document.getElementById('idStudentNameColor')?.value || currentStudentNameColor || "#d32f2f",
+                detailsColor: document.getElementById('idDetailsColor')?.value || currentDetailsColor || "#333333",
+                photoBgColor: document.getElementById('idPhotoBgColor')?.value || currentPhotoBgColor || "#ffffff",
                 students: students.map(st => ({
                     id: st.id || st.regNo,
                     regNo: st.regNo || "N/A",
