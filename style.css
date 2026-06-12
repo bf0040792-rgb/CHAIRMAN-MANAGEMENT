@@ -2,70 +2,145 @@
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
 body { background-color: #f4f7f6; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 
-#auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a1a2e; z-index: 99999; display: flex; justify-content: center; align-items: center; color: white; font-size: 20px; transition: 0.5s; }
+#auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #051419; z-index: 99999; display: flex; justify-content: center; align-items: center; color: white; font-size: 20px; transition: 0.5s; }
 
-/* ================= ULTIMATE PRO LEVEL GLASS LOGIN ================= */
-#login-wrapper, #pin-wrapper { 
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-    display: flex; justify-content: center; align-items: center; 
-    /* Extremely High-End Dark 3D Abstract Background */
-    background: url('https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=1920&auto=format&fit=crop') center/cover no-repeat fixed !important; 
-    z-index: 1000; 
+/* ================= FUJI SUNSET GLASSMORPHIC LOGIN ================= */
+#login-wrapper, #pin-wrapper {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    display: flex; justify-content: center; align-items: center;
+    background: linear-gradient(180deg, #051419 0%, #0b222a 25%, #0d2b35 40%, #1a2a3a 55%, #3d1f2e 70%, #7a2840 82%, #c4445a 90%, #e8865a 95%, #f4a261 100%) !important;
+    z-index: 1000;
+    overflow: hidden;
 }
 #pin-wrapper { z-index: 9999 !important; }
 
+/* Mountain Silhouette */
 #login-wrapper::before, #pin-wrapper::before {
-    content: ''; position: absolute; top:0; left:0; width:100%; height:100%;
-    background: radial-gradient(circle at center, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.8) 100%);
+    content: '';
+    position: absolute;
+    bottom: 18%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 280px solid transparent;
+    border-right: 280px solid transparent;
+    border-bottom: 320px solid #0a1c24;
+    z-index: 1;
+    filter: drop-shadow(0 -5px 30px rgba(196, 68, 90, 0.15));
+}
+
+/* Mountain Snow Cap */
+#login-wrapper::after, #pin-wrapper::after {
+    content: '';
+    position: absolute;
+    bottom: calc(18% + 250px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 55px solid transparent;
+    border-right: 55px solid transparent;
+    border-bottom: 70px solid rgba(220, 230, 245, 0.85);
+    z-index: 2;
+    filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.3));
+}
+
+/* Floating Glowing Orbs */
+.fuji-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    z-index: 3;
+    animation: orbFloat 8s ease-in-out infinite;
+    pointer-events: none;
+}
+.fuji-orb-1 {
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(232, 134, 90, 0.35) 0%, transparent 70%);
+    top: 30%; left: 10%;
+    animation-delay: 0s;
+}
+.fuji-orb-2 {
+    width: 250px; height: 250px;
+    background: radial-gradient(circle, rgba(196, 68, 90, 0.3) 0%, transparent 70%);
+    top: 20%; right: 8%;
+    animation-delay: -3s;
+}
+.fuji-orb-3 {
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(56, 178, 172, 0.2) 0%, transparent 70%);
+    bottom: 25%; left: 25%;
+    animation-delay: -5s;
+}
+.fuji-orb-4 {
+    width: 180px; height: 180px;
+    background: radial-gradient(circle, rgba(244, 162, 97, 0.25) 0%, transparent 70%);
+    top: 45%; right: 20%;
+    animation-delay: -2s;
+}
+
+@keyframes orbFloat {
+    0%, 100% { transform: translateY(0px) scale(1); opacity: 0.7; }
+    50% { transform: translateY(-25px) scale(1.05); opacity: 1; }
+}
+
+/* PRO FROSTED GLASS CARD */
+.glass-login-box {
+    position: relative;
+    background: rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(25px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(25px) saturate(180%) !important;
+    padding: 55px 45px;
+    border-radius: 24px !important;
+    width: 90%; max-width: 400px;
+    border: 1.5px solid rgba(255, 255, 255, 0.24) !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.18) !important;
+    color: #fff !important;
+    font-family: 'Inter', sans-serif !important;
+    z-index: 10;
+    animation: cardFloat 6s ease-in-out infinite;
+}
+
+.glass-login-box::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    border-radius: 24px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%, rgba(255,255,255,0.05) 100%);
+    pointer-events: none;
     z-index: -1;
 }
 
-/* PRO LEVEL GLASS BOX WITH GLOWING BORDER */
-.glass-login-box { 
-    position: relative;
-    background: rgba(15, 15, 20, 0.4) !important;
-    backdrop-filter: blur(40px) saturate(150%) !important; 
-    -webkit-backdrop-filter: blur(40px) saturate(150%) !important; 
-    padding: 50px 45px; 
-    border-radius: 24px !important; 
-    width: 90%; max-width: 400px; 
-    border: 1px solid rgba(255, 255, 255, 0.08) !important; 
-    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
-    color: #fff !important;
-    font-family: 'Inter', sans-serif !important;
-    animation: proFloat 6s ease-in-out infinite;
-}
-
-/* Glowing pseudo-element behind the box */
-.glass-login-box::before {
-    content: ''; position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px;
-    background: linear-gradient(45deg, rgba(56, 178, 172, 0.5), rgba(59, 130, 246, 0.5), rgba(139, 92, 246, 0.5));
-    z-index: -1; filter: blur(20px); opacity: 0.5; border-radius: 26px;
-    animation: pulseGlow 4s linear infinite alternate;
-}
-
-@keyframes pulseGlow { 0% { opacity: 0.3; } 100% { opacity: 0.7; } }
-@keyframes proFloat {
-    0% { transform: translateY(0px); }
-    50% { transform: translateY(-5px); }
-    100% { transform: translateY(0px); }
+@keyframes cardFloat {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-6px); }
 }
 
 .pro-icon-container {
-    text-align: center; margin-bottom: 35px;
+    text-align: center; margin-bottom: 10px;
 }
 .pro-icon-container i {
-    font-size: 45px;
-    background: linear-gradient(135deg, #38b2ac, #3b82f6);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 0 10px rgba(56,178,172,0.4));
+    font-size: 42px;
+    color: rgba(255, 255, 255, 0.9);
+    filter: drop-shadow(0 0 12px rgba(255,255,255,0.2));
 }
 
-.glass-input-group { margin-bottom: 25px; position: relative; }
-.glass-input-group label { 
-    display: block; font-size: 12px; margin-bottom: 8px; 
-    color: rgba(255, 255, 255, 0.5) !important; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px;
+/* Login Title */
+.glass-login-title {
+    text-align: center;
+    font-size: 2.25rem;
+    font-weight: 300;
+    letter-spacing: 12px;
+    text-transform: lowercase;
+    color: rgba(255, 255, 255, 0.92);
+    margin-bottom: 40px;
+    font-family: 'Inter', sans-serif;
+}
+
+.glass-input-group { margin-bottom: 30px; position: relative; }
+.glass-input-group label {
+    display: none;
 }
 
 .input-wrapper {
@@ -73,77 +148,84 @@ body { background-color: #f4f7f6; height: 100vh; overflow: hidden; display: flex
     display: flex; align-items: center;
 }
 .pro-input-icon {
-    position: absolute; left: 15px; color: rgba(255,255,255,0.4); font-size: 14px; transition: 0.3s;
+    position: absolute; right: 12px; color: rgba(255,255,255,0.35); font-size: 15px; transition: 0.4s ease;
+    pointer-events: none;
 }
 
-.glass-input-group input { 
-    width: 100% !important; padding: 15px 15px 15px 45px !important; 
-    background: rgba(0, 0, 0, 0.2) !important; 
-    border: 1px solid rgba(255, 255, 255, 0.05) !important; 
-    border-radius: 12px !important;
-    color: #fff !important; font-size: 15px !important; 
-    outline: none !important; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+.glass-input-group input {
+    width: 100% !important; padding: 14px 40px 14px 5px !important;
+    background: transparent !important;
+    border: none !important;
+    border-bottom: 1.5px solid rgba(255, 255, 255, 0.35) !important;
+    border-radius: 0 !important;
+    color: #fff !important; font-size: 15px !important;
+    outline: none !important; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    letter-spacing: 0.5px;
 }
-.glass-input-group input:focus { 
-    border-color: rgba(56, 178, 172, 0.5) !important;
-    background: rgba(0, 0, 0, 0.4) !important;
-    box-shadow: 0 0 0 4px rgba(56, 178, 172, 0.1) !important;
+.glass-input-group input:focus {
+    border-bottom-color: rgba(255, 255, 255, 1) !important;
+    box-shadow: 0 2px 8px rgba(255, 255, 255, 0.08) !important;
 }
-.glass-input-group input:focus + .pro-input-icon,
+.glass-input-group input:focus ~ .pro-input-icon,
 .input-wrapper:focus-within .pro-input-icon {
-    color: #38b2ac !important;
+    color: rgba(255, 255, 255, 0.95) !important;
+    filter: drop-shadow(0 0 6px rgba(255,255,255,0.4));
 }
-.glass-input-group input::placeholder { color: rgba(255,255,255,0.2) !important; }
+.glass-input-group input::placeholder { color: rgba(255,255,255,0.3) !important; font-weight: 300; letter-spacing: 1px; }
 
-.glass-options { 
-    display: flex; justify-content: space-between; align-items: center; 
-    font-size: 13px; margin-bottom: 35px; color: rgba(255,255,255,0.6) !important; 
+.glass-options {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 13px; margin-bottom: 35px; color: rgba(255,255,255,0.5) !important;
 }
-.glass-options label { display: flex; align-items: center; gap: 10px; cursor: pointer; transition: 0.3s; color: rgba(255,255,255,0.6) !important;}
-.glass-options label:hover { color: #fff !important; }
+.glass-options label { display: flex; align-items: center; gap: 10px; cursor: pointer; transition: 0.3s; color: rgba(255,255,255,0.5) !important;}
+.glass-options label:hover { color: rgba(255,255,255,0.85) !important; }
 
-/* Minimalist Pro Checkbox */
-.custom-checkbox-container { position: relative; padding-left: 28px; cursor: pointer; user-select: none; }
+/* Custom Fuji Checkbox */
+.custom-checkbox-container { position: relative; padding-left: 26px; cursor: pointer; user-select: none; }
 .custom-checkbox-container input { position: absolute; opacity: 0; cursor: pointer; height: 0; width: 0; }
 .custom-checkmark {
-    position: absolute; top: -1px; left: 0; height: 18px; width: 18px; 
-    background-color: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); 
-    border-radius: 5px; transition: all 0.2s ease;
+    position: absolute; top: 0; left: 0; height: 16px; width: 16px;
+    background-color: transparent; border: 1.5px solid rgba(255,255,255,0.35);
+    border-radius: 4px; transition: all 0.3s ease;
 }
-.custom-checkbox-container:hover input ~ .custom-checkmark { border-color: rgba(255,255,255,0.5); }
+.custom-checkbox-container:hover input ~ .custom-checkmark { border-color: rgba(255,255,255,0.7); box-shadow: 0 0 8px rgba(255,255,255,0.1); }
 .custom-checkbox-container input:checked ~ .custom-checkmark {
-    background-color: #38b2ac; border-color: #38b2ac;
-    box-shadow: 0 0 12px rgba(56, 178, 172, 0.6);
+    background-color: rgba(255, 255, 255, 0.95); border-color: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.4);
 }
 .custom-checkmark:after { content: ""; position: absolute; display: none; }
 .custom-checkbox-container input:checked ~ .custom-checkmark:after { display: block; }
 .custom-checkbox-container .custom-checkmark:after {
-    left: 6px; top: 2px; width: 4px; height: 9px;
-    border: solid #000; border-width: 0 2px 2px 0;
+    left: 5px; top: 2px; width: 4px; height: 8px;
+    border: solid #0b2229; border-width: 0 2px 2px 0;
     transform: rotate(45deg);
 }
 
-.glass-login-btn { 
-    width: 100% !important; padding: 16px !important; 
-    background: linear-gradient(135deg, #38b2ac 0%, #3b82f6 100%) !important;
-    color: #fff !important; 
-    border: none !important; border-radius: 12px !important; 
-    font-size: 15px !important; font-weight: 700 !important; text-transform: uppercase; letter-spacing: 2px;
-    cursor: pointer !important; transition: all 0.3s ease !important; 
-    box-shadow: 0 10px 20px rgba(56, 178, 172, 0.3) !important;
+.glass-login-btn {
+    width: 100% !important; padding: 16px !important;
+    background: #ffffff !important;
+    color: #0b2229 !important;
+    border: none !important; border-radius: 14px !important;
+    font-size: 14px !important; font-weight: 700 !important; text-transform: uppercase; letter-spacing: 3px;
+    cursor: pointer !important; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2) !important;
     display: flex; justify-content: center; align-items: center; gap: 10px;
 }
-.glass-login-btn:hover { 
-    transform: translateY(-2px); 
-    box-shadow: 0 15px 25px rgba(59, 130, 246, 0.4) !important;
-    background: linear-gradient(135deg, #4fd1c5 0%, #60a5fa 100%) !important;
+.glass-login-btn:hover {
+    transform: translateY(-2px) scale(1.01);
+    box-shadow: 0 12px 35px rgba(255, 255, 255, 0.15) !important;
+}
+.glass-login-btn:active {
+    transform: translateY(0px) scale(0.97);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+    transition: all 0.1s ease !important;
 }
 
-.error-msg { 
-    color: #fff; margin-top: 20px; font-size: 13px; display: none; background: rgba(239, 68, 68, 0.2); 
-    border: 1px solid rgba(239, 68, 68, 0.5);
-    padding: 12px; border-radius: 8px; font-weight: 500; text-align: center; 
-    backdrop-filter: blur(10px);
+.error-msg {
+    color: #fff; margin-top: 20px; font-size: 13px; display: none; background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    padding: 12px; border-radius: 10px; font-weight: 400; text-align: center;
+    backdrop-filter: blur(10px); letter-spacing: 0.5px;
 }
 
 /* ================= DASHBOARD SECTION ================= */

@@ -20,74 +20,82 @@
         <p style="font-size: 16px; color: #a0aec0; max-width: 550px; line-height: 1.6;">Access Denied: Your School's License has Expired or is Invalid. Please contact CoreEdu Tech to renew your subscription.</p>
     </div>
 
-    <!-- REDESIGNED PREMIUM LOGIN SECTION -->
+    <!-- FUJI SUNSET GLASSMORPHIC LOGIN -->
     <div id="login-wrapper">
+        <!-- Floating Orbs -->
+        <div class="fuji-orb fuji-orb-1"></div>
+        <div class="fuji-orb fuji-orb-2"></div>
+        <div class="fuji-orb fuji-orb-3"></div>
+        <div class="fuji-orb fuji-orb-4"></div>
+
         <div class="glass-login-box">
             <div class="pro-icon-container">
                 <i class="fas fa-fingerprint"></i>
             </div>
+            <h2 class="glass-login-title">login</h2>
             <div class="glass-input-group">
-                <label>Username</label>
                 <div class="input-wrapper">
+                    <input type="text" id="loginId" placeholder="Username">
                     <i class="fas fa-user pro-input-icon"></i>
-                    <input type="text" id="loginId" placeholder="Enter your credentials">
                 </div>
             </div>
             <div class="glass-input-group">
-                <label>Password</label>
                 <div class="input-wrapper">
+                    <input type="password" id="loginPassword" placeholder="Password">
                     <i class="fas fa-lock pro-input-icon"></i>
-                    <input type="password" id="loginPassword" placeholder="Enter your password">
                 </div>
             </div>
             <div class="glass-options">
                 <label class="custom-checkbox-container">
-                    <input type="checkbox" checked id="rememberMe"> 
-                    <span class="custom-checkmark"></span> 
+                    <input type="checkbox" checked id="rememberMe">
+                    <span class="custom-checkmark"></span>
                     Remember me
                 </label>
             </div>
             <button class="glass-login-btn" id="doLoginBtn">
-                <span>Authenticate</span> <i class="fas fa-arrow-right"></i>
+                <span>Sign In</span> <i class="fas fa-arrow-right"></i>
             </button>
             <p class="error-msg" id="loginErrorMsg"></p>
         </div>
     </div>
 
-    <!-- NEW PIN SCREEN FOR CHAIRMAN -->
+    <!-- PIN SCREEN FOR CHAIRMAN (FUJI THEME) -->
     <div id="pin-wrapper" style="display: none;">
+        <div class="fuji-orb fuji-orb-1"></div>
+        <div class="fuji-orb fuji-orb-2"></div>
+        <div class="fuji-orb fuji-orb-3"></div>
+        <div class="fuji-orb fuji-orb-4"></div>
+
         <div class="glass-login-box" id="create-pin-box" style="display:none;">
             <div class="pro-icon-container">
                 <i class="fas fa-key"></i>
             </div>
-            <p style="text-align:center; color:rgba(255,255,255,0.6); margin-bottom:20px; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:1px;">Set a PIN for quick login</p>
+            <h2 class="glass-login-title" style="font-size:1.5rem; letter-spacing:6px;">set pin</h2>
             <div class="glass-input-group">
-                <label style="text-align:center;">Set 4-Digit PIN</label>
                 <div class="input-wrapper" style="justify-content:center;">
-                    <input type="password" id="c_newPin" maxlength="4" style="text-align:center; font-size:24px; letter-spacing:10px; padding:15px !important;">
+                    <input type="password" id="c_newPin" maxlength="4" placeholder="----" style="text-align:center; font-size:28px; letter-spacing:12px; padding:15px 5px !important;">
                 </div>
             </div>
             <button class="glass-login-btn" onclick="saveChairmanPin()">
                 <span>Save & Enter</span> <i class="fas fa-check"></i>
             </button>
         </div>
-        
+
         <div class="glass-login-box" id="enter-pin-box" style="display:none;">
             <div class="pro-icon-container">
                 <i class="fas fa-unlock-alt"></i>
             </div>
-            <p style="text-align:center; color:rgba(255,255,255,0.6); margin-bottom:20px; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:1px;">Welcome back</p>
+            <h2 class="glass-login-title" style="font-size:1.5rem; letter-spacing:6px;">unlock</h2>
             <div class="glass-input-group">
-                <label style="text-align:center;">4-Digit PIN</label>
                 <div class="input-wrapper" style="justify-content:center;">
-                    <input type="password" id="c_loginPin" maxlength="4" style="text-align:center; font-size:24px; letter-spacing:10px; padding:15px !important;">
+                    <input type="password" id="c_loginPin" maxlength="4" placeholder="----" style="text-align:center; font-size:28px; letter-spacing:12px; padding:15px 5px !important;">
                 </div>
             </div>
             <button class="glass-login-btn" onclick="verifyChairmanPin()">
                 <span>Unlock</span> <i class="fas fa-unlock"></i>
             </button>
             <p class="error-msg" id="c_pinErrorMsg">Incorrect PIN!</p>
-            <button class="glass-login-btn" style="margin-top:20px; background: rgba(0,0,0,0.4) !important; color: #fff !important; box-shadow:none !important;" onclick="logoutFromPin()">
+            <button class="glass-login-btn" style="margin-top:20px; background: rgba(255,255,255,0.1) !important; color: rgba(255,255,255,0.8) !important; box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important; border: 1px solid rgba(255,255,255,0.15) !important;" onclick="logoutFromPin()">
                 <span>Logout</span> <i class="fas fa-sign-out-alt"></i>
             </button>
         </div>
