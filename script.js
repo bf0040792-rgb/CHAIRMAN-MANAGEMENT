@@ -1930,6 +1930,7 @@ window.generateBatchIDCards = async (students) => {
                 schoolEmergency: document.getElementById("school_emergency").value || "N/A",
                 emergencyMobile: document.getElementById("school_emergency_mobile")?.value || "N/A",
                 signatureUrl: (window.currentSigSettings && window.currentSigSettings.idCard === false) ? "" : (currentSignatureUrl || ""),
+                schoolLogoUrl: document.getElementById('print_school_logo')?.src || document.getElementById('school-logo')?.src || "",
                 students: students.map(st => ({
                     id: st.id || st.regNo,
                     regNo: st.regNo || "N/A",

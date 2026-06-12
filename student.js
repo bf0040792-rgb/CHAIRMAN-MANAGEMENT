@@ -236,7 +236,8 @@ window.downloadMyIDCard = async () => {
                 templateStyle: currentSchoolDoc.idTemplateStyle || "wave",
                 schoolName: currentSchoolDoc.schoolName || "SCHOOL NAME",
                 schoolEmergency: currentSchoolDoc.emergencyMobile || "N/A",
-                signatureUrl: (currentSchoolDoc.sigSettings && currentSchoolDoc.sigSettings.idCard === false) ? "" : (currentSchoolDoc.signatureUrl || "")
+                signatureUrl: (currentSchoolDoc.sigSettings && currentSchoolDoc.sigSettings.idCard === false) ? "" : (currentSchoolDoc.signatureUrl || ""),
+                schoolLogoUrl: currentSchoolDoc.logoUrl || ""
             })
         });
 
