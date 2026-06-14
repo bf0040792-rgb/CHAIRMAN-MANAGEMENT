@@ -84,6 +84,12 @@ if (urlParams.get('impersonate') === 'true') {
 window.unlockChairmanDashboard = () => {
     document.getElementById("pin-wrapper").style.display = "none";
     dashboardWrapper.style.display = "flex";
+    
+    const savedTab = sessionStorage.getItem('chairmanActiveTab');
+    if (savedTab) {
+        const targetMenu = document.querySelector(`.menu-item[data-target="${savedTab}"]`);
+        if (targetMenu) targetMenu.click();
+    }
 };
 
 window.saveChairmanPin = async () => {
@@ -232,7 +238,14 @@ document.querySelectorAll('.menu-item').forEach(item => {
         if(item.classList.contains('logout-btn')) return;
         document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
         document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-        item.classList.add('active'); document.getElementById(item.dataset.target).classList.add('active'); document.getElementById('tab-title').innerText = item.innerText;
+        item.classList.add('active'); 
+        
+        const targetId = item.dataset.target;
+        const targetEl = document.getElementById(targetId);
+        if(targetEl) targetEl.classList.add('active'); 
+        
+        document.getElementById('tab-title').innerText = item.innerText;
+        sessionStorage.setItem('chairmanActiveTab', targetId);
     });
 });
 
@@ -994,19 +1007,26 @@ async function loadStudents() {
         
         renderClassFilters(); renderStudentsTable("All");
     } catch(e) {}
-}
 function renderClassFilters() {
     const classes =["Nursery", "LKG", "UKG", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th"];
     let html = `<button class="filter-btn active" onclick="filterStudents('All', this)">All</button>`;
     classes.forEach(c => html += `<button class="filter-btn" onclick="filterStudents('${c}', this)">${c}</button>`);
     document.getElementById("class-filters").innerHTML = html;
 }
-window.filterStudents = (className, btnElement) => { document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active')); if(btnElement) btnElement.classList.add('active'); renderStudentsTable(className); };
+
+window.filterStudents = (className, btnElement) => { 
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active')); 
+    if(btnElement) btnElement.classList.add('active'); 
+    sessionStorage.setItem('activeStudentTab', className);
+    renderStudentsTable(className); 
+    renderAdmitCardStudentsTable(className); 
+};
 
 window.searchStudent = () => {
     const term = document.getElementById("searchStudentInput").value;
-    const activeClass = document.querySelector('.filter-btn.active') ? document.querySelector('.filter-btn.active').innerText : 'All';
+    const activeClass = document.querySelector('.filter-btn.active') ? document.querySelector('.filter-btn.active').innerText : (sessionStorage.getItem('activeStudentTab') || 'All');
     renderStudentsTable(activeClass, term);
+    renderAdmitCardStudentsTable(activeClass, term);
 };
 
 window.filterByStatus = (status) => {
@@ -1014,6 +1034,7 @@ window.filterByStatus = (status) => {
     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
     document.querySelector('.filter-btn').classList.add('active');
     renderStudentsTable('All', null, status);
+    renderAdmitCardStudentsTable('All', null, status);
 };
 
 function renderStudentsTable(className, searchTerm = null, statusFilter = null) {
@@ -1034,7 +1055,6 @@ function renderStudentsTable(className, searchTerm = null, statusFilter = null) 
         );
     }
 
-    // Sort by Roll Number Ascending
     filtered.sort((a,b) => (Number(a.rollNo) || 999999) - (Number(b.rollNo) || 999999));
 
     filtered.forEach(dt => {
@@ -1057,11 +1077,66 @@ function renderStudentsTable(className, searchTerm = null, statusFilter = null) 
             <td><span style="font-weight:bold; font-size:13px; color:#333;">${dt.rollNo || 'N/A'}</span></td>
             <td><span style="background:#eaf4ff; color:#2c7be5; padding:3px 8px; border-radius:12px; font-size:12px; font-weight:bold;">Class: ${dt.class || 'N/A'}</span></td>
             <td><span style="font-size:12px; display:block;"><b>P:</b> ${(dt.parentage || dt.fatherName) || 'N/A'}</span><span style="font-size:12px; display:block;"><b>M:</b> ${dt.motherName || 'N/A'}</span></td>
-            <td><span style="color:${statusColor}; font-weight:bold; font-size:13px;">${statusIcon} ${dt.status || 'N/A'}</span></td>
-            <td style="white-space:nowrap;">${actionBtns} <button class="action-btn btn-red" onclick="deleteStudent('${safeId}')"><i class="fas fa-trash"></i></button></td>
+            <td><div style="font-size:11px; font-weight:bold; padding:2px 6px; border-radius:4px; display:inline-block; border:1px solid ${statusColor}; color:${statusColor};">${statusIcon} ${dt.status}</div><br><span style="font-size:11px; color:#7f8c8d;">Due: ?${dt.feeDue || 0}</span></td>
+            <td><div class="action-btn-group">${actionBtns} <button class="action-btn btn-red" onclick="deleteStudent('${safeId}')"><i class="fas fa-trash"></i></button></div></td>
         </tr>`;
     });
     tbody.innerHTML = html || "<tr><td colspan='7' style='text-align:center; padding:30px; color:#999;'>No Students Found.</td></tr>";
+}
+
+window.filterAdmitStudents = (className) => {
+    sessionStorage.setItem('activeAdmitStudentTab', className);
+    renderAdmitCardStudentsTable(className);
+};
+
+window.searchAdmitStudent = () => {
+    const term = document.getElementById("searchAdmitStudentInput").value;
+    const activeClass = document.getElementById("admit_class_select").value || sessionStorage.getItem('activeAdmitStudentTab') || 'All';
+    renderAdmitCardStudentsTable(activeClass, term);
+};
+
+function renderAdmitCardStudentsTable(className = "ALL", searchTerm = null, statusFilter = null) {
+    const tbody = document.getElementById("admit-student-table"); 
+    if(!tbody) return;
+    let html = "";
+    
+    let filtered = className.toUpperCase() === "ALL" ? window.fetchedStudents : window.fetchedStudents.filter(s => s.class && s.class.toUpperCase() === className.toUpperCase());
+    
+    if(statusFilter && statusFilter !== 'all') {
+        filtered = filtered.filter(s => s.status && s.status.toLowerCase() === statusFilter.toLowerCase());
+    }
+
+    if(searchTerm) {
+        const lowerTerm = searchTerm.toLowerCase();
+        filtered = filtered.filter(s => 
+            (s.name && s.name.toLowerCase().includes(lowerTerm)) ||
+            (s.rollNo && String(s.rollNo).includes(lowerTerm)) ||
+            (s.regNo && String(s.regNo).includes(lowerTerm)) ||
+            (s.mobile && String(s.mobile).includes(lowerTerm))
+        );
+    }
+
+    filtered.sort((a,b) => (Number(a.rollNo) || 999999) - (Number(b.rollNo) || 999999));
+
+    filtered.forEach(dt => {
+        const safeId = dt.id.replace(/'/g, "\\'"); 
+        const locked = dt.lockedOut;
+        
+        // NO Generate ID Card Button
+        const actionBtns = `
+            <button class="action-btn btn-purple" onclick="downloadMyAdmitCard('${safeId}')"><i class="fas fa-file-alt"></i> Admit Card</button>
+            <button class="action-btn" style="background:#10b981; color:white;" onclick="downloadMyMarksheet('${safeId}')"><i class="fas fa-file-invoice"></i> Marksheet</button>
+        `;
+        
+        html += `<tr class="${locked ? 'locked-row' : ''}">
+            <td><img src="${dt.photoUrl || 'https://via.placeholder.com/100'}" class="img-circle"></td>
+            <td><strong style="display:block; font-size:13px;">${dt.name || 'N/A'} ${locked ? '<i class="fas fa-lock" style="color:#e53e3e"></i>' : ''}</strong><span style="font-size:12px; display:block;"><b>P:</b> ${(dt.parentage || dt.fatherName) || 'N/A'}</span></td>
+            <td><span style="background:#eaf4ff; color:#2c7be5; padding:3px 8px; border-radius:12px; font-size:12px; font-weight:bold;">Class: ${dt.class || 'N/A'} (Roll: ${dt.rollNo || 'N/A'})</span></td>
+            <td><span style="font-size:13px; font-weight:bold; color:#e53e3e;">₹${dt.feeDue || 0}</span></td>
+            <td><div class="action-btn-group">${actionBtns}</div></td>
+        </tr>`;
+    });
+    tbody.innerHTML = html || "<tr><td colspan='5' style='text-align:center; padding:30px; color:#999;'>No Students Found.</td></tr>";
 }
 
 window.populateStudentsForMarks = () => {
