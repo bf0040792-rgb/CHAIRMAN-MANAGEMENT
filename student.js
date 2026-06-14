@@ -262,6 +262,23 @@ window.downloadMyIDCard = async () => {
     btn.disabled = false;
 };
 
+async function getTransparentAdmitPhoto(imageUrl) {
+    if (!imageUrl) return null;
+    try {
+        const response = await fetch('https://school-backend-zlgy.onrender.com/api/remove-bg', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imageUrl: imageUrl })
+        });
+        const data = await response.json();
+        if (data.success && data.base64) return data.base64;
+        return imageUrl;
+    } catch (e) {
+        console.error("Admit Card BG Removal failed:", e);
+        return imageUrl;
+    }
+}
+
 window.downloadMyAdmitCard = async () => {
     if (!currentStudent || !currentSchoolDoc) return;
     
@@ -315,6 +332,12 @@ window.downloadMyAdmitCard = async () => {
         
         let sigHtml = finalSigBase64 ? `<img src="${finalSigBase64}" style="height:50px;">` : '';
         
+        const fallbackImg = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+        let finalPhotoSrc = fallbackImg;
+        if (currentStudent.photoUrl) {
+            finalPhotoSrc = await getTransparentAdmitPhoto(currentStudent.photoUrl);
+        }
+        
         let tbodyHtml = "";
         for (let i = 0; i < 6; i++) {
             let dStr = sched[i]?.date || "";
@@ -341,6 +364,9 @@ window.downloadMyAdmitCard = async () => {
                     <p><strong>Student Name:</strong> ${currentStudent.name}</p>
                     <p><strong>Class:</strong> ${currentStudent.class}</p>
                     <p><strong>Parentage:</strong> ${(currentStudent.parentage || currentStudent.fatherName)}</p>
+                </div>
+                <div style="flex:1; text-align:center;">
+                    <img id="print-admit-photo" src="${finalPhotoSrc}" style="width: 100px; height: 120px; border: 2px solid #ccc; object-fit: cover; border-radius: 8px; background-color: #ffffff;">
                 </div>
                 <div style="flex:1; text-align:right;">
                     <p><strong>Roll No:</strong> ${currentStudent.rollNo || "N/A"}</p>
@@ -369,6 +395,14 @@ window.downloadMyAdmitCard = async () => {
         `;
         
         document.body.appendChild(printable);
+        
+        const imgEl = printable.querySelector("#print-admit-photo");
+        if (imgEl && !imgEl.complete) {
+            await new Promise((resolve) => {
+                imgEl.onload = resolve;
+                imgEl.onerror = resolve;
+            });
+        }
         
         const canvas = await html2canvas(printable, { scale: 2, useCORS: true });
         const imgData = canvas.toDataURL("image/jpeg", 0.9);

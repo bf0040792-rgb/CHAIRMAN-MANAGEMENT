@@ -1865,6 +1865,23 @@ window.downloadAllIdsAsPDF = () => {
     pdf.save("Batch_ID_Cards.pdf");
 };
 
+async function getTransparentAdmitPhoto(imageUrl) {
+    if (!imageUrl) return null;
+    try {
+        const response = await fetch('https://school-backend-zlgy.onrender.com/api/remove-bg', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imageUrl: imageUrl })
+        });
+        const data = await response.json();
+        if (data.success && data.base64) return data.base64;
+        return imageUrl;
+    } catch (e) {
+        console.error("Admit Card BG Removal failed:", e);
+        return imageUrl;
+    }
+}
+
 // ================= BULK ADMIT CARDS =================
 window.proceedAdmitCards = async (mode) => {
     document.getElementById("defaulter-admit-modal").style.display = "none";
@@ -1928,7 +1945,23 @@ window.proceedAdmitCards = async (mode) => {
             document.getElementById("admit-dob").innerText = st.dob || "N/A";
             
             const fallbackImg = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
-            document.getElementById("admit-photo").src = st.photoUrl || fallbackImg;
+            
+            // Process photo via Hugging Face AI before rendering the card
+            const admitPhotoEl = document.getElementById("admit-photo");
+            
+            // Apply the dynamic school settings background color
+            admitPhotoEl.style.backgroundColor = currentPhotoBgColor || "#ffffff";
+            
+            let finalPhotoSrc = fallbackImg;
+            if (st.photoUrl) {
+                finalPhotoSrc = await getTransparentAdmitPhoto(st.photoUrl);
+            }
+            
+            await new Promise((resolve) => {
+                admitPhotoEl.onload = resolve;
+                admitPhotoEl.onerror = resolve;
+                admitPhotoEl.src = finalPhotoSrc;
+            });
 
             const watermark = document.getElementById("admit-watermark");
             if (mode === 'enable' && st.dueBalance && st.dueBalance > 0) {
