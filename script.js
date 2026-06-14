@@ -126,7 +126,7 @@ onAuthStateChanged(auth, async (user) => {
                 currentSchoolId = data.schoolId; currentSchoolName = data.schoolName;
 
                 // --- TRIGGER SAAS LICENSE VERIFICATION ---
-                overlay.innerText = "Verifying License Subscription...";
+                overlay.innerHTML = '<i class="fas fa-fingerprint fa-pulse" style="font-size:3rem; margin-bottom:15px;"></i><div>Verifying License Subscription...</div>';
                 overlay.style.display = 'flex';
                 
                 const isLicenseValid = await verifySchoolLicense(currentSchoolId);
@@ -195,10 +195,13 @@ onAuthStateChanged(auth, async (user) => {
                     showLoginScreen("Access Denied: You are not a Chairman."); 
                 }
             }
-        } catch (e) { showLoginScreen("Database error."); }
+        } catch (e) { 
+            document.getElementById('auth-overlay').style.display = 'none'; 
+            showLoginScreen("Database error."); 
+        }
     } else { 
         if (sessionStorage.getItem("is_impersonating") === "true" && sessionStorage.getItem("imp_e")) {
-            document.getElementById('auth-overlay').innerText = "Authenticating Super Admin...";
+            document.getElementById('auth-overlay').innerHTML = '<i class="fas fa-fingerprint fa-pulse" style="font-size:3rem; margin-bottom:15px;"></i><div>Authenticating Super Admin...</div>';
             document.getElementById('auth-overlay').style.display = 'flex';
             document.getElementById('login-wrapper').style.display = 'none';
             
@@ -209,9 +212,11 @@ onAuthStateChanged(auth, async (user) => {
                 window.history.replaceState({}, document.title, window.location.pathname);
             }).catch(e => {
                 sessionStorage.removeItem("is_impersonating");
+                document.getElementById('auth-overlay').style.display = 'none';
                 showLoginScreen("Impersonation Failed: " + e.message);
             });
         } else {
+            document.getElementById('auth-overlay').style.display = 'none';
             showLoginScreen(); 
         }
     }
@@ -1007,6 +1012,8 @@ async function loadStudents() {
         
         renderClassFilters(); renderStudentsTable("All");
     } catch(e) {}
+}
+
 function renderClassFilters() {
     const classes =["Nursery", "LKG", "UKG", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th"];
     let html = `<button class="filter-btn active" onclick="filterStudents('All', this)">All</button>`;
