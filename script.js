@@ -84,6 +84,13 @@ if (urlParams.get('impersonate') === 'true') {
     sessionStorage.setItem("imp_e", urlParams.get('email'));
     sessionStorage.setItem("imp_p", urlParams.get('pass'));
 }
+if (urlParams.get('isGhost') === 'true') {
+    window.isGhost = true;
+    sessionStorage.setItem("isGhost", "true");
+    console.log("👻 GHOST MODE ACTIVE: Database audit logging bypassed.");
+} else {
+    window.isGhost = sessionStorage.getItem("isGhost") === "true";
+}
 
 // --- CHAIRMAN PIN UNLOCK LOGIC ---
 window.unlockChairmanDashboard = () => {
