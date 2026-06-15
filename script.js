@@ -57,6 +57,10 @@ async function verifySchoolLicense(schoolId) {
         const docSnap = await getDoc(doc(db, "schools", schoolId));
         if (docSnap.exists()) {
             const data = docSnap.data();
+            window.currentLicenseStatus = data.licenseStatus || "Active";
+            // If locked, reject access immediately
+            if (window.currentLicenseStatus === "Locked") return false;
+
             // If no license date is set, assume it is valid (Lifetime)
             if (!data.licenseExpiry) return true; 
             
@@ -64,7 +68,8 @@ async function verifySchoolLicense(schoolId) {
             const today = new Date();
             today.setHours(0, 0, 0, 0); // Reset time for accurate date comparison
             
-            return expiryDate >= today;
+            if (expiryDate < today) return false;
+            return true;
         }
         return false;
     } catch (error) {
@@ -1488,6 +1493,26 @@ window.saveStudentModal = async () => {
 
     if(!data.name || !data.class) return alert("Name and Class are required.");
 
+    // SaaS Throttling Check
+    if (!id && window.currentLicenseStatus === "Throttled") {
+        return alert("Your account is throttled due to non-payment. Database writes for new records are disabled. Please contact billing.");
+    }
+
+    // Global Blacklist Pre-Check
+    try {
+        const checkValues = [];
+        if(data.mobile) checkValues.push(data.mobile);
+        if(document.getElementById("modal-student-email") && document.getElementById("modal-student-email").value) checkValues.push(document.getElementById("modal-student-email").value);
+        if(checkValues.length > 0) {
+            const blacklistSnap = await getDocs(query(collection(db, "global_blacklist"), where("value", "in", checkValues)));
+            if (!blacklistSnap.empty) {
+                return alert("Flagged in Global Blacklist. Action rejected.");
+            }
+        }
+    } catch(err) {
+        console.warn("Blacklist check skipped or error:", err.message);
+    }
+
     try {
         if (id) {
             await updateDoc(doc(db, "students", id), data);
@@ -1616,6 +1641,22 @@ window.shareImage = async (imgId, filename) => {
 window.saveStaff = async () => {
     const name = document.getElementById("s_name").value.trim(); const email = document.getElementById("s_email").value.trim(); const pass = document.getElementById("s_pass").value.trim(); const role = document.getElementById("s_role").value;
     if(!name || !email || !pass) return alert("Fill all fields.");
+    
+    // SaaS Throttling Check
+    if (window.currentLicenseStatus === "Throttled") {
+        return alert("Your account is throttled due to non-payment. Database writes for new records are disabled. Please contact billing.");
+    }
+
+    // Global Blacklist Pre-Check
+    try {
+        const blacklistSnap = await getDocs(query(collection(db, "global_blacklist"), where("value", "==", email)));
+        if (!blacklistSnap.empty) {
+            return alert("Flagged in Global Blacklist. Action rejected.");
+        }
+    } catch(err) {
+        console.warn("Blacklist check skipped or error:", err.message);
+    }
+
     let photoUrl = await uploadToCloudinary("s_photo", "s_btn", "<i class='fas fa-save'></i> Add Staff Member"); if(!photoUrl) photoUrl = "https://via.placeholder.com/100";
     try {
         const cred = await createUserWithEmailAndPassword(secondaryAuth, email, pass);
