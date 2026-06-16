@@ -2838,12 +2838,12 @@ window.handleStudentFeatureClick = (featureId) => {
 
 // Student Login Handler
 document.getElementById("doStudentLoginBtn").addEventListener("click", async () => {
-    const regNo = document.getElementById("student-login-regno").value.trim();
-    const mobile = document.getElementById("student-login-mobile").value.trim();
+    const username = document.getElementById("student-login-username").value.trim();
+    const password = document.getElementById("student-login-password").value.trim();
     const errBox = document.getElementById('loginErrorMsg');
 
-    if (!regNo || !mobile) {
-        errBox.innerText = "Enter Registration No & Mobile"; errBox.style.display = 'block';
+    if (!username || !password) {
+        errBox.innerText = "Enter Username and Password"; errBox.style.display = 'block';
         setTimeout(() => errBox.style.display = 'none', 4000); return;
     }
 
@@ -2852,42 +2852,53 @@ document.getElementById("doStudentLoginBtn").addEventListener("click", async () 
 
     try {
         const urlSchoolId = new URLSearchParams(window.location.search).get('school');
+        let studQ;
 
         if (urlSchoolId) {
-            const studQ = query(
+            studQ = query(
                 collection(db, "students"),
                 where("schoolId", "==", urlSchoolId),
-                where("regNo", "==", regNo),
-                where("mobile", "==", mobile)
+                where("mobile", "==", username)
             );
-            const studSnap = await getDocs(studQ);
-            if (!studSnap.empty) {
-                currentStudentUser = { id: studSnap.docs[0].id, ...studSnap.docs[0].data() };
-                currentSchoolId = urlSchoolId;
-                const schoolSnap = await getDoc(doc(db, "schools", urlSchoolId));
-                currentStudentSchoolDoc = schoolSnap.exists() ? schoolSnap.data() : {};
-            }
         } else {
-            const schoolsSnap = await getDocs(collection(db, "schools"));
-            for (const schoolDoc of schoolsSnap.docs) {
-                const studQ = query(
-                    collection(db, "students"),
-                    where("schoolId", "==", schoolDoc.id),
-                    where("regNo", "==", regNo),
-                    where("mobile", "==", mobile)
-                );
-                const studSnap = await getDocs(studQ);
-                if (!studSnap.empty) {
-                    currentStudentUser = { id: studSnap.docs[0].id, ...studSnap.docs[0].data() };
-                    currentSchoolId = schoolDoc.id;
-                    currentStudentSchoolDoc = schoolDoc.data();
-                    break;
+            studQ = query(
+                collection(db, "students"),
+                where("mobile", "==", username)
+            );
+        }
+
+        const studSnap = await getDocs(studQ);
+        if (studSnap.empty) {
+            errBox.innerText = "Mobile number not found."; errBox.style.display = 'block';
+            setTimeout(() => errBox.style.display = 'none', 4000);
+            btn.querySelector('span').innerText = "Access Portal"; return;
+        }
+
+        let matchFound = false;
+        for (const docSnapshot of studSnap.docs) {
+            const data = docSnapshot.data();
+            let dobFormatted = "";
+            if (data.dob) {
+                const parts = data.dob.split("-");
+                if (parts.length === 3) {
+                    dobFormatted = `${parts[2]}${parts[1]}${parts[0]}`;
+                } else {
+                    dobFormatted = data.dob;
                 }
+            }
+
+            if (dobFormatted === password) {
+                currentStudentUser = { id: docSnapshot.id, ...data };
+                currentSchoolId = data.schoolId || urlSchoolId;
+                const schoolSnap = await getDoc(doc(db, "schools", currentSchoolId));
+                currentStudentSchoolDoc = schoolSnap.exists() ? schoolSnap.data() : {};
+                matchFound = true;
+                break;
             }
         }
 
-        if (!currentStudentUser) {
-            errBox.innerText = "Invalid Registration No or Mobile Number."; errBox.style.display = 'block';
+        if (!matchFound) {
+            errBox.innerText = "Incorrect Password/DOB."; errBox.style.display = 'block';
             setTimeout(() => errBox.style.display = 'none', 4000);
             btn.querySelector('span').innerText = "Access Portal"; return;
         }
