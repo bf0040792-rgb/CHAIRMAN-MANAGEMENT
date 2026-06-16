@@ -38,10 +38,12 @@ const licenseLockScreen = document.getElementById('license-lock-screen');
 window.closeCustomModal = (id) => { document.getElementById(id).style.display = 'none'; };
 
 function showLoginScreen(errorText = "") {
-    overlay.style.display = "none"; 
-    dashboardWrapper.style.display = "none"; 
-    document.getElementById("pin-wrapper").style.display = "none"; 
-    licenseLockScreen.style.display = "none"; 
+    overlay.style.display = "none";
+    dashboardWrapper.style.display = "none";
+    document.getElementById("pin-wrapper").style.display = "none";
+    document.getElementById("staff-dashboard-wrapper").style.display = "none";
+    document.getElementById("student-dashboard-wrapper").style.display = "none";
+    licenseLockScreen.style.display = "none";
     loginWrapper.style.display = "flex";
     
     if(errorText) {
@@ -129,8 +131,10 @@ onAuthStateChanged(auth, async (user) => {
     if (user) {
         try {
             const userDoc = await getDoc(doc(db, "users", user.uid));
-            if (userDoc.exists() && userDoc.data().role === "chairman") {
-                const data = userDoc.data();
+            if (!userDoc.exists()) { await signOut(auth); showLoginScreen("Account not found."); return; }
+            const data = userDoc.data();
+
+            if (data.role === "chairman") {
                 if(data.status === "blocked") {
                     await signOut(auth); showLoginScreen("Account Blocked. Reason: " + (data.blockReason || "Contact Super Admin")); return;
                 }
@@ -201,10 +205,38 @@ onAuthStateChanged(auth, async (user) => {
                     } catch(e) {}
                 }
 
-            } else { 
-                await signOut(auth); 
+            } else if (data.role === "staff") {
+                if(data.status === "blocked") {
+                    await signOut(auth); showLoginScreen("Account Blocked."); return;
+                }
+                currentSchoolId = data.schoolId; currentSchoolName = data.schoolName;
+
+                const isLicenseValid = await verifySchoolLicense(currentSchoolId);
+                if (!isLicenseValid) {
+                    overlay.style.display = 'none'; dashboardWrapper.style.display = "none"; loginWrapper.style.display = "none";
+                    document.getElementById("pin-wrapper").style.display = "none"; licenseLockScreen.style.display = "flex"; return;
+                }
+
+                overlay.style.display = "none"; loginWrapper.style.display = "none";
+                document.getElementById("staff-dashboard-wrapper").style.display = "block";
+                document.getElementById("staff-school-name").innerText = data.schoolName;
+                document.getElementById("staff-welcome-name").innerText = data.name;
+
+                document.querySelectorAll('#staff-dashboard-wrapper .menu-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        document.querySelectorAll('#staff-dashboard-wrapper .menu-item').forEach(m => m.classList.remove('active'));
+                        document.querySelectorAll('#staff-dashboard-wrapper .tab-content').forEach(t => t.classList.remove('active'));
+                        item.classList.add('active');
+                        const target = document.getElementById(item.dataset.target);
+                        if(target) target.classList.add('active');
+                        document.getElementById('staff-tab-title').innerText = item.innerText;
+                    });
+                });
+
+            } else {
+                await signOut(auth);
                 if (sessionStorage.getItem("is_impersonating") !== "true") {
-                    showLoginScreen("Access Denied: You are not a Chairman."); 
+                    showLoginScreen("Access Denied: Invalid role.");
                 }
             }
         } catch (e) { 
@@ -246,7 +278,11 @@ document.getElementById("doLoginBtn").addEventListener("click", async () => {
     }
 });
 
-window.doLogout = () => signOut(auth);
+window.doLogout = () => {
+    document.getElementById("staff-dashboard-wrapper").style.display = "none";
+    document.getElementById("student-dashboard-wrapper").style.display = "none";
+    signOut(auth);
+};
 
 document.getElementById("deviceModeToggle").addEventListener("change", (e) => { e.target.checked ? document.body.classList.add("force-desktop") : document.body.classList.remove("force-desktop"); });
 
@@ -2708,16 +2744,16 @@ window.saveDailyAttendance = async () => {
     const cls = document.getElementById("attendanceClassSelect").value;
     const dt = document.getElementById("attendanceDateSelect").value;
     if(!cls || !dt) return alert("Select both class and date.");
-    
+
     const stds = (window.fetchedStudents || []).filter(s => s.class === cls && s.status === "Approved");
     if(stds.length === 0) return alert("No students to save.");
-    
+
     let records = {};
     stds.forEach(st => {
         const selected = document.querySelector(`input[name="att_${st.id}"]:checked`);
         records[st.id] = selected ? selected.value : "Absent";
     });
-    
+
     try {
         const attId = currentSchoolId + "_" + cls + "_" + dt;
         await setDoc(doc(db, "attendance", attId), {
@@ -2730,4 +2766,375 @@ window.saveDailyAttendance = async () => {
         alert("Attendance saved!");
         loadStudents();
     } catch(e) { console.error(e); alert("Error saving attendance."); }
+};
+
+// =============================================================================================
+// ============================== STUDENT PORTAL (MERGED) ======================================
+// =============================================================================================
+
+let currentStudentUser = null;
+let currentStudentSchoolDoc = null;
+
+const studentFeatures = [
+    { id: 'profile', title: 'Profile', icon: 'user' },
+    { id: 'homework', title: 'Homework', icon: 'book-open' },
+    { id: 'fee', title: 'Fee', icon: 'indian-rupee' },
+    { id: 'datesheet', title: 'DateSheet', icon: 'calendar-days' },
+    { id: 'attendance', title: 'Attendance', icon: 'calendar-check' },
+    { id: 'sms', title: 'Sms', icon: 'message-square' },
+    { id: 'calendar', title: 'Calendar Planing', icon: 'calendar-clock' },
+    { id: 'idcard', title: 'Id Card', icon: 'credit-card' },
+    { id: 'syllabus', title: 'Syllabus', icon: 'book' },
+    { id: 'fee-receipt', title: 'Fee Receipt', icon: 'receipt' },
+    { id: 'admit', title: 'Admit Card', icon: 'sparkles' },
+    { id: 'gatepass', title: 'Gate Pass', icon: 'ticket' },
+    { id: 'notifications', title: 'Notifications', icon: 'bell' },
+    { id: 'birthday', title: 'Birthday', icon: 'cake' },
+    { id: 'transport', title: 'Transport', icon: 'bus' },
+    { id: 'study-material', title: 'Study Material', icon: 'graduation-cap' },
+    { id: 'result', title: 'Result', icon: 'line-chart' },
+    { id: 'leave', title: 'Leave Request', icon: 'calendar-off' },
+    { id: 'batchmate', title: 'Batchmate', icon: 'users' },
+    { id: 'circular', title: 'Circular', icon: 'send' },
+    { id: 'news', title: 'News', icon: 'newspaper' },
+    { id: 'assignment', title: 'Assignment', icon: 'clipboard-list' },
+    { id: 'complaint', title: 'Complaint', icon: 'wrench' },
+    { id: 'online-classes', title: 'Online Classes', icon: 'monitor-play' },
+    { id: 'social-media', title: 'Social Media', icon: 'share-2' }
+];
+
+function renderStudentFeatureGrid() {
+    const container = document.getElementById("student-feature-grid");
+    container.innerHTML = `
+        <h3 class="text-[#1E3A8A] font-bold text-lg mb-5 text-center tracking-wide" style="font-family:'Inter',sans-serif;">Quick Access</h3>
+        <div class="grid grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-y-8 gap-x-4 justify-items-center">
+            ${studentFeatures.map(f => `
+                <div class="flex flex-col items-center cursor-pointer group" data-feature="${f.id}" onclick="handleStudentFeatureClick('${f.id}')">
+                    <div class="w-14 h-14 rounded-full bg-[#E3EBF3] shadow-[6px_6px_14px_#c1c9d2,-6px_-6px_14px_#ffffff] flex items-center justify-center transition-all duration-150 active:shadow-[inset_4px_4px_8px_#c1c9d2,inset_-4px_-4px_8px_#ffffff] group-hover:scale-105">
+                        <i data-lucide="${f.icon}" class="w-6 h-6 text-[#1E3A8A]" stroke-width="1.5"></i>
+                    </div>
+                    <span class="text-[10px] font-medium text-center mt-3 tracking-wide text-[#1E3A8A]" style="font-family:'Inter',sans-serif;">${f.title}</span>
+                </div>
+            `).join('')}
+        </div>
+    `;
+    if (window.lucide) lucide.createIcons();
+}
+
+window.handleStudentFeatureClick = (featureId) => {
+    switch(featureId) {
+        case 'fee': window.showStudentPaymentSection(); break;
+        case 'idcard': window.downloadStudentIDCard(); break;
+        case 'admit': window.downloadStudentAdmitCard(); break;
+        default:
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-4 right-4 bg-[#1E3A8A] text-white px-5 py-3 rounded-xl shadow-lg z-[9999] text-sm font-medium';
+            toast.style.fontFamily = 'Inter, sans-serif';
+            toast.innerText = '🚀 Coming Soon!';
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+    }
+};
+
+// Student Login Handler
+document.getElementById("doStudentLoginBtn").addEventListener("click", async () => {
+    const regNo = document.getElementById("student-login-regno").value.trim();
+    const mobile = document.getElementById("student-login-mobile").value.trim();
+    const errBox = document.getElementById('loginErrorMsg');
+
+    if (!regNo || !mobile) {
+        errBox.innerText = "Enter Registration No & Mobile"; errBox.style.display = 'block';
+        setTimeout(() => errBox.style.display = 'none', 4000); return;
+    }
+
+    const btn = document.getElementById("doStudentLoginBtn");
+    btn.querySelector('span').innerText = "Verifying...";
+
+    try {
+        const urlSchoolId = new URLSearchParams(window.location.search).get('school');
+
+        if (urlSchoolId) {
+            const studQ = query(
+                collection(db, "students"),
+                where("schoolId", "==", urlSchoolId),
+                where("regNo", "==", regNo),
+                where("mobile", "==", mobile)
+            );
+            const studSnap = await getDocs(studQ);
+            if (!studSnap.empty) {
+                currentStudentUser = { id: studSnap.docs[0].id, ...studSnap.docs[0].data() };
+                currentSchoolId = urlSchoolId;
+                const schoolSnap = await getDoc(doc(db, "schools", urlSchoolId));
+                currentStudentSchoolDoc = schoolSnap.exists() ? schoolSnap.data() : {};
+            }
+        } else {
+            const schoolsSnap = await getDocs(collection(db, "schools"));
+            for (const schoolDoc of schoolsSnap.docs) {
+                const studQ = query(
+                    collection(db, "students"),
+                    where("schoolId", "==", schoolDoc.id),
+                    where("regNo", "==", regNo),
+                    where("mobile", "==", mobile)
+                );
+                const studSnap = await getDocs(studQ);
+                if (!studSnap.empty) {
+                    currentStudentUser = { id: studSnap.docs[0].id, ...studSnap.docs[0].data() };
+                    currentSchoolId = schoolDoc.id;
+                    currentStudentSchoolDoc = schoolDoc.data();
+                    break;
+                }
+            }
+        }
+
+        if (!currentStudentUser) {
+            errBox.innerText = "Invalid Registration No or Mobile Number."; errBox.style.display = 'block';
+            setTimeout(() => errBox.style.display = 'none', 4000);
+            btn.querySelector('span').innerText = "Access Portal"; return;
+        }
+
+        loadStudentDashboard();
+
+    } catch (err) {
+        console.error("Student login error:", err);
+        errBox.innerText = "Error connecting to database."; errBox.style.display = 'block';
+        setTimeout(() => errBox.style.display = 'none', 4000);
+    }
+    btn.querySelector('span').innerText = "Access Portal";
+});
+
+function loadStudentDashboard() {
+    overlay.style.display = "none";
+    loginWrapper.style.display = "none";
+    document.getElementById("student-dashboard-wrapper").style.display = "block";
+
+    document.getElementById("student-dash-school-name").innerText = currentStudentSchoolDoc.schoolName || "Portal";
+    document.getElementById("stu-display-name").innerText = currentStudentUser.name;
+    document.getElementById("stu-display-class").innerText = currentStudentUser.class;
+    document.getElementById("stu-display-reg").innerText = currentStudentUser.regNo;
+
+    if (currentStudentSchoolDoc.schoolLogoUrl) {
+        const logo = document.getElementById("student-school-logo");
+        logo.src = currentStudentSchoolDoc.schoolLogoUrl;
+        logo.style.display = "inline-block";
+    }
+
+    const due = currentStudentUser.dueBalance || 0;
+    document.getElementById("stu-due-balance").innerText = due;
+    if (due > 0) document.getElementById("stu-pay-amount") && (document.getElementById("stu-pay-amount").value = due);
+
+    renderStudentFeatureGrid();
+}
+
+window.showStudentPaymentSection = () => {
+    if (!currentStudentSchoolDoc.paymentQrUrl || !currentStudentSchoolDoc.upiId) {
+        alert("The school has not configured the QR Payment System yet."); return;
+    }
+    document.getElementById("student-payment-section").style.display = "block";
+    document.getElementById("stu-qr-img").src = currentStudentSchoolDoc.paymentQrUrl;
+    document.getElementById("stu-upi-text").innerText = currentStudentSchoolDoc.upiId;
+
+    const amount = currentStudentUser.dueBalance > 0 ? currentStudentUser.dueBalance : 0;
+    const upiLink = `upi://pay?pa=${currentStudentSchoolDoc.upiId}&pn=${encodeURIComponent(currentStudentSchoolDoc.schoolName)}&am=${amount}&cu=INR`;
+    document.getElementById("stu-upi-deep-link").href = upiLink;
+};
+
+// Student Payment Verification Submit
+document.getElementById("student-verification-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const amount = document.getElementById("stu-pay-amount").value.trim();
+    const utr = document.getElementById("stu-pay-utr").value.trim();
+    const fileInput = document.getElementById("stu-pay-screenshot").files[0];
+
+    if (!fileInput) return alert("Please upload the payment screenshot.");
+    if (utr.length < 5) return alert("Please enter a valid Transaction ID / UTR.");
+
+    const submitBtn = document.getElementById("stu-submit-verification-btn");
+    submitBtn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Uploading...";
+    submitBtn.disabled = true;
+
+    try {
+        const base64Image = await convertToBase64(fileInput);
+        const res = await fetch("https://api.cloudinary.com/v1_1/disgtvs6f/image/upload", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ file: base64Image, upload_preset: "ml_default" })
+        });
+        const uploadData = await res.json();
+        const screenshotUrl = uploadData.secure_url;
+        if (!screenshotUrl) throw new Error("Image upload failed.");
+
+        await addDoc(collection(db, "fee_verifications"), {
+            schoolId: currentSchoolId,
+            studentId: currentStudentUser.id,
+            studentName: currentStudentUser.name,
+            regNo: currentStudentUser.regNo,
+            amount: Number(amount),
+            utr: utr,
+            screenshotUrl: screenshotUrl,
+            status: "Pending",
+            createdAt: serverTimestamp()
+        });
+
+        document.getElementById("student-payment-section").style.display = "none";
+        document.getElementById("student-success-section").style.display = "block";
+    } catch(err) {
+        alert("Error submitting verification: " + err.message);
+        submitBtn.innerHTML = "<i class='fas fa-cloud-upload-alt'></i> Submit for Verification";
+        submitBtn.disabled = false;
+    }
+});
+
+window.logoutStudent = () => {
+    currentStudentUser = null;
+    currentStudentSchoolDoc = null;
+    document.getElementById("student-dashboard-wrapper").style.display = "none";
+    document.getElementById("student-payment-section").style.display = "none";
+    document.getElementById("student-success-section").style.display = "none";
+    showLoginScreen();
+};
+
+// Student ID Card Download
+window.downloadStudentIDCard = async () => {
+    if (!currentStudentUser || !currentStudentSchoolDoc) return;
+    if (currentStudentUser.dueBalance > 0) return alert("Digital ID Card is locked due to pending fees. Please clear your dues first.");
+
+    const btn = document.getElementById("stu-btn-download-id");
+    const originalText = btn.innerHTML;
+    btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Generating...";
+    btn.disabled = true;
+
+    try {
+        const response = await fetch("https://school-backend-zlgy.onrender.com/api/generate-id-card", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                studentData: {
+                    id: currentStudentUser.id || currentStudentUser.regNo,
+                    name: currentStudentUser.name, class: currentStudentUser.class,
+                    dob: currentStudentUser.dob || "N/A",
+                    parentage: (currentStudentUser.parentage || currentStudentUser.fatherName) || "N/A",
+                    mobile: currentStudentUser.mobile || "N/A",
+                    address: currentStudentUser.address || "N/A",
+                    photoUrl: currentStudentUser.photoUrl || "https://via.placeholder.com/150"
+                },
+                themeColor: currentStudentSchoolDoc.themeColor || "#1e3c72",
+                secondaryColor: currentStudentSchoolDoc.secondaryColor || "#ffffff",
+                templateStyle: currentStudentSchoolDoc.idTemplateStyle || "wave",
+                schoolName: currentStudentSchoolDoc.schoolName || "SCHOOL NAME",
+                schoolEmergency: currentStudentSchoolDoc.emergencyMobile || "N/A",
+                signatureUrl: (currentStudentSchoolDoc.sigSettings && currentStudentSchoolDoc.sigSettings.idCard === false) ? "" : (currentStudentSchoolDoc.signatureUrl || ""),
+                schoolLogoUrl: currentStudentSchoolDoc.logoUrl || "",
+                schoolNameColor: currentStudentSchoolDoc.schoolNameColor || "#ffffff",
+                studentNameColor: currentStudentSchoolDoc.studentNameColor || "#d32f2f",
+                detailsColor: currentStudentSchoolDoc.detailsColor || "#333333"
+            })
+        });
+        const data = await response.json();
+        if(data.success && data.idCardUrl) {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            pdf.addImage(data.idCardUrl, 'PNG', 10, 10, 54, 86);
+            pdf.save(`${currentStudentUser.name}_ID_Card.pdf`);
+        } else { alert("Could not generate ID card at this moment."); }
+    } catch (e) { console.error(e); alert("Failed to generate ID card."); }
+
+    btn.innerHTML = originalText; btn.disabled = false;
+};
+
+// Student Admit Card Download
+async function getStudentTransparentPhoto(imageUrl) {
+    if (!imageUrl) return null;
+    try {
+        const response = await fetch('https://school-backend-zlgy.onrender.com/api/remove-bg', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imageUrl: imageUrl })
+        });
+        const data = await response.json();
+        if (data.success && data.base64) return data.base64;
+        return imageUrl;
+    } catch (e) { return imageUrl; }
+}
+
+window.downloadStudentAdmitCard = async () => {
+    if (!currentStudentUser || !currentStudentSchoolDoc) return;
+    if (currentStudentUser.dueBalance > 0) return alert("Admit Card is locked due to pending fees. Please clear your dues first.");
+
+    const btn = document.getElementById("stu-btn-download-admit");
+    const originalText = btn.innerHTML;
+    btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Generating...";
+    btn.disabled = true;
+
+    try {
+        const snap = await getDoc(doc(db, "schools", currentSchoolId, "examSchedules", currentStudentUser.class));
+        const sched = snap.exists() ? (snap.data().schedule || []) : [];
+
+        if (sched.length === 0) {
+            alert("No exam routine published for your class yet.");
+            btn.innerHTML = originalText; btn.disabled = false; return;
+        }
+
+        const printable = document.createElement("div");
+        printable.style.cssText = "width:800px; padding:20px; background:#fff; color:#000; position:absolute; left:-9999px; top:0; border:2px solid #000;";
+
+        let logoHtml = currentStudentSchoolDoc.schoolLogoUrl ? `<img src="${currentStudentSchoolDoc.schoolLogoUrl}" style="width:80px; height:80px; object-fit:contain; position:absolute; left:20px; top:20px;">` : '';
+
+        let finalSigBase64 = "";
+        if (currentStudentSchoolDoc.signatureUrl && (!currentStudentSchoolDoc.sigSettings || currentStudentSchoolDoc.sigSettings.admit !== false)) {
+            finalSigBase64 = currentStudentSchoolDoc.signatureUrl;
+            try {
+                const res = await fetch("https://school-backend-zlgy.onrender.com/api/get-transparent-signature", {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ signatureUrl: currentStudentSchoolDoc.signatureUrl })
+                });
+                const d = await res.json();
+                if (d.success) finalSigBase64 = d.base64;
+            } catch(e) {}
+        }
+
+        let sigHtml = finalSigBase64 ? `<img src="${finalSigBase64}" style="height:50px;">` : '';
+        const fallbackImg = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+        let finalPhotoSrc = fallbackImg;
+        if (currentStudentUser.photoUrl) finalPhotoSrc = await getStudentTransparentPhoto(currentStudentUser.photoUrl);
+
+        let tbodyHtml = "";
+        for (let i = 0; i < 6; i++) {
+            let dStr = sched[i]?.date || "";
+            if (dStr && dStr.includes("-")) { let parts = dStr.split("-"); if(parts.length === 3) dStr = `${parts[2]}/${parts[1]}/${parts[0]}`; }
+            tbodyHtml += `<tr><td style="border:1px solid #000; padding:8px;">${dStr}</td><td style="border:1px solid #000; padding:8px;">${sched[i]?.subject || ""}</td><td style="border:1px solid #000; padding:8px;">${sched[i]?.timing || ""}</td></tr>`;
+        }
+
+        printable.innerHTML = `
+            <div style="position:relative; text-align:center; margin-bottom:20px; border-bottom:2px solid #000; padding-bottom:10px;">
+                ${logoHtml}
+                <h2 style="margin:0; font-size:24px;">${(currentStudentSchoolDoc.schoolName || "SCHOOL NAME").toUpperCase()}</h2>
+                <h3 style="margin:5px 0 0; font-size:18px;">EXAMINATION ADMIT CARD</h3>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
+                <div style="flex:1;"><p><strong>Student Name:</strong> ${currentStudentUser.name}</p><p><strong>Class:</strong> ${currentStudentUser.class}</p><p><strong>Parentage:</strong> ${(currentStudentUser.parentage || currentStudentUser.fatherName)}</p></div>
+                <div style="flex:1; text-align:center;"><img id="print-admit-photo-stu" src="${finalPhotoSrc}" style="width:100px; height:120px; border:2px solid #ccc; object-fit:cover; border-radius:8px; background:#fff;"></div>
+                <div style="flex:1; text-align:right;"><p><strong>Roll No:</strong> ${currentStudentUser.rollNo || "N/A"}</p><p><strong>Reg No:</strong> ${currentStudentUser.regNo || "N/A"}</p><p><strong>DOB:</strong> ${currentStudentUser.dob || "N/A"}</p></div>
+            </div>
+            <table style="width:100%; border-collapse:collapse; text-align:left; margin-bottom:30px;">
+                <thead><tr><th style="border:1px solid #000; padding:8px; background:#f0f0f0;">Date</th><th style="border:1px solid #000; padding:8px; background:#f0f0f0;">Subject</th><th style="border:1px solid #000; padding:8px; background:#f0f0f0;">Timing</th></tr></thead>
+                <tbody>${tbodyHtml}</tbody>
+            </table>
+            <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+                <div><p>_______________________<br>Student Signature</p></div>
+                <div style="text-align:right;">${sigHtml}<br><p>_______________________<br>Principal/Controller Signature</p></div>
+            </div>
+        `;
+
+        document.body.appendChild(printable);
+        const imgEl = printable.querySelector("#print-admit-photo-stu");
+        if (imgEl && !imgEl.complete) await new Promise((resolve) => { imgEl.onload = resolve; imgEl.onerror = resolve; });
+
+        const canvas = await html2canvas(printable, { scale: 2, useCORS: true });
+        const imgData = canvas.toDataURL("image/jpeg", 0.9);
+        document.body.removeChild(printable);
+
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('l', 'mm', 'a4');
+        pdf.addImage(imgData, 'JPEG', 10, 10, 277, 130);
+        pdf.save(`${currentStudentUser.name}_Admit_Card.pdf`);
+    } catch (e) { console.error(e); alert("Failed to generate Admit Card."); }
+
+    btn.innerHTML = originalText; btn.disabled = false;
 };

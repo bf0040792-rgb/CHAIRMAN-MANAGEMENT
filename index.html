@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chairman Portal | System Core</title>
+    <title>School Portal | Unified Access</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="style.css">
@@ -159,28 +161,58 @@
                 <i class="fas fa-fingerprint"></i>
             </div>
             <h2 class="glass-login-title">login</h2>
-            <div class="glass-input-group">
-                <div class="input-wrapper">
-                    <input type="text" id="loginId" placeholder="Username" autocomplete="username">
-                    <i class="fas fa-user pro-input-icon"></i>
+
+            <!-- Role Tabs -->
+            <div class="role-tabs" style="display:flex; gap:0; margin-bottom:18px; border-radius:8px; overflow:hidden; border:1px solid rgba(14,246,204,0.15);">
+                <button type="button" class="role-tab active" id="tab-admin" onclick="switchLoginTab('admin')" style="flex:1; padding:10px 0; font-size:12px; font-weight:600; letter-spacing:1px; border:none; cursor:pointer; transition:all 0.3s; background:rgba(14,246,204,0.15); color:#0ef6cc; font-family:'JetBrains Mono',monospace;">ADMIN / STAFF</button>
+                <button type="button" class="role-tab" id="tab-student" onclick="switchLoginTab('student')" style="flex:1; padding:10px 0; font-size:12px; font-weight:600; letter-spacing:1px; border:none; cursor:pointer; transition:all 0.3s; background:transparent; color:rgba(255,255,255,0.4); font-family:'JetBrains Mono',monospace;">STUDENT</button>
+            </div>
+
+            <!-- Admin/Staff Login Fields -->
+            <div id="admin-login-fields">
+                <div class="glass-input-group">
+                    <div class="input-wrapper">
+                        <input type="text" id="loginId" placeholder="Username" autocomplete="username">
+                        <i class="fas fa-user pro-input-icon"></i>
+                    </div>
                 </div>
-            </div>
-            <div class="glass-input-group">
-                <div class="input-wrapper">
-                    <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password">
-                    <i class="fas fa-eye pro-input-icon eye-toggle-icon" id="eyeToggle"></i>
+                <div class="glass-input-group">
+                    <div class="input-wrapper">
+                        <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password">
+                        <i class="fas fa-eye pro-input-icon eye-toggle-icon" id="eyeToggle"></i>
+                    </div>
                 </div>
+                <div class="glass-options">
+                    <label class="custom-checkbox-container">
+                        <input type="checkbox" checked id="rememberMe">
+                        <span class="custom-checkmark"></span>
+                        Remember
+                    </label>
+                </div>
+                <button class="glass-login-btn" id="doLoginBtn">
+                    <span>Authenticate</span> <i class="fas fa-arrow-right"></i>
+                </button>
             </div>
-            <div class="glass-options">
-                <label class="custom-checkbox-container">
-                    <input type="checkbox" checked id="rememberMe">
-                    <span class="custom-checkmark"></span>
-                    Remember
-                </label>
+
+            <!-- Student Login Fields -->
+            <div id="student-login-fields" style="display:none;">
+                <div class="glass-input-group">
+                    <div class="input-wrapper">
+                        <input type="text" id="student-login-regno" placeholder="Registration / Roll No" autocomplete="off">
+                        <i class="fas fa-id-card pro-input-icon"></i>
+                    </div>
+                </div>
+                <div class="glass-input-group">
+                    <div class="input-wrapper">
+                        <input type="tel" id="student-login-mobile" placeholder="Mobile Number" autocomplete="off">
+                        <i class="fas fa-mobile-alt pro-input-icon"></i>
+                    </div>
+                </div>
+                <button class="glass-login-btn" id="doStudentLoginBtn">
+                    <span>Access Portal</span> <i class="fas fa-arrow-right"></i>
+                </button>
             </div>
-            <button class="glass-login-btn" id="doLoginBtn">
-                <span>Authenticate</span> <i class="fas fa-arrow-right"></i>
-            </button>
+
             <p class="error-msg" id="loginErrorMsg"></p>
         </div>
     </div>
@@ -213,6 +245,35 @@
         if (pwd.type === 'password') { pwd.type = 'text'; this.classList.replace('fa-eye', 'fa-eye-slash'); }
         else { pwd.type = 'password'; this.classList.replace('fa-eye-slash', 'fa-eye'); }
     });
+
+    // === LOGIN TAB SWITCHER ===
+    window.switchLoginTab = function(tab) {
+        const adminFields = document.getElementById('admin-login-fields');
+        const studentFields = document.getElementById('student-login-fields');
+        const tabAdmin = document.getElementById('tab-admin');
+        const tabStudent = document.getElementById('tab-student');
+        if (tab === 'admin') {
+            adminFields.style.display = 'block';
+            studentFields.style.display = 'none';
+            tabAdmin.style.background = 'rgba(14,246,204,0.15)';
+            tabAdmin.style.color = '#0ef6cc';
+            tabStudent.style.background = 'transparent';
+            tabStudent.style.color = 'rgba(255,255,255,0.4)';
+        } else {
+            adminFields.style.display = 'none';
+            studentFields.style.display = 'block';
+            tabStudent.style.background = 'rgba(14,246,204,0.15)';
+            tabStudent.style.color = '#0ef6cc';
+            tabAdmin.style.background = 'transparent';
+            tabAdmin.style.color = 'rgba(255,255,255,0.4)';
+        }
+        document.getElementById('loginErrorMsg').style.display = 'none';
+    };
+
+    // Auto-switch to student tab if ?school= param exists
+    if (new URLSearchParams(window.location.search).get('school')) {
+        window.switchLoginTab('student');
+    }
     </script>
 
     <!-- PIN SCREEN (ULTRA-PREMIUM FUJI THEME) -->
@@ -1078,6 +1139,94 @@
 <!-- ========================================== -->
     <!-- 🧑‍🏫 STAFF / TEACHER DASHBOARD WRAPPER -->
     <!-- ========================================== -->
+    <!-- ========== STUDENT DASHBOARD ========== -->
+    <div id="student-dashboard-wrapper" style="display: none; min-height:100vh; background:#f0f4f8;">
+        <div class="top-navbar" style="background: #1E3A8A;">
+            <div class="brand">
+                <img id="student-school-logo" src="" alt="" style="display:none; width:36px; height:36px; border-radius:50%; object-fit:cover; margin-right:10px;">
+                <span id="student-dash-school-name" class="desktop-name" style="color: white;">School Portal</span>
+            </div>
+            <button class="logout-btn" onclick="logoutStudent()" style="background:#e53e3e;"><i class="fas fa-power-off"></i> Logout</button>
+        </div>
+
+        <div style="max-width: 900px; margin: 80px auto 20px; padding: 0 16px;">
+            <!-- Student Info Header -->
+            <div style="text-align:center; margin-bottom:20px;">
+                <h2 style="color:#1E3A8A; font-family:'Inter',sans-serif; font-weight:700; margin-bottom:4px;">Welcome, <span id="stu-display-name">Student</span></h2>
+                <p style="color:#64748b; font-size:14px; font-family:'Inter',sans-serif;">Class: <span id="stu-display-class"></span> | Reg No: <span id="stu-display-reg"></span></p>
+            </div>
+
+            <!-- Neumorphic Feature Grid -->
+            <div id="student-feature-grid" class="bg-[#E3EBF3] rounded-2xl p-6 mb-6"></div>
+
+            <!-- Due Balance Card -->
+            <div class="card" style="text-align: center; padding: 30px 20px; border-radius:16px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.06); margin-bottom:20px;">
+                <div style="background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 15px; padding: 25px; margin-bottom: 20px;">
+                    <p style="font-size: 16px; color: #475569; margin-bottom: 8px; font-family:'Inter',sans-serif;">Total Due Balance</p>
+                    <h2 style="font-size: 42px; color: #e53e3e; margin: 0; font-family:'Inter',sans-serif; font-weight:800;">₹ <span id="stu-due-balance">0</span></h2>
+                </div>
+                <button id="stu-show-payment-btn" class="submit-btn" onclick="showStudentPaymentSection()" style="font-size: 16px; padding: 14px 28px; background: #10b981; border-radius:12px;"><i class="fas fa-qrcode"></i> Pay Now (Zero Commission)</button>
+            </div>
+
+            <!-- Documents Section -->
+            <div style="display: flex; gap: 16px; margin-bottom: 20px; flex-wrap: wrap;">
+                <div class="card" style="flex: 1; text-align: center; min-width: 280px; padding: 25px; border-radius:16px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.06);">
+                    <i class="fas fa-id-badge" style="font-size: 36px; color: #1E3A8A; margin-bottom: 12px;"></i>
+                    <h3 style="color: #1E3A8A; margin-bottom: 8px; font-family:'Inter',sans-serif;">My Digital ID Card</h3>
+                    <p style="color: #64748b; font-size: 13px; margin-bottom: 16px;">Download your official digital student ID card.</p>
+                    <button id="stu-btn-download-id" class="action-btn btn-blue" onclick="window.downloadStudentIDCard()" style="width: 100%; padding: 12px; font-size: 14px; border-radius:10px;"><i class="fas fa-download"></i> Print / Save PDF</button>
+                </div>
+                <div class="card" style="flex: 1; text-align: center; min-width: 280px; padding: 25px; border-radius:16px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.06);">
+                    <i class="fas fa-calendar-alt" style="font-size: 36px; color: #e67e22; margin-bottom: 12px;"></i>
+                    <h3 style="color: #e67e22; margin-bottom: 8px; font-family:'Inter',sans-serif;">My Exam Admit Card</h3>
+                    <p style="color: #64748b; font-size: 13px; margin-bottom: 16px;">Download exam schedule & admit card.</p>
+                    <button id="stu-btn-download-admit" class="action-btn btn-yellow" onclick="window.downloadStudentAdmitCard()" style="width: 100%; padding: 12px; font-size: 14px; background:#e67e22; color:white; border-radius:10px;"><i class="fas fa-download"></i> Print / Save PDF</button>
+                </div>
+            </div>
+
+            <!-- Payment Section (hidden by default) -->
+            <div id="student-payment-section" class="card" style="display: none; text-align: center; padding:30px; border-radius:16px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.06);">
+                <h2 style="color: #1E3A8A; margin-bottom: 15px; font-family:'Inter',sans-serif;"><i class="fas fa-mobile-alt"></i> Scan & Pay</h2>
+                <p style="color: #64748b; margin-bottom: 20px;">Use any UPI App to scan the QR code below or tap the direct link.</p>
+
+                <div style="background: white; padding: 20px; border-radius: 15px; display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid #e2e8f0;">
+                    <img id="stu-qr-img" src="" alt="Payment QR" style="width: 220px; height: 220px; object-fit: contain;">
+                    <p style="margin-top: 12px; font-weight: bold; color: #475569; font-family: monospace; font-size: 14px;" id="stu-upi-text"></p>
+                </div>
+
+                <br>
+                <a id="stu-upi-deep-link" href="#" class="action-btn" style="background: #3182ce; font-size: 14px; padding: 12px 24px; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; border-radius:10px;"><i class="fas fa-external-link-alt"></i> Open UPI App</a>
+
+                <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 30px 0;">
+
+                <h2 style="color: #1E3A8A; margin-bottom: 15px; font-family:'Inter',sans-serif;"><i class="fas fa-file-invoice"></i> Submit Payment Verification</h2>
+                <p style="color: #64748b; margin-bottom: 20px; font-size:14px;">After payment, upload the screenshot and enter the UTR / Transaction ID.</p>
+
+                <form id="student-verification-form" style="max-width: 400px; margin: 0 auto; text-align: left;">
+                    <div class="form-group">
+                        <label>Amount Paid (₹)</label>
+                        <input type="number" id="stu-pay-amount" class="input-premium" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Transaction ID (UTR)</label>
+                        <input type="text" id="stu-pay-utr" class="input-premium" required placeholder="12-digit UTR Number">
+                    </div>
+                    <div class="form-group">
+                        <label>Upload Payment Screenshot</label>
+                        <input type="file" id="stu-pay-screenshot" class="input-premium" accept="image/*" required>
+                    </div>
+                    <button type="submit" id="stu-submit-verification-btn" class="submit-btn" style="width: 100%; border-radius:10px;"><i class="fas fa-cloud-upload-alt"></i> Submit for Verification</button>
+                </form>
+            </div>
+
+            <div id="student-success-section" class="card" style="display: none; text-align: center; padding: 50px 20px; border-radius:16px; background:white;">
+                <i class="fas fa-check-circle" style="font-size: 60px; color: #10b981; margin-bottom: 20px;"></i>
+                <h2 style="color: #1E3A8A; font-family:'Inter',sans-serif;">Verification Submitted!</h2>
+                <p style="color: #64748b;">Your payment details have been sent to the Chairman. Once verified, your due balance will be updated automatically.</p>
+            </div>
+        </div>
+    </div>
+
     <div id="staff-dashboard-wrapper" style="display: none;">
         <div class="top-navbar" style="background: #2c3e50;">
             <div class="brand">
