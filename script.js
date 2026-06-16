@@ -2851,8 +2851,6 @@ document.getElementById("doStudentLoginBtn").addEventListener("click", async () 
     btn.querySelector('span').innerText = "Verifying...";
 
     try {
-        const urlSchoolId = new URLSearchParams(window.location.search).get('school');
-        
         // strictly query by mobile only to bypass composite index issues
         const studQ = query(
             collection(db, "students"),
@@ -2869,11 +2867,6 @@ document.getElementById("doStudentLoginBtn").addEventListener("click", async () 
         let matchFound = false;
         for (const docSnapshot of studSnap.docs) {
             const data = docSnapshot.data();
-            
-            // if a specific school is in URL, ensure student belongs to it
-            if (urlSchoolId && data.schoolId !== urlSchoolId) {
-                continue;
-            }
 
             let dobFormatted = "";
             if (data.dob) {
@@ -2890,9 +2883,15 @@ document.getElementById("doStudentLoginBtn").addEventListener("click", async () 
 
             if (dobFormatted === password) {
                 currentStudentUser = { id: docSnapshot.id, ...data };
-                currentSchoolId = data.schoolId || urlSchoolId;
-                const schoolSnap = await getDoc(doc(db, "schools", currentSchoolId));
-                currentStudentSchoolDoc = schoolSnap.exists() ? schoolSnap.data() : {};
+                currentSchoolId = data.schoolId;
+                
+                if(currentSchoolId) {
+                    const schoolSnap = await getDoc(doc(db, "schools", currentSchoolId));
+                    currentStudentSchoolDoc = schoolSnap.exists() ? schoolSnap.data() : {};
+                } else {
+                    currentStudentSchoolDoc = {};
+                }
+                
                 matchFound = true;
                 break;
             }
@@ -2907,9 +2906,9 @@ document.getElementById("doStudentLoginBtn").addEventListener("click", async () 
         loadStudentDashboard();
 
     } catch (error) {
-        console.error("Student Login Firestore Error:", error);
-        errBox.innerText = "Database connection error."; errBox.style.display = 'block';
-        setTimeout(() => errBox.style.display = 'none', 4000);
+        console.error("Login Error:", error.message);
+        errBox.innerText = error.message; errBox.style.display = 'block';
+        setTimeout(() => errBox.style.display = 'none', 8000); // 8 seconds to allow reading the developer link
     }
     btn.querySelector('span').innerText = "Access Portal";
 });
