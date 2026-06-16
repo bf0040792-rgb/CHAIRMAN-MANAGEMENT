@@ -2852,24 +2852,16 @@ document.getElementById("doStudentLoginBtn").addEventListener("click", async () 
 
     try {
         const urlSchoolId = new URLSearchParams(window.location.search).get('school');
-        let studQ;
-
-        if (urlSchoolId) {
-            studQ = query(
-                collection(db, "students"),
-                where("schoolId", "==", urlSchoolId),
-                where("mobile", "==", username)
-            );
-        } else {
-            studQ = query(
-                collection(db, "students"),
-                where("mobile", "==", username)
-            );
-        }
+        
+        // strictly query by mobile only to bypass composite index issues
+        const studQ = query(
+            collection(db, "students"),
+            where("mobile", "==", username)
+        );
 
         const studSnap = await getDocs(studQ);
         if (studSnap.empty) {
-            errBox.innerText = "Mobile number not found."; errBox.style.display = 'block';
+            errBox.innerText = "Invalid username and password."; errBox.style.display = 'block';
             setTimeout(() => errBox.style.display = 'none', 4000);
             btn.querySelector('span').innerText = "Access Portal"; return;
         }
@@ -2877,11 +2869,20 @@ document.getElementById("doStudentLoginBtn").addEventListener("click", async () 
         let matchFound = false;
         for (const docSnapshot of studSnap.docs) {
             const data = docSnapshot.data();
+            
+            // if a specific school is in URL, ensure student belongs to it
+            if (urlSchoolId && data.schoolId !== urlSchoolId) {
+                continue;
+            }
+
             let dobFormatted = "";
             if (data.dob) {
                 const parts = data.dob.split("-");
                 if (parts.length === 3) {
-                    dobFormatted = `${parts[2]}${parts[1]}${parts[0]}`;
+                    const yyyy = parts[0].padStart(4, '0');
+                    const mm = parts[1].padStart(2, '0');
+                    const dd = parts[2].padStart(2, '0');
+                    dobFormatted = `${dd}${mm}${yyyy}`;
                 } else {
                     dobFormatted = data.dob;
                 }
@@ -2898,16 +2899,16 @@ document.getElementById("doStudentLoginBtn").addEventListener("click", async () 
         }
 
         if (!matchFound) {
-            errBox.innerText = "Incorrect Password/DOB."; errBox.style.display = 'block';
+            errBox.innerText = "Invalid username and password."; errBox.style.display = 'block';
             setTimeout(() => errBox.style.display = 'none', 4000);
             btn.querySelector('span').innerText = "Access Portal"; return;
         }
 
         loadStudentDashboard();
 
-    } catch (err) {
-        console.error("Student login error:", err);
-        errBox.innerText = "Error connecting to database."; errBox.style.display = 'block';
+    } catch (error) {
+        console.error("Student Login Firestore Error:", error);
+        errBox.innerText = "Database connection error."; errBox.style.display = 'block';
         setTimeout(() => errBox.style.display = 'none', 4000);
     }
     btn.querySelector('span').innerText = "Access Portal";
