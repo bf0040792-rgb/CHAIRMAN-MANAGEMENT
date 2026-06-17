@@ -2995,7 +2995,7 @@ document.getElementById("doStudentLoginBtn").addEventListener("click", async () 
     btn.querySelector('span').innerText = "Access Portal";
 });
 
-function loadStudentDashboard() {
+async function loadStudentDashboard() {
     overlay.style.display = "none";
     loginWrapper.style.display = "none";
     document.getElementById("student-dashboard-wrapper").style.display = "block";
@@ -3012,7 +3012,6 @@ function loadStudentDashboard() {
     // Format DOB if available
     let formattedDob = "N/A";
     if (currentStudentUser.dob) {
-        // Assume format YYYY-MM-DD to DD-MM-YYYY
         const parts = currentStudentUser.dob.split('-');
         if (parts.length === 3) {
             formattedDob = `${parts[2]}-${parts[1]}-${parts[0]}`;
@@ -3026,16 +3025,42 @@ function loadStudentDashboard() {
     document.getElementById("banner-blood").innerText = currentStudentUser.bloodGroup || "N/A";
     document.getElementById("banner-emergency").innerText = currentStudentUser.emergencyNo || "N/A";
 
-    const bannerBgColor = currentStudentSchoolDoc.photoBgColor || currentStudentSchoolDoc.themeColor || "#fbcfe8";
-    document.getElementById("student-id-banner").style.backgroundColor = bannerBgColor;
+    // 1. Premium Styling & Colors
+    const banner = document.getElementById("student-id-banner");
+    if (banner) {
+        banner.style.backgroundColor = currentStudentSchoolDoc.photoBgColor || '#fce4ec';
+        banner.style.borderRadius = "12px";
+        banner.style.padding = "15px";
+    }
 
-    const qrData = encodeURIComponent(`Name:${currentStudentUser.name}|Reg:${currentStudentUser.regNo}|Class:${currentStudentUser.class}`);
-    document.getElementById("stu-banner-qr").src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${qrData}`;
+    // 3. Comprehensive QR Code Data
+    const qrString = `Name: ${currentStudentUser.name}\nParentage: ${currentStudentUser.parentage || currentStudentUser.fatherName || 'N/A'}\nClass: ${currentStudentUser.class}\nReg/Roll: ${currentStudentUser.regNo || 'N/A'}\nDOB: ${formattedDob}\nContact: ${currentStudentUser.mobile || 'N/A'}`;
+    const qrElem = document.getElementById("stu-banner-qr");
+    if (qrElem) {
+        qrElem.src = 'https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=' + encodeURIComponent(qrString);
+    }
 
+    // 2. Photo Background Removal Logic
     if (currentStudentUser.photoUrl) {
         document.getElementById("stu-banner-photo-icon").style.display = "none";
-        document.getElementById("stu-banner-photo").src = currentStudentUser.photoUrl;
-        document.getElementById("stu-banner-photo").classList.remove("hidden");
+        const photoElem = document.getElementById("stu-banner-photo");
+        photoElem.classList.remove("hidden");
+        
+        photoElem.src = currentStudentUser.photoUrl; 
+        
+        const wrapperElem = document.getElementById("stu-banner-photo-bg");
+        if (wrapperElem) {
+            wrapperElem.style.backgroundColor = currentStudentSchoolDoc.themeColor || currentStudentSchoolDoc.photoBgColor || '#ffffff';
+        }
+        
+        try {
+            const transparentSrc = await getStudentTransparentPhoto(currentStudentUser.photoUrl);
+            if (transparentSrc) {
+                photoElem.src = transparentSrc;
+            }
+        } catch (err) {
+            console.error("Failed to load transparent photo for dashboard:", err);
+        }
     } else {
         document.getElementById("stu-banner-photo-icon").style.display = "block";
         document.getElementById("stu-banner-photo").classList.add("hidden");
