@@ -3025,10 +3025,10 @@ async function loadStudentDashboard() {
     document.getElementById("banner-blood").innerText = currentStudentUser.bloodGroup || "N/A";
     document.getElementById("banner-emergency").innerText = currentStudentUser.emergencyNo || "N/A";
 
-    // 1. Premium Styling & Colors
+    // 1. Premium Styling & Colors (Hardcoded pastel pink for main banner)
     const banner = document.getElementById("student-id-banner");
     if (banner) {
-        banner.style.backgroundColor = currentStudentSchoolDoc.photoBgColor || '#fce4ec';
+        banner.style.backgroundColor = '#fce4ec';
         banner.style.borderRadius = "12px";
         banner.style.padding = "15px";
     }
@@ -3050,7 +3050,8 @@ async function loadStudentDashboard() {
         
         const wrapperElem = document.getElementById("stu-banner-photo-bg");
         if (wrapperElem) {
-            wrapperElem.style.backgroundColor = currentStudentSchoolDoc.themeColor || currentStudentSchoolDoc.photoBgColor || '#ffffff';
+            // Apply dynamic color ONLY to the photo wrapper
+            wrapperElem.style.backgroundColor = currentStudentSchoolDoc.photoBgColor || '#ffffff';
         }
         
         try {
@@ -3064,6 +3065,12 @@ async function loadStudentDashboard() {
     } else {
         document.getElementById("stu-banner-photo-icon").style.display = "block";
         document.getElementById("stu-banner-photo").classList.add("hidden");
+        
+        const wrapperElem = document.getElementById("stu-banner-photo-bg");
+        if (wrapperElem) {
+            // Apply dynamic color ONLY to the photo wrapper even if no photo exists
+            wrapperElem.style.backgroundColor = currentStudentSchoolDoc.photoBgColor || '#ffffff';
+        }
     }
 
     if (currentStudentSchoolDoc.schoolLogoUrl) {
