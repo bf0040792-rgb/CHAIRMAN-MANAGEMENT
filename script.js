@@ -2822,7 +2822,6 @@ const studentFeatures = [
 function renderStudentFeatureGrid() {
     const container = document.getElementById("student-feature-grid");
     container.innerHTML = `
-        <h3 class="text-[#1E3A8A] font-bold text-lg mb-5 text-center tracking-wide" style="font-family:'Inter',sans-serif;">Quick Access</h3>
         <div class="grid grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-y-8 gap-x-4 justify-items-center">
             ${studentFeatures.map(f => `
                 <div class="flex flex-col items-center cursor-pointer group" data-feature="${f.id}" onclick="handleStudentFeatureClick('${f.id}')">
@@ -3025,10 +3024,10 @@ async function loadStudentDashboard() {
     document.getElementById("banner-blood").innerText = currentStudentUser.bloodGroup || "N/A";
     document.getElementById("banner-emergency").innerText = currentStudentUser.emergencyNo || "N/A";
 
-    // 1. Premium Styling & Colors (Hardcoded pastel pink for main banner)
+    // 1. Premium Styling & Colors (Fixed professional pastel pink matching reference image)
     const banner = document.getElementById("student-id-banner");
     if (banner) {
-        banner.style.backgroundColor = '#fce4ec';
+        banner.style.background = 'linear-gradient(135deg, #fbcfe8, #fecdd3)';
         banner.style.borderRadius = "12px";
         banner.style.padding = "15px";
     }
