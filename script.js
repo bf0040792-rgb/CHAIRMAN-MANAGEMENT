@@ -3011,12 +3011,33 @@ document.getElementById("doStudentLoginBtn").addEventListener("click", async () 
                 currentStudentUser = { id: docSnapshot.id, ...data };
                 currentSchoolId = data.schoolId;
                 
+                // Real-time listener for School Doc (Background, Settings, etc.)
                 if(currentSchoolId) {
+                    // Initial fetch to avoid blank dashboard on slow connections
                     const schoolSnap = await getDoc(doc(db, "schools", currentSchoolId));
                     currentStudentSchoolDoc = schoolSnap.exists() ? schoolSnap.data() : {};
+                    
+                    window.unsubSchool = onSnapshot(doc(db, "schools", currentSchoolId), (docSnap) => {
+                        if(docSnap.exists()) {
+                            currentStudentSchoolDoc = docSnap.data();
+                            if (document.getElementById("student-dashboard-wrapper").style.display === "block") {
+                                loadStudentDashboard();
+                            }
+                        }
+                    });
                 } else {
                     currentStudentSchoolDoc = {};
                 }
+                
+                // Real-time listener for Student Doc (Attendance, SMS, etc.)
+                window.unsubStudent = onSnapshot(doc(db, "students", docSnapshot.id), (docSnap) => {
+                    if(docSnap.exists()) {
+                        currentStudentUser = { id: docSnap.id, ...docSnap.data() };
+                        if (document.getElementById("student-dashboard-wrapper").style.display === "block") {
+                            loadStudentDashboard();
+                        }
+                    }
+                });
                 
                 matchFound = true;
                 break;
