@@ -3002,17 +3002,56 @@ function loadStudentDashboard() {
 
     document.getElementById("student-dash-school-name").innerText = currentStudentSchoolDoc.schoolName || "Portal";
     document.getElementById("stu-display-name").innerText = currentStudentUser.name;
-    document.getElementById("stu-display-class").innerText = currentStudentUser.class;
-    document.getElementById("stu-display-reg").innerText = currentStudentUser.regNo;
+
+    // Top ID Banner
+    document.getElementById("banner-name").innerText = currentStudentUser.name || "N/A";
+    document.getElementById("banner-parentage").innerText = (currentStudentUser.parentage || currentStudentUser.fatherName) || "N/A";
+    document.getElementById("banner-class").innerText = currentStudentUser.class || "N/A";
+    document.getElementById("banner-reg").innerText = currentStudentUser.regNo || "N/A";
+    
+    // Format DOB if available
+    let formattedDob = "N/A";
+    if (currentStudentUser.dob) {
+        // Assume format YYYY-MM-DD to DD-MM-YYYY
+        const parts = currentStudentUser.dob.split('-');
+        if (parts.length === 3) {
+            formattedDob = `${parts[2]}-${parts[1]}-${parts[0]}`;
+        } else {
+            formattedDob = currentStudentUser.dob;
+        }
+    }
+    document.getElementById("banner-dob").innerText = formattedDob;
+    
+    document.getElementById("banner-contact").innerText = currentStudentUser.mobile || "N/A";
+    document.getElementById("banner-blood").innerText = currentStudentUser.bloodGroup || "N/A";
+    document.getElementById("banner-emergency").innerText = currentStudentUser.emergencyNo || "N/A";
+
+    const bannerBgColor = currentStudentSchoolDoc.photoBgColor || currentStudentSchoolDoc.themeColor || "#fbcfe8";
+    document.getElementById("student-id-banner").style.backgroundColor = bannerBgColor;
+
+    const qrData = encodeURIComponent(`Name:${currentStudentUser.name}|Reg:${currentStudentUser.regNo}|Class:${currentStudentUser.class}`);
+    document.getElementById("stu-banner-qr").src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${qrData}`;
+
+    if (currentStudentUser.photoUrl) {
+        document.getElementById("stu-banner-photo-icon").style.display = "none";
+        document.getElementById("stu-banner-photo").src = currentStudentUser.photoUrl;
+        document.getElementById("stu-banner-photo").classList.remove("hidden");
+    } else {
+        document.getElementById("stu-banner-photo-icon").style.display = "block";
+        document.getElementById("stu-banner-photo").classList.add("hidden");
+    }
 
     if (currentStudentSchoolDoc.schoolLogoUrl) {
         const logo = document.getElementById("student-school-logo");
-        logo.src = currentStudentSchoolDoc.schoolLogoUrl;
-        logo.style.display = "inline-block";
+        if (logo) {
+            logo.src = currentStudentSchoolDoc.schoolLogoUrl;
+            logo.style.display = "inline-block";
+        }
     }
 
     const due = currentStudentUser.dueBalance || 0;
-    document.getElementById("stu-due-balance").innerText = due;
+    const dueElem = document.getElementById("stu-due-balance");
+    if (dueElem) dueElem.innerText = due;
     if (due > 0) document.getElementById("stu-pay-amount") && (document.getElementById("stu-pay-amount").value = due);
 
     renderStudentFeatureGrid();

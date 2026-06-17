@@ -1153,17 +1153,51 @@
 
         <div style="max-width: 900px; margin: 80px auto 0; padding: 0 16px; height: calc(100vh - 80px); overflow-y: auto; padding-bottom: 120px; box-sizing: border-box; scroll-behavior: smooth;">
             <div id="student-main-grid">
-                <!-- Student Info Header -->
+                <!-- Top ID Banner -->
+                <div id="student-id-banner" class="rounded-[2rem] border-[3px] border-black p-4 flex items-center justify-between shadow-sm mb-6" style="background-color: #fbcfe8;">
+                    <!-- Left: Photo -->
+                    <div class="flex-shrink-0 relative w-16 h-16 md:w-20 md:h-20 rounded-full border-[2px] border-black border-dashed flex items-center justify-center bg-gray-200 overflow-hidden" id="stu-banner-photo-bg">
+                        <i class="fas fa-user text-gray-400 text-2xl" id="stu-banner-photo-icon"></i>
+                        <img id="stu-banner-photo" src="" class="w-full h-full object-cover hidden" alt="Student Photo">
+                    </div>
+                    
+                    <!-- Center: Details -->
+                    <div class="flex-1 px-3 md:px-5 text-[8px] md:text-[10px] text-black font-semibold uppercase leading-tight" style="font-family: 'Inter', sans-serif;">
+                        <div class="flex flex-wrap gap-x-2 md:gap-x-4">
+                            <div class="flex-1 border-b border-black border-dotted pb-0.5 mb-1.5 whitespace-nowrap">Name: <span class="font-bold ml-1 text-gray-800" id="banner-name"></span></div>
+                            <div class="flex-1 border-b border-black border-dotted pb-0.5 mb-1.5 whitespace-nowrap">Parentage: <span class="font-bold ml-1 text-gray-800" id="banner-parentage"></span></div>
+                        </div>
+                        <div class="flex flex-wrap gap-x-2 md:gap-x-4">
+                            <div class="flex-1 border-b border-black border-dotted pb-0.5 mb-1.5 whitespace-nowrap">Class: <span class="font-bold ml-1 text-gray-800" id="banner-class"></span></div>
+                            <div class="flex-1 border-b border-black border-dotted pb-0.5 mb-1.5 whitespace-nowrap">Roll No/Reg No: <span class="font-bold ml-1 text-gray-800" id="banner-reg"></span></div>
+                        </div>
+                        <div class="flex flex-wrap gap-x-2 md:gap-x-4">
+                            <div class="flex-1 border-b border-black border-dotted pb-0.5 mb-1.5 whitespace-nowrap">DOB: <span class="font-bold ml-1 text-gray-800" id="banner-dob"></span></div>
+                            <div class="flex-1 border-b border-black border-dotted pb-0.5 mb-1.5 whitespace-nowrap">Contact: <span class="font-bold ml-1 text-gray-800" id="banner-contact"></span></div>
+                        </div>
+                        <div class="flex flex-wrap gap-x-2 md:gap-x-4">
+                            <div class="flex-1 border-b border-black border-dotted pb-0.5 mb-1.5 whitespace-nowrap">Blood Group: <span class="font-bold ml-1 text-gray-800" id="banner-blood"></span></div>
+                            <div class="flex-1 border-b border-black border-dotted pb-0.5 mb-1.5 whitespace-nowrap">Emergency No: <span class="font-bold ml-1 text-gray-800" id="banner-emergency"></span></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Right: QR Code -->
+                    <div class="flex-shrink-0 p-1 bg-white rounded-md border border-gray-300">
+                        <img id="stu-banner-qr" src="" alt="QR" class="w-12 h-12 md:w-16 md:h-16 object-contain">
+                    </div>
+                </div>
+
+                <!-- Student Welcome Header -->
                 <div style="text-align:center; margin-bottom:20px;">
-                    <h2 style="color:#1E3A8A; font-family:'Inter',sans-serif; font-weight:700; margin-bottom:4px;">Welcome, <span id="stu-display-name">Student</span></h2>
-                    <p style="color:#64748b; font-size:14px; font-family:'Inter',sans-serif;">Class: <span id="stu-display-class"></span> | Reg No: <span id="stu-display-reg"></span></p>
+                    <h2 style="color:#1E3A8A; font-family:'Inter',sans-serif; font-weight:700; margin-bottom:4px; font-size: 1.1rem;">Welcome, <span id="stu-display-name">Student</span></h2>
+                    <p style="color:#1E3A8A; font-family:'Inter',sans-serif; font-weight:700; font-size: 1rem;">Quick Access</p>
                 </div>
 
                 <!-- Neumorphic Feature Grid -->
                 <div id="student-feature-grid" class="bg-[#E3EBF3] rounded-2xl p-6 mb-6"></div>
 
-                <!-- Due Balance Card -->
-                <div class="card" style="text-align: center; padding: 30px 20px; border-radius:16px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.06); margin-bottom:20px;">
+                <!-- Due Balance Card (HIDDEN for SPA, it is moved to Fee module) -->
+                <div id="student-due-balance-card" class="card" style="display: none; text-align: center; padding: 30px 20px; border-radius:16px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.06); margin-bottom:20px;">
                     <div style="background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 15px; padding: 25px; margin-bottom: 20px;">
                         <p style="font-size: 16px; color: #475569; margin-bottom: 8px; font-family:'Inter',sans-serif;">Total Due Balance</p>
                         <h2 style="font-size: 42px; color: #e53e3e; margin: 0; font-family:'Inter',sans-serif; font-weight:800;">₹ <span id="stu-due-balance">0</span></h2>
