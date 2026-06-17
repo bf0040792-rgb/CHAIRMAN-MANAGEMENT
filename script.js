@@ -2837,11 +2837,21 @@ function renderStudentFeatureGrid() {
     if (window.lucide) lucide.createIcons();
 }
 
+window.openStudentView = (targetId) => {
+    const mainGrid = document.getElementById('student-main-grid');
+    if (mainGrid) mainGrid.style.display = 'none';
+    
+    document.querySelectorAll('.student-view-section').forEach(el => el.style.display = 'none');
+    
+    const targetEl = document.getElementById(targetId);
+    if (targetEl) targetEl.style.display = 'block';
+};
+
 window.handleStudentFeatureClick = (featureId) => {
     switch(featureId) {
         case 'fee': window.showStudentPaymentSection(); break;
-        case 'idcard': window.downloadStudentIDCard(); break;
-        case 'admit': window.downloadStudentAdmitCard(); break;
+        case 'idcard': window.openStudentView('student-idcard-section'); break;
+        case 'admit': window.openStudentView('student-admitcard-section'); break;
         case 'fee-receipt': window.showStudentReceiptsSection(); break;
         default:
             const toast = document.createElement('div');
@@ -2854,7 +2864,7 @@ window.handleStudentFeatureClick = (featureId) => {
 };
 
 window.showStudentReceiptsSection = () => {
-    document.getElementById("student-receipt-section").style.display = "block";
+    window.openStudentView('student-receipt-section');
     const tbody = document.getElementById("stu-receipt-table-body");
     
     // Dummy Data
@@ -3013,7 +3023,7 @@ window.showStudentPaymentSection = () => {
         alert("The school has not configured the QR Payment System yet."); return;
     }
     
-    document.getElementById("student-payment-section").style.display = "block";
+    window.openStudentView('student-payment-section');
     document.getElementById("stu-qr-img").src = currentStudentSchoolDoc.paymentQrUrl;
     document.getElementById("stu-upi-text").innerText = currentStudentSchoolDoc.upiId;
 

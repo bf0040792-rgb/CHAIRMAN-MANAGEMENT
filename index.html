@@ -1152,42 +1152,53 @@
         </div>
 
         <div style="max-width: 900px; margin: 80px auto 0; padding: 0 16px; height: calc(100vh - 80px); overflow-y: auto; padding-bottom: 120px; box-sizing: border-box; scroll-behavior: smooth;">
-            <!-- Student Info Header -->
-            <div style="text-align:center; margin-bottom:20px;">
-                <h2 style="color:#1E3A8A; font-family:'Inter',sans-serif; font-weight:700; margin-bottom:4px;">Welcome, <span id="stu-display-name">Student</span></h2>
-                <p style="color:#64748b; font-size:14px; font-family:'Inter',sans-serif;">Class: <span id="stu-display-class"></span> | Reg No: <span id="stu-display-reg"></span></p>
-            </div>
-
-            <!-- Neumorphic Feature Grid -->
-            <div id="student-feature-grid" class="bg-[#E3EBF3] rounded-2xl p-6 mb-6"></div>
-
-            <!-- Due Balance Card -->
-            <div class="card" style="text-align: center; padding: 30px 20px; border-radius:16px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.06); margin-bottom:20px;">
-                <div style="background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 15px; padding: 25px; margin-bottom: 20px;">
-                    <p style="font-size: 16px; color: #475569; margin-bottom: 8px; font-family:'Inter',sans-serif;">Total Due Balance</p>
-                    <h2 style="font-size: 42px; color: #e53e3e; margin: 0; font-family:'Inter',sans-serif; font-weight:800;">₹ <span id="stu-due-balance">0</span></h2>
+            <div id="student-main-grid">
+                <!-- Student Info Header -->
+                <div style="text-align:center; margin-bottom:20px;">
+                    <h2 style="color:#1E3A8A; font-family:'Inter',sans-serif; font-weight:700; margin-bottom:4px;">Welcome, <span id="stu-display-name">Student</span></h2>
+                    <p style="color:#64748b; font-size:14px; font-family:'Inter',sans-serif;">Class: <span id="stu-display-class"></span> | Reg No: <span id="stu-display-reg"></span></p>
                 </div>
-                <button id="stu-show-payment-btn" class="submit-btn" onclick="showStudentPaymentSection()" style="font-size: 16px; padding: 14px 28px; background: #10b981; border-radius:12px;"><i class="fas fa-qrcode"></i> Pay Now (Zero Commission)</button>
-            </div>
 
-            <!-- Documents Section -->
-            <div style="display: flex; gap: 16px; margin-bottom: 20px; flex-wrap: wrap;">
-                <div class="card" style="flex: 1; text-align: center; min-width: 280px; padding: 25px; border-radius:16px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.06);">
+                <!-- Neumorphic Feature Grid -->
+                <div id="student-feature-grid" class="bg-[#E3EBF3] rounded-2xl p-6 mb-6"></div>
+
+                <!-- Due Balance Card -->
+                <div class="card" style="text-align: center; padding: 30px 20px; border-radius:16px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.06); margin-bottom:20px;">
+                    <div style="background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 15px; padding: 25px; margin-bottom: 20px;">
+                        <p style="font-size: 16px; color: #475569; margin-bottom: 8px; font-family:'Inter',sans-serif;">Total Due Balance</p>
+                        <h2 style="font-size: 42px; color: #e53e3e; margin: 0; font-family:'Inter',sans-serif; font-weight:800;">₹ <span id="stu-due-balance">0</span></h2>
+                    </div>
+                    <button id="stu-show-payment-btn" class="submit-btn" onclick="openStudentView('student-payment-section')" style="font-size: 16px; padding: 14px 28px; background: #10b981; border-radius:12px;"><i class="fas fa-qrcode"></i> Pay Now (Zero Commission)</button>
+                </div>
+            </div> <!-- End student-main-grid -->
+
+            <!-- Digital ID Card Section -->
+            <div id="student-idcard-section" class="student-view-section" style="display: none;">
+                <button onclick="openStudentView('student-main-grid')" class="mb-4 flex items-center gap-2 text-slate-600 font-semibold"><i class="fas fa-arrow-left"></i> Back to Dashboard</button>
+                <div class="card" style="text-align: center; padding: 25px; border-radius:16px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.06);">
                     <i class="fas fa-id-badge" style="font-size: 36px; color: #1E3A8A; margin-bottom: 12px;"></i>
                     <h3 style="color: #1E3A8A; margin-bottom: 8px; font-family:'Inter',sans-serif;">My Digital ID Card</h3>
                     <p style="color: #64748b; font-size: 13px; margin-bottom: 16px;">Download your official digital student ID card.</p>
                     <button id="stu-btn-download-id" class="action-btn btn-blue" onclick="window.downloadStudentIDCard()" style="width: 100%; padding: 12px; font-size: 14px; border-radius:10px;"><i class="fas fa-download"></i> Print / Save PDF</button>
                 </div>
-                <div class="card" style="flex: 1; text-align: center; min-width: 280px; padding: 25px; border-radius:16px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.06);">
+            </div>
+
+            <!-- Exam Admit Card Section -->
+            <div id="student-admitcard-section" class="student-view-section" style="display: none;">
+                <button onclick="openStudentView('student-main-grid')" class="mb-4 flex items-center gap-2 text-slate-600 font-semibold"><i class="fas fa-arrow-left"></i> Back to Dashboard</button>
+                <div class="card" style="text-align: center; padding: 25px; border-radius:16px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.06);">
                     <i class="fas fa-calendar-alt" style="font-size: 36px; color: #e67e22; margin-bottom: 12px;"></i>
                     <h3 style="color: #e67e22; margin-bottom: 8px; font-family:'Inter',sans-serif;">My Exam Admit Card</h3>
                     <p style="color: #64748b; font-size: 13px; margin-bottom: 16px;">Download exam schedule & admit card.</p>
-                    <button id="stu-btn-download-admit" class="action-btn btn-yellow" onclick="window.downloadStudentAdmitCard()" style="width: 100%; padding: 12px; font-size: 14px; background:#e67e22; color:white; border-radius:10px;"><i class="fas fa-download"></i> Print / Save PDF</button>
+                    <div>
+                        <button id="stu-btn-download-admit" class="action-btn btn-yellow" onclick="window.downloadStudentAdmitCard()" style="width: 100%; padding: 12px; font-size: 14px; background:#e67e22; color:white; border-radius:10px;"><i class="fas fa-download"></i> Print / Save PDF</button>
+                    </div>
                 </div>
             </div>
 
             <!-- Payment Section (hidden by default) -->
-            <div id="student-payment-section" style="display: none;">
+            <div id="student-payment-section" class="student-view-section" style="display: none;">
+                <button onclick="openStudentView('student-main-grid')" class="mb-4 flex items-center gap-2 text-slate-600 font-semibold"><i class="fas fa-arrow-left"></i> Back to Dashboard</button>
                 <!-- Floating Stats Card -->
                 <div class="card" style="display: flex; align-items: center; justify-content: space-between; padding: 25px; border-radius: 16px; background: linear-gradient(135deg, #1E3A8A, #3182ce); color: white; box-shadow: 0 10px 25px rgba(30,58,138,0.2); margin-bottom: 20px;">
                     <div>
@@ -1267,10 +1278,10 @@
             </div>
 
             <!-- Fee Receipt Section -->
-            <div id="student-receipt-section" class="card" style="display: none; padding: 25px; border-radius:16px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.06); margin-bottom:20px;">
+            <div id="student-receipt-section" class="student-view-section card" style="display: none; padding: 25px; border-radius:16px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.06); margin-bottom:20px;">
+                <button onclick="openStudentView('student-main-grid')" class="mb-4 flex items-center gap-2 text-slate-600 font-semibold"><i class="fas fa-arrow-left"></i> Back to Dashboard</button>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <h2 style="color: #1E3A8A; font-family:'Inter',sans-serif; margin: 0;"><i class="fas fa-receipt"></i> Digital Fee Receipts</h2>
-                    <button class="action-btn" style="background:#e2e8f0; color:#475569;" onclick="document.getElementById('student-receipt-section').style.display='none'"><i class="fas fa-times"></i> Close</button>
                 </div>
                 <div style="overflow-x: auto;">
                     <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
