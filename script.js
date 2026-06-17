@@ -1182,17 +1182,33 @@ function renderAdmitCardStudentsTable(className = "ALL", searchTerm = null, stat
             <button class="action-btn btn-purple" onclick="downloadMyAdmitCard('${safeId}')"><i class="fas fa-file-alt"></i> Admit Card</button>
             <button class="action-btn" style="background:#10b981; color:white;" onclick="downloadMyMarksheet('${safeId}')"><i class="fas fa-file-invoice"></i> Marksheet</button>
         `;
+
+        const toggleHtml = `<label class="switch" style="transform: scale(0.8);"><input type="checkbox" onchange="toggleAdmitCardVisibility('${safeId}', this.checked)" ${dt.admitCardPublished ? 'checked' : ''}><span class="slider"></span></label>`;
         
         html += `<tr class="${locked ? 'locked-row' : ''}">
             <td><img src="${dt.photoUrl || 'https://via.placeholder.com/100'}" class="img-circle"></td>
             <td><strong style="display:block; font-size:13px;">${dt.name || 'N/A'} ${locked ? '<i class="fas fa-lock" style="color:#e53e3e"></i>' : ''}</strong><span style="font-size:12px; display:block;"><b>P:</b> ${(dt.parentage || dt.fatherName) || 'N/A'}</span></td>
             <td><span style="background:#eaf4ff; color:#2c7be5; padding:3px 8px; border-radius:12px; font-size:12px; font-weight:bold;">Class: ${dt.class || 'N/A'} (Roll: ${dt.rollNo || 'N/A'})</span></td>
             <td><span style="font-size:13px; font-weight:bold; color:#e53e3e;">₹${dt.feeDue || 0}</span></td>
+            <td style="text-align: center;">${toggleHtml}</td>
             <td><div class="action-btn-group">${actionBtns}</div></td>
         </tr>`;
     });
-    tbody.innerHTML = html || "<tr><td colspan='5' style='text-align:center; padding:30px; color:#999;'>No Students Found.</td></tr>";
+    tbody.innerHTML = html || "<tr><td colspan='6' style='text-align:center; padding:30px; color:#999;'>No Students Found.</td></tr>";
 }
+
+window.toggleAdmitCardVisibility = async (studentId, isPublished) => {
+    try {
+        await updateDoc(doc(db, "students", studentId), { admitCardPublished: isPublished });
+        // Optionally update the local fetched array so it persists on re-filter
+        const idx = window.fetchedStudents.findIndex(s => s.id === studentId);
+        if (idx !== -1) window.fetchedStudents[idx].admitCardPublished = isPublished;
+        console.log(`Admit card visibility updated for ${studentId}: ${isPublished}`);
+    } catch (error) {
+        console.error("Error toggling admit card visibility:", error);
+        alert("Failed to update database.");
+    }
+};
 
 window.populateStudentsForMarks = () => {
     const classVal = document.getElementById("marks_class").value;
@@ -2826,6 +2842,7 @@ window.handleStudentFeatureClick = (featureId) => {
         case 'fee': window.showStudentPaymentSection(); break;
         case 'idcard': window.downloadStudentIDCard(); break;
         case 'admit': window.downloadStudentAdmitCard(); break;
+        case 'fee-receipt': window.showStudentReceiptsSection(); break;
         default:
             const toast = document.createElement('div');
             toast.className = 'fixed top-4 right-4 bg-[#1E3A8A] text-white px-5 py-3 rounded-xl shadow-lg z-[9999] text-sm font-medium';
@@ -2833,6 +2850,61 @@ window.handleStudentFeatureClick = (featureId) => {
             toast.innerText = '🚀 Coming Soon!';
             document.body.appendChild(toast);
             setTimeout(() => toast.remove(), 2000);
+    }
+};
+
+window.showStudentReceiptsSection = () => {
+    document.getElementById("student-receipt-section").style.display = "block";
+    const tbody = document.getElementById("stu-receipt-table-body");
+    
+    // Dummy Data
+    const dummyReceipts = [
+        { recNo: "REC-2026-001", date: "05-Apr-2026", period: "April", mode: "UPI", total: 1000, paid: 1000, due: 0 },
+        { recNo: "REC-2026-054", date: "10-May-2026", period: "May", mode: "Cash", total: 1000, paid: 1000, due: 0 },
+        { recNo: "REC-2026-102", date: "02-Jun-2026", period: "June", mode: "Bank Transfer", total: 1000, paid: 1000, due: 0 }
+    ];
+    
+    let html = "";
+    dummyReceipts.forEach(r => {
+        html += `
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+            <td style="padding: 12px; font-weight:bold; color:#1E3A8A;">${r.recNo}</td>
+            <td style="padding: 12px;">${r.date}</td>
+            <td style="padding: 12px;">${r.period}</td>
+            <td style="padding: 12px;">${r.mode}</td>
+            <td style="padding: 12px;">₹${r.total}</td>
+            <td style="padding: 12px; color:#10b981;">₹${r.paid}</td>
+            <td style="padding: 12px; color:#e53e3e;">₹${r.due}</td>
+            <td style="padding: 12px; text-align: center;">
+                <button class="action-btn" style="background:#e2e8f0; color:#3182ce; padding:5px 10px; border-radius:5px;" onclick="alert('Print functionality coming soon!')"><i class="fas fa-print"></i></button>
+            </td>
+        </tr>`;
+    });
+    tbody.innerHTML = html;
+};
+
+window.initAdmitCardUI = () => {
+    if (!currentStudentUser) return;
+    const btnContainer = document.getElementById("stu-btn-download-admit")?.parentElement;
+    if (btnContainer) {
+        if (!currentStudentUser.admitCardPublished) {
+            document.getElementById("stu-btn-download-admit")?.remove();
+            const lockedMsg = document.createElement("div");
+            lockedMsg.id = "stu-admit-locked-msg";
+            lockedMsg.style.cssText = "background:#fee2e2; color:#b91c1c; padding:12px; border-radius:8px; font-weight:bold; font-size:14px; text-align:center;";
+            lockedMsg.innerHTML = `<i class="fas fa-lock"></i> Admit Card Not Available. Please contact the administration.`;
+            // Remove any existing locked message first
+            const existing = document.getElementById("stu-admit-locked-msg");
+            if (existing) existing.remove();
+            btnContainer.appendChild(lockedMsg);
+        } else {
+            // Ensure button is there if published (e.g. after relogin)
+            if (!document.getElementById("stu-btn-download-admit")) {
+                const existing = document.getElementById("stu-admit-locked-msg");
+                if (existing) existing.remove();
+                btnContainer.insertAdjacentHTML('beforeend', `<button id="stu-btn-download-admit" class="action-btn btn-yellow" onclick="window.downloadStudentAdmitCard()" style="width: 100%; padding: 12px; font-size: 14px; background:#e67e22; color:white; border-radius:10px;"><i class="fas fa-download"></i> Print / Save PDF</button>`);
+            }
+        }
     }
 };
 
@@ -2940,12 +3012,56 @@ window.showStudentPaymentSection = () => {
     if (!currentStudentSchoolDoc.paymentQrUrl || !currentStudentSchoolDoc.upiId) {
         alert("The school has not configured the QR Payment System yet."); return;
     }
+    
     document.getElementById("student-payment-section").style.display = "block";
     document.getElementById("stu-qr-img").src = currentStudentSchoolDoc.paymentQrUrl;
     document.getElementById("stu-upi-text").innerText = currentStudentSchoolDoc.upiId;
 
-    const amount = currentStudentUser.dueBalance > 0 ? currentStudentUser.dueBalance : 0;
-    const upiLink = `upi://pay?pa=${currentStudentSchoolDoc.upiId}&pn=${encodeURIComponent(currentStudentSchoolDoc.schoolName)}&am=${amount}&cu=INR`;
+    // Advanced Math Logic
+    const dueAmount = Number(currentStudentUser.feeDue || currentStudentUser.dueBalance || 0);
+    // If totalFee exists use it, otherwise fake a realistic total fee (e.g. 1000 * 12) or just dueAmount
+    const totalAmount = Number(currentStudentUser.totalFee || (dueAmount > 0 ? dueAmount + 12000 : 12000)); 
+    const paidAmount = Number(currentStudentUser.paidAmount || (totalAmount - dueAmount)); 
+    
+    document.getElementById("stu-total-fee").innerText = `₹${totalAmount}`;
+    document.getElementById("stu-paid-fee").innerText = `₹${paidAmount}`;
+    document.getElementById("stu-due-fee").innerText = `₹${dueAmount}`;
+    
+    // Pie Chart Logic
+    const percentagePaid = totalAmount > 0 ? Math.round((paidAmount / totalAmount) * 100) : 0;
+    document.getElementById("stu-fee-percentage").innerText = `${percentagePaid}%`;
+    document.getElementById("stu-fee-pie-chart").style.background = `conic-gradient(#10b981 0% ${percentagePaid}%, #e53e3e ${percentagePaid}% 100%)`;
+
+    // Monthly breakdown dummy data
+    const tbody = document.getElementById("stu-monthly-fee-table");
+    let html = "";
+    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const currentMonthIndex = new Date().getMonth();
+    
+    months.forEach((month, idx) => {
+        if (idx <= currentMonthIndex) {
+            const isPaid = idx < currentMonthIndex || (idx === currentMonthIndex && dueAmount === 0);
+            const amt = Math.round(totalAmount / 12) || 1000;
+            const paid = isPaid ? amt : 0;
+            const due = isPaid ? 0 : amt;
+            const statusIcon = isPaid ? '<i class="fas fa-check-circle" style="color:#10b981; font-size:16px;"></i>' : '<i class="fas fa-times-circle" style="color:#e53e3e; font-size:16px;"></i>';
+            const actionBtn = isPaid ? '<span style="color:#10b981; font-weight:bold;">Paid</span>' : `<button class="action-btn" style="background:#1E3A8A; color:white; padding:6px 12px; font-size:12px; border-radius:6px; width:100%;" onclick="document.getElementById('stu-pay-amount').value='${due}'; document.getElementById('stu-pay-amount').focus();">Pay</button>`;
+            
+            html += `
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+                <td style="padding: 12px; font-weight:bold;">${month}</td>
+                <td style="padding: 12px;">₹${amt}</td>
+                <td style="padding: 12px; color:#10b981;">₹${paid}</td>
+                <td style="padding: 12px; color:#e53e3e; font-weight:bold;">₹${due}</td>
+                <td style="padding: 12px; text-align: center;">${statusIcon}</td>
+                <td style="padding: 12px; text-align: center;">${actionBtn}</td>
+            </tr>`;
+        }
+    });
+    tbody.innerHTML = html;
+
+    const amountForUpi = dueAmount > 0 ? dueAmount : 0;
+    const upiLink = `upi://pay?pa=${currentStudentSchoolDoc.upiId}&pn=${encodeURIComponent(currentStudentSchoolDoc.schoolName)}&am=${amountForUpi}&cu=INR`;
     document.getElementById("stu-upi-deep-link").href = upiLink;
 };
 

@@ -1121,6 +1121,8 @@
                                         <th>Student Details</th>
                                         <th>Class</th>
                                         <th>Fee Due</th>
+                                        <th>Student View</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="admit-student-table">
@@ -1149,7 +1151,7 @@
             <button class="logout-btn" onclick="logoutStudent()" style="background:#e53e3e;"><i class="fas fa-power-off"></i> Logout</button>
         </div>
 
-        <div style="max-width: 900px; margin: 80px auto 20px; padding: 0 16px;">
+        <div style="max-width: 900px; margin: 80px auto 0; padding: 0 16px; height: calc(100vh - 80px); overflow-y: auto; padding-bottom: 120px; box-sizing: border-box; scroll-behavior: smooth;">
             <!-- Student Info Header -->
             <div style="text-align:center; margin-bottom:20px;">
                 <h2 style="color:#1E3A8A; font-family:'Inter',sans-serif; font-weight:700; margin-bottom:4px;">Welcome, <span id="stu-display-name">Student</span></h2>
@@ -1185,7 +1187,45 @@
             </div>
 
             <!-- Payment Section (hidden by default) -->
-            <div id="student-payment-section" class="card" style="display: none; text-align: center; padding:30px; border-radius:16px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.06);">
+            <div id="student-payment-section" style="display: none;">
+                <!-- Floating Stats Card -->
+                <div class="card" style="display: flex; align-items: center; justify-content: space-between; padding: 25px; border-radius: 16px; background: linear-gradient(135deg, #1E3A8A, #3182ce); color: white; box-shadow: 0 10px 25px rgba(30,58,138,0.2); margin-bottom: 20px;">
+                    <div>
+                        <p style="margin: 0; font-size: 14px; opacity: 0.9;">Total Fee</p>
+                        <h2 style="margin: 0 0 10px 0; font-size: 28px;" id="stu-total-fee">₹0</h2>
+                        <p style="margin: 0; font-size: 13px; color: #10b981;"><i class="fas fa-check-circle"></i> Paid: <span id="stu-paid-fee">₹0</span></p>
+                        <p style="margin: 5px 0 0 0; font-size: 13px; color: #fecaca;"><i class="fas fa-exclamation-circle"></i> Due: <span id="stu-due-fee">₹0</span></p>
+                    </div>
+                    <div style="position: relative; width: 100px; height: 100px;">
+                        <div id="stu-fee-pie-chart" style="width: 100%; height: 100%; border-radius: 50%; background: conic-gradient(#10b981 0% 0%, #e53e3e 0% 100%); transition: background 1s ease;"></div>
+                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 70px; height: 70px; background: #1E3A8A; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;"><span id="stu-fee-percentage">0%</span></div>
+                    </div>
+                </div>
+
+                <!-- Monthly Breakdown Table -->
+                <div class="card" style="padding: 20px; border-radius: 16px; background: white; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.06);">
+                    <h3 style="color: #1E3A8A; margin-bottom: 15px; font-family: 'Inter', sans-serif;"><i class="fas fa-calendar-alt"></i> Monthly Breakdown</h3>
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
+                            <thead>
+                                <tr style="background: #f8fafc; color: #64748b;">
+                                    <th style="padding: 12px; border-bottom: 2px solid #e2e8f0;">Month</th>
+                                    <th style="padding: 12px; border-bottom: 2px solid #e2e8f0;">Amt</th>
+                                    <th style="padding: 12px; border-bottom: 2px solid #e2e8f0;">Paid</th>
+                                    <th style="padding: 12px; border-bottom: 2px solid #e2e8f0;">Due</th>
+                                    <th style="padding: 12px; border-bottom: 2px solid #e2e8f0; text-align: center;">Status</th>
+                                    <th style="padding: 12px; border-bottom: 2px solid #e2e8f0; text-align: center;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="stu-monthly-fee-table">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Scan & Pay Card -->
+                <div class="card" style="text-align: center; padding:30px; border-radius:16px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.06);">
                 <h2 style="color: #1E3A8A; margin-bottom: 15px; font-family:'Inter',sans-serif;"><i class="fas fa-mobile-alt"></i> Scan & Pay</h2>
                 <p style="color: #64748b; margin-bottom: 20px;">Use any UPI App to scan the QR code below or tap the direct link.</p>
 
@@ -1217,6 +1257,7 @@
                     </div>
                     <button type="submit" id="stu-submit-verification-btn" class="submit-btn" style="width: 100%; border-radius:10px;"><i class="fas fa-cloud-upload-alt"></i> Submit for Verification</button>
                 </form>
+                </div>
             </div>
 
             <div id="student-success-section" class="card" style="display: none; text-align: center; padding: 50px 20px; border-radius:16px; background:white;">
@@ -1224,6 +1265,34 @@
                 <h2 style="color: #1E3A8A; font-family:'Inter',sans-serif;">Verification Submitted!</h2>
                 <p style="color: #64748b;">Your payment details have been sent to the Chairman. Once verified, your due balance will be updated automatically.</p>
             </div>
+
+            <!-- Fee Receipt Section -->
+            <div id="student-receipt-section" class="card" style="display: none; padding: 25px; border-radius:16px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.06); margin-bottom:20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="color: #1E3A8A; font-family:'Inter',sans-serif; margin: 0;"><i class="fas fa-receipt"></i> Digital Fee Receipts</h2>
+                    <button class="action-btn" style="background:#e2e8f0; color:#475569;" onclick="document.getElementById('student-receipt-section').style.display='none'"><i class="fas fa-times"></i> Close</button>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                        <thead>
+                            <tr style="background: #f8fafc; color: #64748b; border-bottom: 2px solid #e2e8f0;">
+                                <th style="padding: 10px;">Rec. No.</th>
+                                <th style="padding: 10px;">Rec. Date</th>
+                                <th style="padding: 10px;">Period</th>
+                                <th style="padding: 10px;">Pay Mode</th>
+                                <th style="padding: 10px;">Total Due</th>
+                                <th style="padding: 10px;">Paid Amt</th>
+                                <th style="padding: 10px;">Due Amt</th>
+                                <th style="padding: 10px; text-align: center;">Print</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stu-receipt-table-body">
+                            <!-- Dummy Data populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
         </div>
     </div>
 
