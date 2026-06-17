@@ -1249,6 +1249,49 @@
                 </div>
             </div>
 
+            <!-- Complaint Section -->
+            <div id="student-complaint-section" class="student-view-section" style="display: none;">
+                <button onclick="openStudentView('student-main-grid')" class="mb-4 flex items-center gap-2 text-slate-600 font-semibold"><i class="fas fa-arrow-left"></i> Back to Dashboard</button>
+                <div class="card p-6 rounded-2xl bg-white shadow-sm border border-gray-100">
+                    <h3 class="text-xl font-bold text-[#1E3A8A] mb-2 flex items-center gap-2"><i class="fas fa-wrench"></i> Register Complaint</h3>
+                    <p class="text-sm text-gray-500 mb-6">Send your complaints securely. They will be directed to the appropriate department.</p>
+                    
+                    <form id="student-complaint-form" onsubmit="submitStudentComplaint(event)" class="flex flex-col gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Select Target *</label>
+                            <select id="complaint-target" required class="w-full p-3 rounded-xl border border-gray-200 bg-gray-50 focus:ring-2 focus:ring-[#1E3A8A] outline-none">
+                                <option value="">-- Select Recipient --</option>
+                                <option value="CoreEduTech">CoreEduTech (System Admin)</option>
+                                <option value="Principal">Principal / Chairman</option>
+                                <option value="Staff">Staff Member / Teacher</option>
+                                <option value="Student">Student Management</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Complaint Subject *</label>
+                            <input type="text" id="complaint-subject" required placeholder="Brief title of issue" class="w-full p-3 rounded-xl border border-gray-200 bg-gray-50 focus:ring-2 focus:ring-[#1E3A8A] outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Description *</label>
+                            <textarea id="complaint-desc" required rows="4" placeholder="Detail your complaint here..." class="w-full p-3 rounded-xl border border-gray-200 bg-gray-50 focus:ring-2 focus:ring-[#1E3A8A] outline-none resize-none"></textarea>
+                        </div>
+                        <button type="submit" class="mt-2 w-full py-3 bg-[#1E3A8A] text-white font-bold rounded-xl shadow-md hover:bg-blue-800 transition-colors flex items-center justify-center gap-2">
+                            <i class="fas fa-paper-plane"></i> Submit Complaint
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Generic Placeholder Section for under construction modules -->
+            <div id="student-placeholder-section" class="student-view-section" style="display: none;">
+                <button onclick="openStudentView('student-main-grid')" class="mb-4 flex items-center gap-2 text-slate-600 font-semibold"><i class="fas fa-arrow-left"></i> Back to Dashboard</button>
+                <div class="card p-8 rounded-2xl bg-white shadow-sm border border-gray-100 text-center flex flex-col items-center justify-center h-64">
+                    <i id="placeholder-icon" class="fas fa-tools text-5xl text-gray-300 mb-4"></i>
+                    <h3 id="placeholder-title" class="text-xl font-bold text-gray-700 mb-2">Module Under Construction</h3>
+                    <p class="text-sm text-gray-500">This feature is currently being built and will be available soon.</p>
+                </div>
+            </div>
+
             <!-- Payment Section (hidden by default) -->
             <div id="student-payment-section" class="student-view-section" style="display: none;">
                 <button onclick="openStudentView('student-main-grid')" class="mb-4 flex items-center gap-2 text-slate-600 font-semibold"><i class="fas fa-arrow-left"></i> Back to Dashboard</button>

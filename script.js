@@ -2852,13 +2852,58 @@ window.handleStudentFeatureClick = (featureId) => {
         case 'idcard': window.openStudentView('student-idcard-section'); break;
         case 'admit': window.openStudentView('student-admitcard-section'); break;
         case 'fee-receipt': window.showStudentReceiptsSection(); break;
+        case 'complaint': window.openStudentView('student-complaint-section'); break;
         default:
-            const toast = document.createElement('div');
-            toast.className = 'fixed top-4 right-4 bg-[#1E3A8A] text-white px-5 py-3 rounded-xl shadow-lg z-[9999] text-sm font-medium';
-            toast.style.fontFamily = 'Inter, sans-serif';
-            toast.innerText = '🚀 Coming Soon!';
-            document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 2000);
+            const feature = studentFeatures.find(f => f.id === featureId);
+            if (feature) {
+                document.getElementById("placeholder-title").innerText = `${feature.title} Module Under Construction`;
+                window.openStudentView('student-placeholder-section');
+            } else {
+                const toast = document.createElement('div');
+                toast.className = 'fixed top-4 right-4 bg-[#1E3A8A] text-white px-5 py-3 rounded-xl shadow-lg z-[9999] text-sm font-medium';
+                toast.style.fontFamily = 'Inter, sans-serif';
+                toast.innerText = '🚀 Coming Soon!';
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 2000);
+            }
+    }
+};
+
+window.submitStudentComplaint = async (e) => {
+    e.preventDefault();
+    const target = document.getElementById("complaint-target").value;
+    const subject = document.getElementById("complaint-subject").value;
+    const desc = document.getElementById("complaint-desc").value;
+    
+    if(!target || !subject || !desc) return;
+    
+    const btn = e.target.querySelector('button[type="submit"]');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+    btn.disabled = true;
+    
+    try {
+        await addDoc(collection(db, "complaints"), {
+            schoolId: currentStudentSchoolDoc.id || currentSchoolId,
+            studentId: currentStudentUser.id || currentStudentUser.regNo,
+            studentName: currentStudentUser.name,
+            studentMobile: currentStudentUser.mobile || "",
+            target: target,
+            subject: subject,
+            description: desc,
+            timestamp: serverTimestamp(),
+            status: 'Pending'
+        });
+        
+        alert("Complaint submitted successfully!");
+        e.target.reset();
+        window.openStudentView('student-main-grid');
+    } catch (err) {
+        console.error("Error submitting complaint:", err);
+        alert("Failed to submit complaint. Please try again.");
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
     }
 };
 
