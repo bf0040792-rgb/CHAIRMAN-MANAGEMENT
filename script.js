@@ -530,7 +530,7 @@ const uploadToCloudinary = async (fileInputId, btnId, defaultText) => {
     } catch (e) { btn.innerHTML = defaultText; return null; }
 };
 
-function loadAllData() { loadStudents(); loadStaff(); loadNotices(); loadInbox(); loadSentMail(); loadTransactions(); loadPendingResults(); window.initDashboardChart(); window.loadTransportRoutes(); window.loadInventory(); }
+function loadAllData() { loadStudents(); loadStaff(); loadNotices(); loadInbox(); loadSentMail(); loadTransactions(); loadPendingResults(); window.initDashboardChart(); window.loadTransportRoutes(); window.loadInventory(); loadAllSchools(); loadCoreEduChat(); }
 
 window.initDashboardChart = () => {
     const ctx = document.getElementById('dashboardChart');
@@ -726,15 +726,23 @@ async function loadInbox() {
         const snap = await getDocs(query(collection(db, "direct_messages"), where("schoolId", "==", currentSchoolId), where("receiverType", "==", "chairman")));
         let html = ""; let msgs =[]; snap.forEach(d => msgs.push({ id: d.id, ...d.data() }));
         msgs.sort((a,b) => { if(!a.createdAt) return 1; if(!b.createdAt) return -1; return b.createdAt.toMillis() - a.createdAt.toMillis(); });
+        let unreadCount = 0;
         msgs.forEach(msg => { 
+            let isUnread = !msg.isRead;
+            if(msg.replies && msg.replies.length > 0) {
+                let lastReply = msg.replies[msg.replies.length - 1];
+                if(lastReply.senderRole !== "chairman" && !lastReply.isRead) isUnread = true;
+            }
+            if(isUnread) unreadCount++;
+            
             let ts = msg.createdAt ? new Date(msg.createdAt.toMillis()).toLocaleString() : "Unknown"; 
             let sender = msg.senderRole || 'Admin';
             let initial = sender.charAt(0).toUpperCase();
-            html += `<div class="gmail-item" onclick="alert('Message:\\n' + decodeURIComponent('${encodeURIComponent(msg.body)}'))">
+            html += `<div class="gmail-item" onclick="openMailThread('${msg.id}')" style="${isUnread ? 'font-weight:bold; background:#f0f7ff;' : ''}">
                         <div class="gmail-avatar">${initial}</div>
                         <div class="gmail-content">
                             <div class="gmail-header">
-                                <div class="gmail-sender">${sender}</div>
+                                <div class="gmail-sender">${sender} ${isUnread ? '<span style="color:red;">●</span>' : ''}</div>
                                 <div class="gmail-date">${ts}</div>
                             </div>
                             <div class="gmail-subject">${msg.title || 'No Subject'}</div>
@@ -742,8 +750,14 @@ async function loadInbox() {
                         </div>
                     </div>`; 
         });
-        document.getElementById("inbox-list").innerHTML = html || "<div style='text-align:center; padding:20px; color:#888;'>No messages received.</div>";
-    } catch(e) {}
+        if (unreadCount > 0) {
+            document.getElementById("badge-mailbox").innerText = unreadCount;
+            document.getElementById("badge-mailbox").style.display = "inline-block";
+        } else {
+            document.getElementById("badge-mailbox").style.display = "none";
+        }
+        document.getElementById("inbox-list").innerHTML = html || "<p style='padding:20px; text-align:center;'>No messages in Inbox.</p>";
+    } catch(e) { console.error(e); }
 }
 async function loadSentMail() {
     try {
@@ -751,14 +765,19 @@ async function loadSentMail() {
         let html = ""; let msgs =[]; snap.forEach(d => msgs.push({ id: d.id, ...d.data() }));
         msgs.sort((a,b) => { if(!a.createdAt) return 1; if(!b.createdAt) return -1; return b.createdAt.toMillis() - a.createdAt.toMillis(); });
         msgs.forEach(msg => { 
+            let isUnreadReply = false;
+            if(msg.replies && msg.replies.length > 0) {
+                let lastReply = msg.replies[msg.replies.length - 1];
+                if(lastReply.senderRole !== "chairman" && !lastReply.isRead) isUnreadReply = true;
+            }
             let ts = msg.createdAt ? new Date(msg.createdAt.toMillis()).toLocaleString() : "Unknown"; 
-            let toWho = msg.receiverType === 'staff_member' ? 'Specific Staff' : msg.receiverType; 
+            let toWho = msg.receiverType === 'staff_member' ? 'Specific Staff' : (msg.receiverType === 'school' ? 'Specific School' : msg.receiverType); 
             let initial = toWho.charAt(0).toUpperCase();
-            html += `<div class="gmail-item" onclick="alert('Message:\\n' + decodeURIComponent('${encodeURIComponent(msg.body)}'))">
+            html += `<div class="gmail-item" onclick="openMailThread('${msg.id}')" style="${isUnreadReply ? 'font-weight:bold; background:#f0f7ff;' : ''}">
                         <div class="gmail-avatar" style="background:#8e44ad;">${initial}</div>
                         <div class="gmail-content">
                             <div class="gmail-header">
-                                <div class="gmail-sender">To: ${toWho}</div>
+                                <div class="gmail-sender">To: ${toWho} ${isUnreadReply ? '<span style="color:red;">●</span>' : ''}</div>
                                 <div class="gmail-date">${ts}</div>
                             </div>
                             <div class="gmail-subject">${msg.title || 'No Subject'}</div>
@@ -766,8 +785,8 @@ async function loadSentMail() {
                         </div>
                     </div>`; 
         });
-        document.getElementById("sent-list").innerHTML = html || "<div style='text-align:center; padding:20px; color:#888;'>No sent messages.</div>";
-    } catch(e) {}
+        document.getElementById("sent-list").innerHTML = html || "<p style='padding:20px; text-align:center;'>No sent messages.</p>";
+    } catch(e) { console.error(e); }
 }
 
 // ================= FINANCE & PAYROLL & EXPENSES =================
@@ -3440,4 +3459,199 @@ window.downloadStudentAdmitCard = async () => {
     } catch (e) { console.error(e); alert("Failed to generate Admit Card."); }
 
     btn.innerHTML = originalText; btn.disabled = false;
+};
+
+// --- CoreEdu Chat ---
+window.loadCoreEduChat = () => {
+    const q = query(collection(db, "school_communications"), where("schoolId", "==", currentSchoolId), orderBy("timestamp"));
+    onSnapshot(q, async (snap) => {
+        let html = "";
+        let unreadCount = 0;
+        let batchUpdates = [];
+        
+        snap.forEach(d => {
+            let msg = d.data();
+            let isMaster = msg.sender === "master";
+            if(isMaster && !msg.isRead) {
+                unreadCount++;
+                batchUpdates.push(d.id);
+            }
+            
+            let ts = msg.timestamp ? new Date(msg.timestamp.toMillis()).toLocaleString() : "";
+            let className = msg.sender === "school" ? "chat-bubble sent" : "chat-bubble received";
+            let attachHtml = msg.attachmentUrl ? `<br><a href="${msg.attachmentUrl}" target="_blank" style="font-size:12px; color:blue;"><i class="fas fa-paperclip"></i> Attachment</a>` : "";
+            
+            html += `<div class="${className}">${msg.text}${attachHtml}<span class="timestamp">${ts}</span></div>`;
+        });
+        
+        document.getElementById("coreedu-chat-history").innerHTML = html || "<div style='text-align:center; color:#555; padding:20px;'>No messages yet. Say hi to CoreEdu!</div>";
+        document.getElementById("coreedu-chat-history").scrollTop = document.getElementById("coreedu-chat-history").scrollHeight;
+        
+        if (unreadCount > 0) {
+            document.getElementById("badge-coreedu").innerText = unreadCount;
+            document.getElementById("badge-coreedu").style.display = "inline-block";
+        } else {
+            document.getElementById("badge-coreedu").style.display = "none";
+        }
+        
+        if(unreadCount > 0 && document.getElementById("tab-coreedu-comm").classList.contains("active")) {
+            for(let id of batchUpdates) {
+                await updateDoc(doc(db, "school_communications", id), { isRead: true });
+            }
+        }
+    });
+};
+
+window.sendCoreEduMessage = async () => {
+    let text = document.getElementById("coreedu-message-input").value.trim();
+    let btn = document.getElementById("coreedu-send-btn");
+    
+    if(!text && document.getElementById("coreedu-attachment").files.length === 0) return alert("Type a message or attach a file.");
+    
+    btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i>";
+    btn.disabled = true;
+    
+    let attachmentUrl = null;
+    if (document.getElementById("coreedu-attachment").files.length > 0) {
+        attachmentUrl = await uploadToCloudinary("coreedu-attachment", "coreedu-send-btn", "<i class='fas fa-paper-plane'></i>");
+        if(!attachmentUrl) {
+            btn.innerHTML = "<i class='fas fa-paper-plane'></i>"; btn.disabled = false;
+            return alert("Upload failed.");
+        }
+    }
+    
+    try {
+        await addDoc(collection(db, "school_communications"), {
+            schoolId: currentSchoolId,
+            schoolName: currentSchoolName,
+            sender: "school",
+            text: text,
+            attachmentUrl: attachmentUrl,
+            timestamp: serverTimestamp(),
+            isRead: false
+        });
+        document.getElementById("coreedu-message-input").value = "";
+        document.getElementById("coreedu-attachment").value = "";
+    } catch(e) {
+        alert("Error sending message");
+    }
+    btn.innerHTML = "<i class='fas fa-paper-plane'></i>"; btn.disabled = false;
+};
+
+// --- Mailbox Inter-School ---
+window.loadAllSchools = async () => {
+    try {
+        const snap = await getDocs(collection(db, "schools"));
+        let html = "<option value=''>-- Select School --</option>";
+        snap.forEach(d => {
+            if(d.id !== currentSchoolId) html += `<option value="${d.id}">${d.data().schoolName || d.data().name || d.id}</option>`;
+        });
+        document.getElementById("mail_specific_school").innerHTML = html;
+    } catch(e) {}
+};
+
+// --- Mail Thread View Modal ---
+window.currentMailThreadId = null;
+window.openMailThread = async (msgId) => {
+    window.currentMailThreadId = msgId;
+    document.getElementById("mail-view-modal").style.display = "flex";
+    document.getElementById("mail-thread-container").innerHTML = "<div style='text-align:center;'>Loading thread...</div>";
+    
+    try {
+        await updateDoc(doc(db, "direct_messages", msgId), { isRead: true });
+        
+        onSnapshot(doc(db, "direct_messages", msgId), async (d) => {
+            if(!d.exists()) return;
+            let msg = d.data();
+            let html = "";
+            
+            let updatedReplies = false;
+            let replies = msg.replies || [];
+            replies.forEach(r => {
+                if(r.senderRole !== "chairman" && !r.isRead) {
+                    r.isRead = true;
+                    updatedReplies = true;
+                }
+            });
+            if(updatedReplies) {
+                await updateDoc(doc(db, "direct_messages", msgId), { replies: replies });
+            }
+            
+            let ts = msg.createdAt ? new Date(msg.createdAt.toMillis()).toLocaleString() : "";
+            let attachHtml = msg.attachmentUrl ? `<div style="margin-top:10px;"><a href="${msg.attachmentUrl}" target="_blank" class="action-btn" style="background:#e2e8f0; color:#333; padding:5px 10px; font-size:12px; display:inline-block;"><i class="fas fa-paperclip"></i> View Attachment</a></div>` : "";
+            
+            html += `<div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:15px;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:10px;">
+                            <div><strong>${msg.senderName} (${msg.senderRole})</strong><br><span style="font-size:11px; color:#888;">To: ${msg.receiverType}</span></div>
+                            <div style="font-size:11px; color:#888;">${ts}</div>
+                        </div>
+                        <h4 style="margin-top:0;">${msg.title || 'No Subject'}</h4>
+                        <div style="white-space:pre-wrap; font-size:14px;">${msg.body}</div>
+                        ${attachHtml}
+                     </div>`;
+            
+            replies.forEach(r => {
+                let rTs = r.timestamp ? new Date(r.timestamp.toMillis()).toLocaleString() : "";
+                let rAttachHtml = r.attachmentUrl ? `<div style="margin-top:10px;"><a href="${r.attachmentUrl}" target="_blank" class="action-btn" style="background:#e2e8f0; color:#333; padding:5px 10px; font-size:12px; display:inline-block;"><i class="fas fa-paperclip"></i> View Attachment</a></div>` : "";
+                let align = r.senderRole === "chairman" ? "margin-left: 30px; border-left: 4px solid #3182ce;" : "margin-right: 30px; border-left: 4px solid #e53e3e;";
+                html += `<div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:15px; margin-top:10px; ${align}">
+                            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                                <div><strong>${r.senderName} (${r.senderRole})</strong></div>
+                                <div style="font-size:11px; color:#888;">${rTs}</div>
+                            </div>
+                            <div style="white-space:pre-wrap; font-size:14px;">${r.text}</div>
+                            ${rAttachHtml}
+                         </div>`;
+            });
+            
+            document.getElementById("mail-thread-container").innerHTML = html;
+            setTimeout(() => {
+                document.getElementById("mail-thread-container").scrollTop = document.getElementById("mail-thread-container").scrollHeight;
+            }, 100);
+            
+            loadInbox(); loadSentMail();
+        });
+    } catch(e) { console.error(e); }
+};
+
+window.replyToMailThread = async () => {
+    if(!window.currentMailThreadId) return;
+    let text = document.getElementById("mail-reply-body").value.trim();
+    let btn = document.getElementById("mail-reply-btn");
+    
+    if(!text && document.getElementById("mail-reply-attachment").files.length === 0) return alert("Type a reply or attach a file.");
+    
+    btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i>";
+    btn.disabled = true;
+    
+    let attachmentUrl = null;
+    if (document.getElementById("mail-reply-attachment").files.length > 0) {
+        attachmentUrl = await uploadToCloudinary("mail-reply-attachment", "mail-reply-btn", "<i class='fas fa-reply'></i>");
+        if(!attachmentUrl) {
+            btn.innerHTML = "<i class='fas fa-reply'></i> Reply"; btn.disabled = false;
+            return alert("Upload failed.");
+        }
+    }
+    
+    try {
+        const d = await getDoc(doc(db, "direct_messages", window.currentMailThreadId));
+        if(!d.exists()) throw new Error();
+        let replies = d.data().replies || [];
+        replies.push({
+            senderRole: "chairman",
+            senderName: currentSchoolName + " (Chairman)",
+            text: text,
+            attachmentUrl: attachmentUrl,
+            timestamp: serverTimestamp(),
+            isRead: false
+        });
+        
+        await updateDoc(doc(db, "direct_messages", window.currentMailThreadId), { replies: replies });
+        
+        document.getElementById("mail-reply-body").value = "";
+        document.getElementById("mail-reply-attachment").value = "";
+    } catch(e) {
+        alert("Error sending reply");
+    }
+    btn.innerHTML = "<i class='fas fa-reply'></i> Reply"; btn.disabled = false;
 };
