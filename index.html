@@ -769,23 +769,30 @@
                         <button class="submit-btn" onclick="sendChairmanMessage()"><i class="fas fa-paper-plane"></i> Send Message</button>
                     </div>
 
+                    <style>
+                        .gmail-list { display: flex; flex-direction: column; gap: 8px; }
+                        .gmail-item { display: flex; align-items: center; padding: 12px 15px; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background 0.2s; border-radius: 8px; background: #fafafa; }
+                        .gmail-item:hover { background: #f1f5f9; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+                        .gmail-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--theme-color, #1e3c72); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; margin-right: 15px; flex-shrink: 0; }
+                        .gmail-content { flex: 1; min-width: 0; }
+                        .gmail-header { display: flex; justify-content: space-between; margin-bottom: 4px; align-items: baseline; }
+                        .gmail-sender { font-weight: bold; color: #334155; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+                        .gmail-date { font-size: 12px; color: #64748b; white-space: nowrap; margin-left: 10px; }
+                        .gmail-subject { font-size: 14px; color: #0f172a; margin-bottom: 2px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+                        .gmail-snippet { font-size: 13px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+                    </style>
+
                     <div class="card" style="margin-bottom: 20px;">
                         <h3><i class="fas fa-inbox"></i> Inbox (Incoming Messages)</h3>
-                        <div style="overflow-x:auto;">
-                            <table>
-                                <thead><tr><th>Date</th><th>From</th><th>Message</th></tr></thead>
-                                <tbody id="inbox-table"><tr><td colspan='3' style='text-align:center; padding:20px; color:#888;'>Loading messages...</td></tr></tbody>
-                            </table>
+                        <div id="inbox-list" class="gmail-list">
+                            <div style="text-align:center; padding:20px; color:#888;">Loading messages...</div>
                         </div>
                     </div>
                     
                     <div class="card">
                         <h3><i class="fas fa-paper-plane"></i> Sent Messages</h3>
-                        <div style="overflow-x:auto;">
-                            <table>
-                                <thead><tr><th>Date</th><th>To</th><th>Message</th></tr></thead>
-                                <tbody id="sent-table"><tr><td colspan='3' style='text-align:center; padding:20px; color:#888;'>Loading sent messages...</td></tr></tbody>
-                            </table>
+                        <div id="sent-list" class="gmail-list">
+                            <div style="text-align:center; padding:20px; color:#888;">Loading sent messages...</div>
                         </div>
                     </div>
                 </div>

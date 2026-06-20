@@ -726,8 +726,23 @@ async function loadInbox() {
         const snap = await getDocs(query(collection(db, "direct_messages"), where("schoolId", "==", currentSchoolId), where("receiverType", "==", "chairman")));
         let html = ""; let msgs =[]; snap.forEach(d => msgs.push({ id: d.id, ...d.data() }));
         msgs.sort((a,b) => { if(!a.createdAt) return 1; if(!b.createdAt) return -1; return b.createdAt.toMillis() - a.createdAt.toMillis(); });
-        msgs.forEach(msg => { let ts = msg.createdAt ? new Date(msg.createdAt.toMillis()).toLocaleString() : "Unknown"; html += `<tr><td style="font-size:11px; color:#888;">${ts}</td><td><span style="background:#eaf4ff; color:#2c7be5; padding:2px 6px; border-radius:4px; font-size:11px; text-transform:uppercase;">${msg.senderRole || 'Admin'}</span></td><td><strong>${msg.title}</strong><br><span style="font-size:12px;">${msg.body}</span></td></tr>`; });
-        document.getElementById("inbox-table").innerHTML = html || "<tr><td colspan='3' style='text-align:center;'>No messages received.</td></tr>";
+        msgs.forEach(msg => { 
+            let ts = msg.createdAt ? new Date(msg.createdAt.toMillis()).toLocaleString() : "Unknown"; 
+            let sender = msg.senderRole || 'Admin';
+            let initial = sender.charAt(0).toUpperCase();
+            html += `<div class="gmail-item" onclick="alert('Message:\\n' + decodeURIComponent('${encodeURIComponent(msg.body)}'))">
+                        <div class="gmail-avatar">${initial}</div>
+                        <div class="gmail-content">
+                            <div class="gmail-header">
+                                <div class="gmail-sender">${sender}</div>
+                                <div class="gmail-date">${ts}</div>
+                            </div>
+                            <div class="gmail-subject">${msg.title || 'No Subject'}</div>
+                            <div class="gmail-snippet">${msg.body}</div>
+                        </div>
+                    </div>`; 
+        });
+        document.getElementById("inbox-list").innerHTML = html || "<div style='text-align:center; padding:20px; color:#888;'>No messages received.</div>";
     } catch(e) {}
 }
 async function loadSentMail() {
@@ -735,8 +750,23 @@ async function loadSentMail() {
         const snap = await getDocs(query(collection(db, "direct_messages"), where("senderId", "==", auth.currentUser.uid)));
         let html = ""; let msgs =[]; snap.forEach(d => msgs.push({ id: d.id, ...d.data() }));
         msgs.sort((a,b) => { if(!a.createdAt) return 1; if(!b.createdAt) return -1; return b.createdAt.toMillis() - a.createdAt.toMillis(); });
-        msgs.forEach(msg => { let ts = msg.createdAt ? new Date(msg.createdAt.toMillis()).toLocaleString() : "Unknown"; let toWho = msg.receiverType === 'staff_member' ? 'Specific Staff' : msg.receiverType; html += `<tr><td style="font-size:11px; color:#888;">${ts}</td><td><span style="background:#f4ebff; color:#8e44ad; padding:2px 6px; border-radius:4px; font-size:11px; text-transform:uppercase;">${toWho}</span></td><td><strong>${msg.title}</strong><br><span style="font-size:12px;">${msg.body}</span></td></tr>`; });
-        document.getElementById("sent-table").innerHTML = html || "<tr><td colspan='3' style='text-align:center;'>No sent messages.</td></tr>";
+        msgs.forEach(msg => { 
+            let ts = msg.createdAt ? new Date(msg.createdAt.toMillis()).toLocaleString() : "Unknown"; 
+            let toWho = msg.receiverType === 'staff_member' ? 'Specific Staff' : msg.receiverType; 
+            let initial = toWho.charAt(0).toUpperCase();
+            html += `<div class="gmail-item" onclick="alert('Message:\\n' + decodeURIComponent('${encodeURIComponent(msg.body)}'))">
+                        <div class="gmail-avatar" style="background:#8e44ad;">${initial}</div>
+                        <div class="gmail-content">
+                            <div class="gmail-header">
+                                <div class="gmail-sender">To: ${toWho}</div>
+                                <div class="gmail-date">${ts}</div>
+                            </div>
+                            <div class="gmail-subject">${msg.title || 'No Subject'}</div>
+                            <div class="gmail-snippet">${msg.body}</div>
+                        </div>
+                    </div>`; 
+        });
+        document.getElementById("sent-list").innerHTML = html || "<div style='text-align:center; padding:20px; color:#888;'>No sent messages.</div>";
     } catch(e) {}
 }
 
