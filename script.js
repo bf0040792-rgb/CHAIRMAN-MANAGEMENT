@@ -3463,7 +3463,7 @@ window.downloadStudentAdmitCard = async () => {
 
 // --- CoreEdu Chat ---
 window.loadCoreEduChat = () => {
-    const q = query(collection(db, "school_communications"), where("schoolId", "==", currentSchoolId), orderBy("timestamp"));
+    const q = query(collection(db, "communications"), where("schoolId", "==", currentSchoolId), orderBy("timestamp"));
     onSnapshot(q, async (snap) => {
         let html = "";
         let unreadCount = 0;
@@ -3496,7 +3496,7 @@ window.loadCoreEduChat = () => {
         
         if(unreadCount > 0 && document.getElementById("tab-coreedu-comm").classList.contains("active")) {
             for(let id of batchUpdates) {
-                await updateDoc(doc(db, "school_communications", id), { isRead: true });
+                await updateDoc(doc(db, "communications", id), { isRead: true });
             }
         }
     });
@@ -3521,7 +3521,7 @@ window.sendCoreEduMessage = async () => {
     }
     
     try {
-        await addDoc(collection(db, "school_communications"), {
+        await addDoc(collection(db, "communications"), {
             schoolId: currentSchoolId,
             schoolName: currentSchoolName,
             sender: "school",
