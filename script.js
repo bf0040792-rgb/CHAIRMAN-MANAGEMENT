@@ -3478,7 +3478,9 @@ window.loadCoreEduChat = () => {
         messages.sort((a, b) => {
             if(!a.timestamp) return -1;
             if(!b.timestamp) return 1;
-            return a.timestamp.toMillis() - b.timestamp.toMillis();
+            let aTime = typeof a.timestamp.toMillis === 'function' ? a.timestamp.toMillis() : Date.now();
+            let bTime = typeof b.timestamp.toMillis === 'function' ? b.timestamp.toMillis() : Date.now();
+            return aTime - bTime;
         });
         
         messages.forEach(msg => {
@@ -3488,11 +3490,12 @@ window.loadCoreEduChat = () => {
                 batchUpdates.push(msg.id);
             }
             
-            let ts = msg.timestamp ? new Date(msg.timestamp.toMillis()).toLocaleString() : "";
+            let ts = (msg.timestamp && typeof msg.timestamp.toMillis === 'function') ? new Date(msg.timestamp.toMillis()).toLocaleString() : "";
             let className = msg.sender === "school" ? "chat-bubble sent" : "chat-bubble received";
             let attachHtml = msg.attachmentUrl ? `<br><a href="${msg.attachmentUrl}" target="_blank" style="font-size:12px; color:blue;"><i class="fas fa-paperclip"></i> Attachment</a>` : "";
+            let textHtml = msg.text || "";
             
-            html += `<div class="${className}">${msg.text}${attachHtml}<span class="timestamp">${ts}</span></div>`;
+            html += `<div class="${className}">${textHtml}${attachHtml}<span class="timestamp">${ts}</span></div>`;
         });
         
         document.getElementById("coreedu-chat-history").innerHTML = html || "<div style='text-align:center; color:#555; padding:20px;'>No messages yet. Say hi to CoreEdu!</div>";
