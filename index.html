@@ -354,7 +354,16 @@
                     <div class="menu-item" data-target="tab-academics"><i class="fas fa-book-open"></i> Academic Veto</div>
                     <div class="menu-item" data-target="tab-notices"><i class="fas fa-bullhorn"></i> Notices & Ticker</div>
                     <div class="menu-item" data-target="tab-mailbox"><i class="fas fa-envelope"></i> Mail Box <span id="badge-mailbox" style="display:none; background:red; color:white; border-radius:50%; width:18px; height:18px; text-align:center; font-size:10px; line-height:18px; margin-left:10px; display:inline-block;"></span></div>
-                    <div class="menu-item" data-target="tab-coreedu-comm"><i class="fab fa-whatsapp" style="color: #25D366;"></i> CoreEdu Comm Hub <span id="badge-coreedu" style="display:none; background:red; color:white; border-radius:50%; width:18px; height:18px; text-align:center; font-size:10px; line-height:18px; margin-left:10px; display:inline-block;"></span></div>
+                    
+                    <div style="padding: 10px 20px; border-left: 4px solid transparent; display: flex; flex-direction: column; cursor: pointer; transition: 0.3s; color: var(--text-color);" id="nav-comm-hub-wrapper">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                            <span><i class="fab fa-whatsapp" style="color: #25D366; font-size: 1.2rem;"></i> Comm Hub</span>
+                            <span id="badge-coreedu" style="display:none; background:red; color:white; border-radius:50%; width:18px; height:18px; text-align:center; font-size:10px; line-height:18px; display:inline-block;"></span>
+                        </div>
+                        <select id="sidebar-comm-select" style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 4px; padding: 5px; outline: none; font-size: 12px;">
+                            <option value="master">CoreEdu Teach</option>
+                        </select>
+                    </div>
                     
                     <div id="module-qr-fee" class="menu-item" data-target="tab-qr-fee" style="display:none"><i class="fas fa-qrcode"></i> QR Fee Module</div>
                     <div id="module-admit-card" class="menu-item" data-target="tab-admit-card" style="display:none"><i class="fas fa-id-badge"></i> Admit Card Module</div>
@@ -747,18 +756,21 @@
                     </div>
                 </div>
 
-                <!-- TAB: COREEDU COMM HUB -->
+                <!-- TAB: UNIVERSAL COMM HUB -->
                 <div id="tab-coreedu-comm" class="tab-content">
-                    <div class="card" style="height: 70vh; display: flex; flex-direction: column;">
-                        <h3><i class="fab fa-whatsapp" style="color: #25D366;"></i> CoreEdu Direct Comm Hub</h3>
-                        <div id="coreedu-chat-history" style="flex:1; overflow-y:auto; padding:15px; background:#e5ddd5; border-radius:8px; margin-bottom:15px; display:flex; flex-direction:column; gap:10px;">
+                    <div class="card" style="height: 70vh; display: flex; flex-direction: column; padding: 0; overflow: hidden; background: #efeae2;">
+                        <div style="background: #075e54; color: white; padding: 15px 20px; display: flex; align-items: center; gap: 15px;">
+                            <i class="fab fa-whatsapp" style="font-size: 2rem;"></i>
+                            <h3 id="comm-hub-header-title" style="margin: 0; font-size: 1.2rem; font-weight: 500;">CoreEdu Teach Direct Comm Hub</h3>
+                        </div>
+                        <div id="coreedu-chat-history" style="flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:10px; background: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');">
                             <div style="text-align:center; color:#555; padding:20px;">Loading chat history...</div>
                         </div>
                         <div style="display:flex; gap:10px; align-items:center;">
                             <label for="coreedu-attachment" style="cursor:pointer; padding:10px; background:#f0f0f0; border-radius:50%; width:40px; height:40px; text-align:center;"><i class="fas fa-paperclip"></i></label>
                             <input type="file" id="coreedu-attachment" style="display:none;">
                             <input type="text" id="coreedu-message-input" class="input-premium" style="flex:1;" placeholder="Type your message to CoreEdu...">
-                            <button id="coreedu-send-btn" class="action-btn btn-blue" onclick="sendCoreEduMessage()"><i class="fas fa-paper-plane"></i></button>
+                            <button id="coreedu-send-btn" class="action-btn btn-blue" onclick="sendUniversalMessage()"><i class="fas fa-paper-plane"></i></button>
                         </div>
                         <style>
                             .chat-bubble { max-width: 80%; padding: 10px 15px; border-radius: 15px; position: relative; font-size: 14px; }

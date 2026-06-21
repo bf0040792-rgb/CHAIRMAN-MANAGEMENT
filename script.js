@@ -530,7 +530,7 @@ const uploadToCloudinary = async (fileInputId, btnId, defaultText) => {
     } catch (e) { btn.innerHTML = defaultText; return null; }
 };
 
-function loadAllData() { loadStudents(); loadStaff(); loadNotices(); loadInbox(); loadSentMail(); loadTransactions(); loadPendingResults(); window.initDashboardChart(); window.loadTransportRoutes(); window.loadInventory(); loadAllSchools(); loadCoreEduChat(); }
+function loadAllData() { loadStudents(); loadStaff(); loadNotices(); loadInbox(); loadSentMail(); loadTransactions(); loadPendingResults(); window.initDashboardChart(); window.loadTransportRoutes(); window.loadInventory(); loadAllSchools(); window.loadUniversalChat("master"); }
 
 window.initDashboardChart = () => {
     const ctx = document.getElementById('dashboardChart');
@@ -3462,16 +3462,37 @@ window.downloadStudentAdmitCard = async () => {
 };
 
 // --- CoreEdu Chat ---
-window.loadCoreEduChat = () => {
-    const q = query(collection(db, "communications"), where("schoolId", "==", currentSchoolId));
-    onSnapshot(q, async (snap) => {
+window.currentCommTarget = "master";
+window.unsubCommChat = null;
+
+window.loadUniversalChat = (targetId) => {
+    if(window.unsubCommChat) window.unsubCommChat();
+    window.currentCommTarget = targetId;
+    
+    // Update Header
+    let targetName = targetId === "master" ? "CoreEdu Teach" : document.querySelector(`#sidebar-comm-select option[value="${targetId}"]`)?.innerText || "School";
+    document.getElementById("comm-hub-header-title").innerText = targetName + " Direct Comm Hub";
+    
+    let q;
+    if(targetId === "master") {
+        q = query(collection(db, "communications"), where("schoolId", "==", currentSchoolId));
+    } else {
+        let chatId = [currentSchoolId, targetId].sort().join("_");
+        q = query(collection(db, "communications"), where("chatId", "==", chatId));
+    }
+    
+    window.unsubCommChat = onSnapshot(q, async (snap) => {
         let html = "";
         let unreadCount = 0;
         let batchUpdates = [];
         let messages = [];
         
         snap.forEach(d => {
-            messages.push({ id: d.id, ...d.data() });
+            let msg = { id: d.id, ...d.data() };
+            // Filter logic for backward compatibility with master chats
+            if(targetId === "master" && msg.chatId) return; // exclude inter-school chats that might accidentally have schoolId set
+            if(msg.deletedBy && msg.deletedBy.includes(currentSchoolId)) return; // deleted for me
+            messages.push(msg);
         });
         
         // Sort manually by timestamp to avoid Firebase Index requirement
@@ -3484,21 +3505,54 @@ window.loadCoreEduChat = () => {
         });
         
         messages.forEach(msg => {
-            let isMaster = msg.sender === "master";
-            if(isMaster && !msg.isRead) {
+            let isReceived = msg.sender !== currentSchoolId; // If I didn't send it, I received it
+            if(targetId === "master") {
+                isReceived = msg.sender === "master"; // legacy compat
+            }
+            
+            if(isReceived && !msg.isRead) {
                 unreadCount++;
                 batchUpdates.push(msg.id);
             }
             
             let ts = (msg.timestamp && typeof msg.timestamp.toMillis === 'function') ? new Date(msg.timestamp.toMillis()).toLocaleString() : "";
-            let className = msg.sender === "school" ? "chat-bubble sent" : "chat-bubble received";
-            let attachHtml = msg.attachmentUrl ? `<br><a href="${msg.attachmentUrl}" target="_blank" style="font-size:12px; color:blue;"><i class="fas fa-paperclip"></i> Attachment</a>` : "";
-            let textHtml = msg.text || "";
+            let className = !isReceived ? "chat-bubble sent" : "chat-bubble received";
+            let rowClass = !isReceived ? "chat-row sent" : "chat-row received";
             
-            html += `<div class="${className}">${textHtml}${attachHtml}<span class="timestamp">${ts}</span></div>`;
+            let contentHtml = "";
+            if(msg.isDeleted) {
+                contentHtml = `<span class="msg-deleted"><i class="fas fa-ban"></i> This message was deleted</span>`;
+            } else {
+                let attachHtml = msg.attachmentUrl ? `<br><a href="${msg.attachmentUrl}" target="_blank" style="font-size:12px; color:blue;"><i class="fas fa-paperclip"></i> Attachment</a>` : "";
+                let textHtml = msg.text || "";
+                let editedTag = msg.isEdited ? `<span style="font-size:10px; color:#aaa; margin-left:5px;">(edited)</span>` : "";
+                contentHtml = `${textHtml} ${editedTag} ${attachHtml}`;
+            }
+            
+            let contextMenuHtml = "";
+            if(!msg.isDeleted) {
+                let editBtn = !isReceived ? `<button onclick="window.editCommMessage('${msg.id}', \`${(msg.text||'').replace(/`/g, '')}\`)"><i class="fas fa-edit"></i> Edit</button>` : "";
+                contextMenuHtml = `
+                    <button class="chat-menu-btn" onclick="document.getElementById('menu-${msg.id}').style.display='flex'"><i class="fas fa-ellipsis-v"></i></button>
+                    <div id="menu-${msg.id}" class="chat-context-menu" onmouseleave="this.style.display='none'">
+                        ${editBtn}
+                        <button onclick="window.forwardCommMessage('${msg.id}')"><i class="fas fa-share"></i> Forward</button>
+                        <button onclick="window.deleteCommMessageForMe('${msg.id}')"><i class="fas fa-trash-alt"></i> Delete for me</button>
+                        ${!isReceived ? `<button onclick="window.deleteCommMessageForEveryone('${msg.id}')"><i class="fas fa-globe"></i> Delete for everyone</button>` : ""}
+                    </div>
+                `;
+            }
+            
+            html += `<div class="${rowClass}">
+                        <div class="${className}">
+                            ${contentHtml}
+                            <span class="chat-timestamp">${ts}</span>
+                            ${contextMenuHtml}
+                        </div>
+                     </div>`;
         });
         
-        document.getElementById("coreedu-chat-history").innerHTML = html || "<div style='text-align:center; color:#555; padding:20px;'>No messages yet. Say hi to CoreEdu!</div>";
+        document.getElementById("coreedu-chat-history").innerHTML = html || "<div style='text-align:center; color:#555; padding:20px;'>No messages yet. Say hi!</div>";
         document.getElementById("coreedu-chat-history").scrollTop = document.getElementById("coreedu-chat-history").scrollHeight;
         
         if (unreadCount > 0) {
@@ -3516,11 +3570,11 @@ window.loadCoreEduChat = () => {
     });
 };
 
-window.sendCoreEduMessage = async () => {
+window.sendUniversalMessage = async () => {
     let text = document.getElementById("coreedu-message-input").value.trim();
     let btn = document.getElementById("coreedu-send-btn");
     
-    if(!text && document.getElementById("coreedu-attachment").files.length === 0) return alert("Type a message or attach a file.");
+    if(!text && document.getElementById("coreedu-attachment").files.length === 0) return window.showToast("Type a message or attach a file.");
     
     btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i>";
     btn.disabled = true;
@@ -3530,39 +3584,136 @@ window.sendCoreEduMessage = async () => {
         attachmentUrl = await uploadToCloudinary("coreedu-attachment", "coreedu-send-btn", "<i class='fas fa-paper-plane'></i>");
         if(!attachmentUrl) {
             btn.innerHTML = "<i class='fas fa-paper-plane'></i>"; btn.disabled = false;
-            return alert("Upload failed.");
+            return window.showToast("Upload failed.");
         }
     }
     
+    let payload = {
+        sender: currentSchoolId, // Use my school ID instead of just "school"
+        senderName: currentSchoolName,
+        text: text,
+        attachmentUrl: attachmentUrl,
+        timestamp: serverTimestamp(),
+        isRead: false
+    };
+    
+    if(window.currentCommTarget === "master") {
+        payload.schoolId = currentSchoolId; // Legacy
+        payload.sender = "school"; // Legacy
+    } else {
+        payload.chatId = [currentSchoolId, window.currentCommTarget].sort().join("_");
+        payload.targetId = window.currentCommTarget;
+    }
+    
     try {
-        await addDoc(collection(db, "communications"), {
-            schoolId: currentSchoolId,
-            schoolName: currentSchoolName,
-            sender: "school",
-            text: text,
-            attachmentUrl: attachmentUrl,
-            timestamp: serverTimestamp(),
-            isRead: false
-        });
+        await addDoc(collection(db, "communications"), payload);
         document.getElementById("coreedu-message-input").value = "";
         document.getElementById("coreedu-attachment").value = "";
     } catch(e) {
-        alert("Error sending message");
+        window.showToast("Error sending message");
     }
     btn.innerHTML = "<i class='fas fa-paper-plane'></i>"; btn.disabled = false;
+};
+
+// Chat Actions
+window.editCommMessage = async (msgId, oldText) => {
+    let newText = prompt("Edit message:", oldText);
+    if(newText !== null && newText.trim() !== "") {
+        await updateDoc(doc(db, "communications", msgId), { text: newText.trim(), isEdited: true });
+    }
+};
+
+window.deleteCommMessageForEveryone = async (msgId) => {
+    if(confirm("Delete message for everyone?")) {
+        await updateDoc(doc(db, "communications", msgId), { isDeleted: true });
+    }
+};
+
+window.deleteCommMessageForMe = async (msgId) => {
+    if(confirm("Delete message for you?")) {
+        let d = await getDoc(doc(db, "communications", msgId));
+        if(d.exists()) {
+            let delBy = d.data().deletedBy || [];
+            delBy.push(currentSchoolId);
+            await updateDoc(doc(db, "communications", msgId), { deletedBy: delBy });
+        }
+    }
+};
+
+window.forwardCommMessage = async (msgId) => {
+    let target = prompt("Enter School ID or 'master' to forward to:");
+    if(!target) return;
+    
+    let d = await getDoc(doc(db, "communications", msgId));
+    if(!d.exists()) return;
+    
+    let msg = d.data();
+    let payload = {
+        sender: currentSchoolId,
+        senderName: currentSchoolName,
+        text: "(Forwarded) " + (msg.text || ""),
+        attachmentUrl: msg.attachmentUrl || null,
+        timestamp: serverTimestamp(),
+        isRead: false
+    };
+    
+    if(target === "master") {
+        payload.schoolId = currentSchoolId;
+        payload.sender = "school";
+    } else {
+        payload.chatId = [currentSchoolId, target].sort().join("_");
+        payload.targetId = target;
+    }
+    
+    await addDoc(collection(db, "communications"), payload);
+    window.showToast("Message Forwarded!");
 };
 
 // --- Mailbox Inter-School ---
 window.loadAllSchools = async () => {
     try {
         const snap = await getDocs(collection(db, "schools"));
-        let html = "<option value=''>-- Select School --</option>";
+        let htmlMail = "<option value=''>-- Select School --</option>";
+        let htmlComm = "<option value='master'>CoreEdu Teach</option>";
         snap.forEach(d => {
-            if(d.id !== currentSchoolId) html += `<option value="${d.id}">${d.data().schoolName || d.data().name || d.id}</option>`;
+            if(d.id !== currentSchoolId) {
+                let name = d.data().schoolName || d.data().name || d.id;
+                htmlMail += `<option value="${d.id}">${name}</option>`;
+                htmlComm += `<option value="${d.id}">${name}</option>`;
+            }
         });
-        document.getElementById("mail_specific_school").innerHTML = html;
+        if(document.getElementById("mail_specific_school")) document.getElementById("mail_specific_school").innerHTML = htmlMail;
+        if(document.getElementById("sidebar-comm-select")) document.getElementById("sidebar-comm-select").innerHTML = htmlComm;
     } catch(e) {}
 };
+
+// Bind Sidebar Select to Universal Chat
+document.addEventListener("DOMContentLoaded", () => {
+    const commSelect = document.getElementById("sidebar-comm-select");
+    const commWrapper = document.getElementById("nav-comm-hub-wrapper");
+    if(commSelect) {
+        commSelect.addEventListener("change", (e) => {
+            // Activate tab manually
+            document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
+            document.querySelectorAll(".menu-item").forEach(m => m.classList.remove("active"));
+            if(commWrapper) commWrapper.classList.add("active");
+            document.getElementById("tab-coreedu-comm").classList.add("active");
+            
+            // Load Chat
+            window.loadUniversalChat(e.target.value);
+        });
+    }
+    if(commWrapper) {
+        commWrapper.addEventListener("click", (e) => {
+            if(e.target === commSelect) return; // let the select handle itself
+            document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
+            document.querySelectorAll(".menu-item").forEach(m => m.classList.remove("active"));
+            commWrapper.classList.add("active");
+            document.getElementById("tab-coreedu-comm").classList.add("active");
+            window.loadUniversalChat(commSelect.value);
+        });
+    }
+});
 
 // --- Mail Thread View Modal ---
 window.currentMailThreadId = null;
