@@ -3463,18 +3463,29 @@ window.downloadStudentAdmitCard = async () => {
 
 // --- CoreEdu Chat ---
 window.loadCoreEduChat = () => {
-    const q = query(collection(db, "communications"), where("schoolId", "==", currentSchoolId), orderBy("timestamp"));
+    const q = query(collection(db, "communications"), where("schoolId", "==", currentSchoolId));
     onSnapshot(q, async (snap) => {
         let html = "";
         let unreadCount = 0;
         let batchUpdates = [];
+        let messages = [];
         
         snap.forEach(d => {
-            let msg = d.data();
+            messages.push({ id: d.id, ...d.data() });
+        });
+        
+        // Sort manually by timestamp to avoid Firebase Index requirement
+        messages.sort((a, b) => {
+            if(!a.timestamp) return -1;
+            if(!b.timestamp) return 1;
+            return a.timestamp.toMillis() - b.timestamp.toMillis();
+        });
+        
+        messages.forEach(msg => {
             let isMaster = msg.sender === "master";
             if(isMaster && !msg.isRead) {
                 unreadCount++;
-                batchUpdates.push(d.id);
+                batchUpdates.push(msg.id);
             }
             
             let ts = msg.timestamp ? new Date(msg.timestamp.toMillis()).toLocaleString() : "";
