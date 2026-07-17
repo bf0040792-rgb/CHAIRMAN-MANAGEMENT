@@ -3937,20 +3937,23 @@ function renderStudioGrid() {
     });
 }
 
-function updateStudioName(index, value) {
-    studioImages[index].nameText = value;
-    const nameplateContainer = document.getElementById(`nameplate-container-${index}`);
-    const nameplateText = document.getElementById(`nameplate-text-${index}`);
-    
-    if (value.trim() === "") {
-        if(nameplateContainer) nameplateContainer.classList.add('hidden-el');
-    } else {
-        if(nameplateContainer) nameplateContainer.classList.remove('hidden-el');
-        if(nameplateText) nameplateText.innerText = value.toUpperCase();
+window.updateStudioName = function(index, value) {
+    if (studioImages[index]) {
+        studioImages[index].nameText = value;
+        // Update live DOM
+        const nameplateContainer = document.getElementById(`nameplate-container-${index}`);
+        const nameplateText = document.getElementById(`nameplate-text-${index}`);
+        
+        if (value.trim() === '') {
+            if(nameplateContainer) nameplateContainer.classList.add('hidden-el');
+        } else {
+            if(nameplateContainer) nameplateContainer.classList.remove('hidden-el');
+            if(nameplateText) nameplateText.innerText = value.toUpperCase();
+        }
     }
 }
 
-function removeStudioImage(index) {
+window.removeStudioImage = function(index) {
     studioImages.splice(index, 1);
     renderStudioGrid();
 }
@@ -3976,6 +3979,20 @@ window.saveStudioPreset = function() {
     localStorage.setItem('studio_preset_bg', color);
     if(window.showToast) window.showToast("Preset Saved!", "#10b981");
 };
+
+window.loadStudioPreset = function() {
+    const saved = localStorage.getItem('studio_preset_bg');
+    if (saved) {
+        const colorInput = document.getElementById('studio-bg-color');
+        if(colorInput) {
+            colorInput.value = saved;
+        }
+    }
+};
+
+setTimeout(() => {
+    window.loadStudioPreset();
+}, 500);
 
 // Load preset on load
 setTimeout(() => {
