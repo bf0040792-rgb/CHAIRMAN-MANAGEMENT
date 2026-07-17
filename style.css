@@ -639,3 +639,48 @@ img[src*="signature"], .id-signature, .cert-sig, .global-transparent-sig {
     font-style: italic;
     color: #888;
 }
+/* MS STUDIO STYLES */
+.studio-card {
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.studio-img-wrapper {
+    width: 100%;
+    aspect-ratio: 3.5 / 4.5;
+    background-color: #FF0000;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid #cbd5e1;
+}
+.studio-img-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top;
+}
+.studio-nameplate {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 15%;
+    background-color: #ffffff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-top: 1px solid #000;
+}
+.studio-nameplate span {
+    color: #000000;
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    font-size: 8px;
+    text-transform: uppercase;
+}

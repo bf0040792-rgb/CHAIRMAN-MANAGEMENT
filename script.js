@@ -3820,3 +3820,339 @@ window.replyToMailThread = async () => {
     }
     btn.innerHTML = "<i class='fas fa-reply'></i> Reply"; btn.disabled = false;
 };
+
+// === MS STUDIO LOGIC ===
+
+let studioImages = [];
+
+document.getElementById('studio-upload')?.addEventListener('change', function(e) {
+    const files = e.target.files;
+    if (!files.length) return;
+    
+    Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                // Standard passport ratio is 35:45 (or 7:9)
+                const TARGET_WIDTH = 350;
+                const TARGET_HEIGHT = 450;
+                canvas.width = TARGET_WIDTH;
+                canvas.height = TARGET_HEIGHT;
+                
+                const ctx = canvas.getContext('2d');
+                
+                // Calculate cover cropping (fill the canvas, center crop)
+                const imgRatio = img.width / img.height;
+                const targetRatio = TARGET_WIDTH / TARGET_HEIGHT;
+                let sWidth = img.width;
+                let sHeight = img.height;
+                let sx = 0;
+                let sy = 0;
+                
+                if (imgRatio > targetRatio) {
+                    // Image is wider than passport format, crop sides
+                    sWidth = img.height * targetRatio;
+                    sx = (img.width - sWidth) / 2;
+                } else {
+                    // Image is taller than passport format, crop top/bottom
+                    // Usually we want to keep the top (head) so we shift sy slightly higher rather than absolute center
+                    sHeight = img.width / targetRatio;
+                    sy = (img.height - sHeight) * 0.2; 
+                }
+                
+                // Fill background with white just in case of transparent uploads
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, TARGET_WIDTH, TARGET_HEIGHT);
+                
+                // Draw cropped image
+                ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, TARGET_WIDTH, TARGET_HEIGHT);
+                
+                // Compress to JPEG for high-speed API payload
+                const compressedBase64 = canvas.toDataURL('image/jpeg', 0.9);
+                
+                const newIndex = studioImages.length;
+                studioImages.push({
+                    id: Date.now() + Math.random().toString(36).substr(2, 9),
+                    originalBase64: compressedBase64,
+                    processedBase64: null,
+                    nameText: "",
+                    isProcessed: false,
+                    isLoading: false
+                });
+                renderStudioGrid();
+                processSingleBG(newIndex);
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+    // Reset input
+    this.value = '';
+});
+
+document.getElementById('studio-bg-color')?.addEventListener('input', function(e) {
+    const color = e.target.value;
+    document.querySelectorAll('.studio-img-wrapper').forEach(el => {
+        el.style.backgroundColor = color;
+    });
+});
+
+function renderStudioGrid() {
+    const grid = document.getElementById('studio-grid');
+    if (!grid) return;
+    
+    grid.innerHTML = '';
+    const bgColor = document.getElementById('studio-bg-color').value || '#FF0000';
+    
+    studioImages.forEach((img, index) => {
+        const imgSrc = img.processedBase64 || img.originalBase64;
+        
+        const card = document.createElement('div');
+        card.className = 'studio-card';
+        
+        let loaderHtml = img.isLoading ? 
+            `<div class="absolute inset-0 bg-black/50 flex flex-col items-center justify-center z-10">
+                <i class="fas fa-circle-notch fa-spin text-white text-2xl mb-2"></i>
+                <span class="text-white text-[10px] font-mono mt-2">Processing...</span>
+            </div>` : '';
+
+        // Conditional display for nameplate
+        const hasName = img.nameText && img.nameText.trim() !== "";
+        const nameplateClass = hasName ? "studio-nameplate" : "studio-nameplate hidden-el";
+        
+        card.innerHTML = `
+            <div class="studio-img-wrapper" style="background-color: ${bgColor};">
+                ${loaderHtml}
+                <img src="${imgSrc}" alt="Studio Photo" style="background-color: transparent;">
+                <div class="${nameplateClass}" id="nameplate-container-${index}">
+                    <span id="nameplate-text-${index}">${hasName ? img.nameText.toUpperCase() : ''}</span>
+                </div>
+            </div>
+            <input type="text" class="input-premium w-full mt-2 px-2 py-1 text-xs text-center font-mono rounded" placeholder="Enter Name..." value="${img.nameText}" oninput="updateStudioName(${index}, this.value)">
+            <button onclick="removeStudioImage(${index})" class="mt-2 text-rose-500 text-[10px] hover:text-rose-400 font-mono"><i class="fas fa-trash"></i> Remove</button>
+        `;
+        grid.appendChild(card);
+    });
+}
+
+function updateStudioName(index, value) {
+    studioImages[index].nameText = value;
+    const nameplateContainer = document.getElementById(`nameplate-container-${index}`);
+    const nameplateText = document.getElementById(`nameplate-text-${index}`);
+    
+    if (value.trim() === "") {
+        if(nameplateContainer) nameplateContainer.classList.add('hidden-el');
+    } else {
+        if(nameplateContainer) nameplateContainer.classList.remove('hidden-el');
+        if(nameplateText) nameplateText.innerText = value.toUpperCase();
+    }
+}
+
+function removeStudioImage(index) {
+    studioImages.splice(index, 1);
+    renderStudioGrid();
+}
+
+window.syncBulkNames = function() {
+    const text = document.getElementById('studio-bulk-names').value;
+    const lines = text.split('\n').map(l => l.trim()).filter(l => l !== '');
+    
+    studioImages.forEach((img, i) => {
+        if(lines[i]) {
+            // Strip starting numbers like "1. ", "2-", etc.
+            const cleanName = lines[i].replace(/^[0-9]+[\.\-\)\s]+/, '').trim();
+            img.nameText = cleanName;
+        } else {
+            img.nameText = "";
+        }
+    });
+    renderStudioGrid();
+};
+
+window.saveStudioPreset = function() {
+    const color = document.getElementById('studio-bg-color').value;
+    localStorage.setItem('studio_preset_bg', color);
+    if(window.showToast) window.showToast("Preset Saved!", "#10b981");
+};
+
+// Load preset on load
+setTimeout(() => {
+    const savedColor = localStorage.getItem('studio_preset_bg');
+    if (savedColor) {
+        const colorPicker = document.getElementById('studio-bg-color');
+        if (colorPicker) {
+            colorPicker.value = savedColor;
+            // Also apply it to any existing wrappers
+            document.querySelectorAll('.studio-img-wrapper').forEach(el => {
+                el.style.backgroundColor = savedColor;
+            });
+        }
+    }
+}, 1000);
+
+async function processSingleBG(index) {
+    if(studioImages[index].isProcessed || studioImages[index].isLoading) return;
+    
+    studioImages[index].isLoading = true;
+    renderStudioGrid();
+    
+    try {
+        const API_ENDPOINT = "https://school-backend-zlgy.onrender.com/api/remove-bg"; 
+        
+        const response = await fetch(API_ENDPOINT, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ imageUrl: studioImages[index].originalBase64 })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success && data.base64) {
+            studioImages[index].processedBase64 = data.base64;
+            studioImages[index].isProcessed = true;
+        } else {
+            console.error("BG Removal failed for index", index, data.error);
+            if(window.showToast) window.showToast(`BG Fail: ${data.error || "Unknown Error"}`, "#e11d48");
+        }
+    } catch (error) {
+        console.error("BG Removal API error for index", index, error);
+        if(window.showToast) window.showToast(`API ERR: ${error.message}`, "#e11d48");
+    } finally {
+        studioImages[index].isLoading = false;
+        renderStudioGrid();
+    }
+}
+
+window.processAllBG = async function() {
+    if(studioImages.length === 0) {
+        if(window.showToast) window.showToast("No images to process!", "#e11d48");
+        return;
+    }
+    
+    if(window.showToast) window.showToast("Starting Batch Background Removal...", "#a855f7");
+    
+    for (let i = 0; i < studioImages.length; i++) {
+        await processSingleBG(i);
+    }
+    
+    if(window.showToast) window.showToast("Batch Processing Complete!", "#10b981");
+}
+
+window.generateA4PDF = function() {
+    if (!studioImages.length) {
+        if(window.showToast) window.showToast("No images to export!", "#e11d48");
+        return;
+    }
+    
+    if(window.showToast) window.showToast("Generating A4 Grid PDF...", "#10b981");
+    
+    // A4 Dimensions in mm: 210 x 297
+    const pdf = new window.jspdf.jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+    });
+    
+    const bgColorHex = document.getElementById('studio-bg-color').value || '#FF0000';
+    // Convert hex to rgb
+    const r = parseInt(bgColorHex.slice(1, 3), 16) || 255;
+    const g = parseInt(bgColorHex.slice(3, 5), 16) || 0;
+    const b = parseInt(bgColorHex.slice(5, 7), 16) || 0;
+    
+    const photoWidth = 35;
+    const photoHeight = 45;
+    const cols = 5;
+    
+    // Calculate margins and gaps
+    const totalWidth = 210;
+    const marginX = 10;
+    const marginY = 10;
+    // Available width = 210 - (2 * 10) = 190.
+    // 5 photos = 5 * 35 = 175.
+    // Remaining = 190 - 175 = 15.
+    // 4 gaps = 15 / 4 = 3.75 mm gap.
+    const gapX = 3.75;
+    const gapY = 5; // vertical gap
+    
+    let currentX = marginX;
+    let currentY = marginY;
+    let colIndex = 0;
+    
+    studioImages.forEach((img, idx) => {
+        // Wrap to next line if needed
+        if (colIndex >= cols) {
+            colIndex = 0;
+            currentX = marginX;
+            currentY += photoHeight + gapY;
+        }
+        
+        // Check for page overflow
+        if (currentY + photoHeight > 297 - marginY) {
+            pdf.addPage();
+            currentX = marginX;
+            currentY = marginY;
+            colIndex = 0;
+        }
+        
+        // 1. Draw Background Color Rectangle
+        pdf.setFillColor(r, g, b);
+        pdf.rect(currentX, currentY, photoWidth, photoHeight, 'F');
+        
+        // 2. Draw Image
+        const imgData = img.processedBase64 || img.originalBase64;
+        try {
+            let format = 'JPEG';
+            if(imgData.includes('image/png')) format = 'PNG';
+            
+            pdf.addImage(imgData, format, currentX, currentY, photoWidth, photoHeight);
+        } catch(e) {
+            console.error("Failed to add image to PDF", e);
+        }
+        
+        // 3. Draw Nameplate conditionally
+        const text = img.nameText ? img.nameText.trim() : "";
+        
+        if (text !== "") {
+            const nameplateHeight = 7;
+            const nameplateY = currentY + photoHeight - nameplateHeight;
+            pdf.setFillColor(255, 255, 255); // white
+            pdf.setDrawColor(0, 0, 0); // black border
+            pdf.rect(currentX, nameplateY, photoWidth, nameplateHeight, 'DF');
+            
+            // 4. Draw Text
+            const uppercaseText = text.toUpperCase();
+            pdf.setTextColor(0, 0, 0); // black text
+            pdf.setFont("helvetica", "bold");
+            
+            let fontSize = 8;
+            pdf.setFontSize(fontSize);
+            let textWidth = pdf.getTextWidth(uppercaseText);
+            
+            // Auto-adjust font size if name is too long
+            while (textWidth > photoWidth - 2 && fontSize > 3) {
+                fontSize -= 0.5;
+                pdf.setFontSize(fontSize);
+                textWidth = pdf.getTextWidth(uppercaseText);
+            }
+            
+            const textX = currentX + (photoWidth - textWidth) / 2;
+            const textY = nameplateY + (nameplateHeight / 2) + 1.5;
+            
+            pdf.text(uppercaseText, textX, textY);
+        }
+        
+        // Move to next column
+        currentX += photoWidth + gapX;
+        colIndex++;
+    });
+    
+    pdf.save("Batch_Studio_Photos.pdf");
+}
