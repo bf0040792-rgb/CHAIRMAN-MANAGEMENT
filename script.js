@@ -3975,18 +3975,49 @@ window.syncBulkNames = function() {
 };
 
 window.saveStudioPreset = function() {
-    const color = document.getElementById('studio-bg-color').value;
-    localStorage.setItem('studio_preset_bg', color);
-    if(window.showToast) window.showToast("Preset Saved!", "#10b981");
+    try {
+        const color = document.getElementById('studio-bg-color').value;
+        const bulkNames = document.getElementById('studio-bulk-names').value;
+        
+        const sessionData = {
+            bgColor: color,
+            bulkNames: bulkNames,
+            images: studioImages
+        };
+        
+        localStorage.setItem('studio_full_session', JSON.stringify(sessionData));
+        if(window.showToast) window.showToast("Full Session Saved!", "#10b981");
+    } catch (e) {
+        console.error("Save Session Error: ", e);
+        if(window.showToast) window.showToast("Save Failed (Too many large photos).", "#e11d48");
+    }
 };
 
 window.loadStudioPreset = function() {
-    const saved = localStorage.getItem('studio_preset_bg');
-    if (saved) {
-        const colorInput = document.getElementById('studio-bg-color');
-        if(colorInput) {
-            colorInput.value = saved;
+    try {
+        const saved = localStorage.getItem('studio_full_session');
+        if (saved) {
+            const data = JSON.parse(saved);
+            
+            if (data.bgColor) {
+                const colorInput = document.getElementById('studio-bg-color');
+                if(colorInput) colorInput.value = data.bgColor;
+            }
+            
+            if (data.bulkNames !== undefined) {
+                const bulkInput = document.getElementById('studio-bulk-names');
+                if(bulkInput) bulkInput.value = data.bulkNames;
+            }
+            
+            if (data.images && Array.isArray(data.images)) {
+                // Wipe array and refill to maintain reference
+                studioImages.length = 0;
+                data.images.forEach(img => studioImages.push(img));
+                renderStudioGrid();
+            }
         }
+    } catch (e) {
+        console.error("Load Session Error: ", e);
     }
 };
 
