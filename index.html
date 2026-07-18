@@ -460,6 +460,14 @@
                                         <label style="font-size: 12px; font-weight: bold; color: #666; margin-bottom: 5px; display: block;" title="How many of those copies should have the nameplate?">Name Copies</label>
                                         <input type="number" id="studio-name-copies" value="1" min="0" max="50" style="width: 60px; height: 40px; padding: 2px 5px; border: 1px solid #ccc; border-radius: 4px; text-align: center;" class="input-premium">
                                     </div>
+                                    <div>
+                                        <label style="font-size: 12px; font-weight: bold; color: #666; margin-bottom: 5px; display: block;" title="Width in inches for primary copies (with names)">Primary Size</label>
+                                        <input type="number" id="studio-primary-size" value="1.8" step="0.1" min="0.5" max="3" style="width: 60px; height: 40px; padding: 2px 5px; border: 1px solid #ccc; border-radius: 4px; text-align: center;" class="input-premium">
+                                    </div>
+                                    <div>
+                                        <label style="font-size: 12px; font-weight: bold; color: #666; margin-bottom: 5px; display: block;" title="Width in inches for duplicate copies (no names)">Dup Size</label>
+                                        <input type="number" id="studio-duplicate-size" value="1.5" step="0.1" min="0.5" max="3" style="width: 60px; height: 40px; padding: 2px 5px; border: 1px solid #ccc; border-radius: 4px; text-align: center;" class="input-premium">
+                                    </div>
                                     <button onclick="saveStudioPreset()" class="submit-btn btn-blue" style="width: auto; margin: 0;"><i class="fas fa-save"></i> Save Preset</button>
                                     
                                     <div style="position: relative; display: inline-block;">

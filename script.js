@@ -4124,6 +4124,12 @@ window.generateA4PDF = function() {
     const copies = parseInt(document.getElementById('studio-copies').value) || 1;
     const nameCopies = parseInt(document.getElementById('studio-name-copies').value);
     const validNameCopies = isNaN(nameCopies) ? copies : nameCopies;
+    
+    const primaryWInches = parseFloat(document.getElementById('studio-primary-size').value) || 1.8;
+    const dupWInches = parseFloat(document.getElementById('studio-duplicate-size').value) || 1.5;
+    const primaryW = primaryWInches * 25.4;
+    const dupW = dupWInches * 25.4;
+    
     if(window.showToast) window.showToast(`Generating A4 PDF (${copies} copies each)...`, "#10b981");
     
     // A4 Dimensions in mm: 210 x 297
@@ -4139,12 +4145,6 @@ window.generateA4PDF = function() {
     const g = parseInt(bgColorHex.slice(3, 5), 16) || 0;
     const b = parseInt(bgColorHex.slice(5, 7), 16) || 0;
     
-    const photoWidth = 35;
-    const photoHeight = 45;
-    const cols = 5;
-    
-    // Calculate margins and gaps
-    const totalWidth = 210;
     const marginX = 10;
     const marginY = 10;
     const gapX = 3.75;
@@ -4152,75 +4152,82 @@ window.generateA4PDF = function() {
     
     let currentX = marginX;
     let currentY = marginY;
-    let colIndex = 0;
+    let rowMaxHeight = 0;
     
     studioImages.forEach((img, idx) => {
         for (let copy = 0; copy < copies; copy++) {
-            // Wrap to next line if needed
-            if (colIndex >= cols) {
-                colIndex = 0;
+            const isNameCopy = copy < validNameCopies;
+            const w = isNameCopy ? primaryW : dupW;
+            const h = w * (45/35); // Maintain 35:45 ratio
+            
+            // Check wrap (if adding this exceeds width)
+            if (currentX + w > 210 - marginX) {
                 currentX = marginX;
-                currentY += photoHeight + gapY;
+                currentY += rowMaxHeight + gapY;
+                rowMaxHeight = 0;
             }
             
             // Check for page overflow
-            if (currentY + photoHeight > 297 - marginY) {
+            if (currentY + h > 297 - marginY) {
                 pdf.addPage();
                 currentX = marginX;
                 currentY = marginY;
-                colIndex = 0;
+                rowMaxHeight = 0;
+            }
+            
+            // Track tallest in row
+            if (h > rowMaxHeight) {
+                rowMaxHeight = h;
             }
             
             // 1. Draw Background Color Rectangle
             pdf.setFillColor(r, g, b);
-            pdf.rect(currentX, currentY, photoWidth, photoHeight, 'F');
+            pdf.rect(currentX, currentY, w, h, 'F');
             
             // 2. Draw Image
             const imgData = img.processedBase64 || img.originalBase64;
             try {
                 let format = 'JPEG';
                 if(imgData.includes('image/png')) format = 'PNG';
-                
-                pdf.addImage(imgData, format, currentX, currentY, photoWidth, photoHeight);
+                pdf.addImage(imgData, format, currentX, currentY, w, h);
             } catch(e) {
                 console.error("Failed to add image to PDF", e);
             }
             
             // 3. Draw Nameplate conditionally
-            const text = (copy < validNameCopies && img.nameText) ? img.nameText.trim() : "";
+            const text = (isNameCopy && img.nameText) ? img.nameText.trim() : "";
             
             if (text !== "") {
-                const nameplateHeight = 7;
-                const nameplateY = currentY + photoHeight - nameplateHeight;
+                const nameplateHeight = h * (7/45); // Scale nameplate proportionally
+                const nameplateY = currentY + h - nameplateHeight;
                 pdf.setFillColor(255, 255, 255); // white
                 pdf.setDrawColor(0, 0, 0); // black border
-                pdf.rect(currentX, nameplateY, photoWidth, nameplateHeight, 'DF');
+                pdf.rect(currentX, nameplateY, w, nameplateHeight, 'DF');
                 
                 // 4. Draw Text
                 const uppercaseText = text.toUpperCase();
                 pdf.setTextColor(0, 0, 0); // black text
-            pdf.setFont("helvetica", "bold");
-            
-            let fontSize = 8;
-            pdf.setFontSize(fontSize);
-            let textWidth = pdf.getTextWidth(uppercaseText);
-            
-            // Auto-adjust font size if name is too long
-            while (textWidth > photoWidth - 2 && fontSize > 3) {
-                fontSize -= 0.5;
+                pdf.setFont("helvetica", "bold");
+                
+                let fontSize = 8 * (w/35); // Scale font size
                 pdf.setFontSize(fontSize);
-                textWidth = pdf.getTextWidth(uppercaseText);
-            }
-            
-            const textX = currentX + (photoWidth - textWidth) / 2;
-            const textY = nameplateY + (nameplateHeight / 2) + 1.5;
-            
+                let textWidth = pdf.getTextWidth(uppercaseText);
+                
+                // Auto-adjust font size if name is too long
+                while (textWidth > w - 2 && fontSize > 3) {
+                    fontSize -= 0.5;
+                    pdf.setFontSize(fontSize);
+                    textWidth = pdf.getTextWidth(uppercaseText);
+                }
+                
+                const textX = currentX + (w - textWidth) / 2;
+                const textY = nameplateY + (nameplateHeight / 2) + (1.5 * (w/35));
+                
                 pdf.text(uppercaseText, textX, textY);
             }
             
-            // Move to next column
-            currentX += photoWidth + gapX;
-            colIndex++;
+            // Move to next column position
+            currentX += w + gapX;
         }
     });
     
@@ -4241,6 +4248,10 @@ window.generatePowerPoint = function() {
     const copies = parseInt(document.getElementById('studio-copies').value) || 1;
     const nameCopies = parseInt(document.getElementById('studio-name-copies').value);
     const validNameCopies = isNaN(nameCopies) ? copies : nameCopies;
+    
+    const primaryWInches = parseFloat(document.getElementById('studio-primary-size').value) || 1.8;
+    const dupWInches = parseFloat(document.getElementById('studio-duplicate-size').value) || 1.5;
+    
     if(window.showToast) window.showToast(`Generating PowerPoint (${copies} copies each)...`, "#10b981");
     
     let pptx = new pptxgen();
@@ -4248,64 +4259,67 @@ window.generatePowerPoint = function() {
     
     const bgColorHex = document.getElementById('studio-bg-color').value || '#FF0000';
     
-    const inToMm = 25.4;
-    const photoWidth = 35 / inToMm;
-    const photoHeight = 45 / inToMm;
-    const nameplateHeight = 7 / inToMm;
-    const marginX = 10 / inToMm;
-    const marginY = 10 / inToMm;
-    const gapX = 3.75 / inToMm;
-    const gapY = 5 / inToMm;
+    const marginX = 10 / 25.4;
+    const marginY = 10 / 25.4;
+    const gapX = 3.75 / 25.4;
+    const gapY = 5 / 25.4;
     
     let currentX = marginX;
     let currentY = marginY;
-    let colIndex = 0;
-    const cols = 5;
+    let rowMaxHeight = 0;
     
     let slide = pptx.addSlide();
     
     studioImages.forEach((img, idx) => {
         for(let copy = 0; copy < copies; copy++) {
-            if (colIndex >= cols) {
-                colIndex = 0;
+            const isNameCopy = copy < validNameCopies;
+            const w = isNameCopy ? primaryWInches : dupWInches;
+            const h = w * (45/35);
+            
+            if (currentX + w > (210 / 25.4) - marginX) {
                 currentX = marginX;
-                currentY += photoHeight + gapY;
+                currentY += rowMaxHeight + gapY;
+                rowMaxHeight = 0;
             }
             
-            if (currentY + photoHeight > (297 / inToMm) - marginY) {
+            if (currentY + h > (297 / 25.4) - marginY) {
                 slide = pptx.addSlide();
                 currentX = marginX;
                 currentY = marginY;
-                colIndex = 0;
+                rowMaxHeight = 0;
+            }
+            
+            if (h > rowMaxHeight) {
+                rowMaxHeight = h;
             }
             
             slide.addShape(pptx.ShapeType.rect, { 
-                x: currentX, y: currentY, w: photoWidth, h: photoHeight, 
+                x: currentX, y: currentY, w: w, h: h, 
                 fill: { color: bgColorHex.replace('#', '') } 
             });
             
             const imgData = img.processedBase64 || img.originalBase64;
-            // PptxGenJS accepts data URI directly
-            slide.addImage({ data: imgData, x: currentX, y: currentY, w: photoWidth, h: photoHeight });
+            slide.addImage({ data: imgData, x: currentX, y: currentY, w: w, h: h });
             
-            const text = (copy < validNameCopies && img.nameText) ? img.nameText.trim() : "";
+            const text = (isNameCopy && img.nameText) ? img.nameText.trim() : "";
             if (text !== "") {
-                const nameplateY = currentY + photoHeight - nameplateHeight;
+                const nameplateHeight = h * (7/45);
+                const nameplateY = currentY + h - nameplateHeight;
                 slide.addShape(pptx.ShapeType.rect, { 
-                    x: currentX, y: nameplateY, w: photoWidth, h: nameplateHeight, 
+                    x: currentX, y: nameplateY, w: w, h: nameplateHeight, 
                     fill: { color: 'FFFFFF' },
                     line: { color: '000000', width: 1 }
                 });
                 
+                const fontSize = 8 * (w / (35/25.4));
                 slide.addText(text.toUpperCase(), { 
-                    x: currentX, y: nameplateY, w: photoWidth, h: nameplateHeight, 
-                    color: '000000', fontSize: 8, bold: true, align: 'center', valign: 'middle',
+                    x: currentX, y: nameplateY, w: w, h: nameplateHeight, 
+                    color: '000000', fontSize: fontSize, bold: true, align: 'center', valign: 'middle',
                     margin: 0
                 });
             }
             
-            currentX += photoWidth + gapX;
-            colIndex++;
+            currentX += w + gapX;
         }
     });
     
@@ -4321,42 +4335,76 @@ window.generateMSWord = function() {
     const copies = parseInt(document.getElementById('studio-copies').value) || 1;
     const nameCopies = parseInt(document.getElementById('studio-name-copies').value);
     const validNameCopies = isNaN(nameCopies) ? copies : nameCopies;
+    
+    const primaryWInches = parseFloat(document.getElementById('studio-primary-size').value) || 1.8;
+    const dupWInches = parseFloat(document.getElementById('studio-duplicate-size').value) || 1.5;
+    
     if(window.showToast) window.showToast(`Generating Word Doc (${copies} copies each)...`, "#10b981");
     
     const bgColor = document.getElementById('studio-bg-color').value || '#FF0000';
     
-    let html = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><style>@page Section1 { size: 210mm 297mm; margin: 10mm; } div.Section1 { page: Section1; } table { border-collapse: separate; border-spacing: 3.75mm 5mm; } td { width: 35mm; height: 45mm; background-color: " + bgColor + "; padding: 0; margin: 0; vertical-align: top; } </style></head><body><div class='Section1'><table><tr>";
+    const maxWidthInches = 8.27 - (2 * (10 / 25.4)); // A4 width minus margins
+    const gapXInches = 3.75 / 25.4;
     
-    const cols = 5;
-    let colIndex = 0;
+    let html = "<html xmlns:v='urn:schemas-microsoft-com:vml' xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><style>@page Section1 { size: 210mm 297mm; margin: 10mm; } div.Section1 { page: Section1; } table { border-collapse: separate; border-spacing: 3.75mm 5mm; } td { padding: 0; margin: 0; vertical-align: top; background-color: " + bgColor + "; } </style></head><body><div class='Section1'><table><tr>";
+    
+    let currentXInches = 0;
+    const imagesToEmbed = [];
+    let imgCounter = 0;
     
     studioImages.forEach((img) => {
         for(let copy = 0; copy < copies; copy++) {
-            if (colIndex >= cols) {
+            const isNameCopy = copy < validNameCopies;
+            const wInches = isNameCopy ? primaryWInches : dupWInches;
+            const hInches = wInches * (45/35);
+            
+            if (currentXInches + wInches > maxWidthInches) {
                 html += "</tr><tr>";
-                colIndex = 0;
+                currentXInches = 0;
             }
             
-            const text = (copy < validNameCopies && img.nameText) ? img.nameText.trim() : "";
+            const text = (isNameCopy && img.nameText) ? img.nameText.trim() : "";
             const imgData = img.processedBase64 || img.originalBase64;
             
+            const cid = `img_${imgCounter}`;
+            let mimeType = 'image/jpeg';
+            if(imgData.includes('image/png')) mimeType = 'image/png';
+            
+            imagesToEmbed.push({
+                id: cid,
+                type: mimeType,
+                data: imgData
+            });
+            
+            const wMm = wInches * 25.4;
+            const hMm = hInches * 25.4;
+            
             if (text !== "") {
-                html += "<td><img src='" + imgData + "' style='width:35mm; height:38mm; display:block;' /><div style='width:34.5mm; height:6.5mm; background:white; border:0.5pt solid black; text-align:center; font-family:sans-serif; font-size:8pt; font-weight:bold; line-height:6.5mm; overflow:hidden; white-space:nowrap;'>" + text.toUpperCase() + "</div></td>";
+                const nameHeightMm = hMm * (7/45);
+                const picHeightMm = hMm - nameHeightMm;
+                html += `<td style='width:${wMm}mm; height:${hMm}mm;'><img src='cid:${cid}' style='width:${wMm}mm; height:${picHeightMm}mm; display:block;' /><div style='width:${wMm - 0.5}mm; height:${nameHeightMm - 0.5}mm; background:white; border:0.5pt solid black; text-align:center; font-family:sans-serif; font-size:8pt; font-weight:bold; line-height:${nameHeightMm - 0.5}mm; overflow:hidden; white-space:nowrap;'>${text.toUpperCase()}</div></td>`;
             } else {
-                html += "<td><img src='" + imgData + "' style='width:35mm; height:45mm; display:block;' /></td>";
+                html += `<td style='width:${wMm}mm; height:${hMm}mm;'><img src='cid:${cid}' style='width:${wMm}mm; height:${hMm}mm; display:block;' /></td>`;
             }
-            colIndex++;
+            
+            currentXInches += wInches + gapXInches;
+            imgCounter++;
         }
     });
     
-    while(colIndex < cols) {
-        html += "<td style='background: transparent;'></td>";
-        colIndex++;
-    }
-    
     html += "</tr></table></div></body></html>";
     
-    const blob = new Blob(['\\ufeff', html], { type: 'application/msword' });
+    const boundary = "----=_NextPart_000_0000_01D70000.00000000";
+    let mhtml = `MIME-Version: 1.0\r\nContent-Type: multipart/related; boundary="${boundary}"\r\n\r\n--${boundary}\r\nContent-Type: text/html; charset="utf-8"\r\nContent-Transfer-Encoding: 8bit\r\n\r\n${html}\r\n`;
+    
+    imagesToEmbed.forEach((imgObj) => {
+        const base64Data = imgObj.data.split(',')[1];
+        mhtml += `\r\n--${boundary}\r\nContent-Type: ${imgObj.type}\r\nContent-Transfer-Encoding: base64\r\nContent-ID: <${imgObj.id}>\r\n\r\n${base64Data}\r\n`;
+    });
+    
+    mhtml += `\r\n--${boundary}--\r\n`;
+    
+    const blob = new Blob([mhtml], { type: 'application/msword' });
     if (window.saveAs) {
         window.saveAs(blob, 'Batch_Studio_Photos.doc');
     } else {
