@@ -3978,10 +3978,14 @@ window.saveStudioPreset = function() {
     try {
         const color = document.getElementById('studio-bg-color').value;
         const bulkNames = document.getElementById('studio-bulk-names').value;
+        const copies = document.getElementById('studio-copies') ? document.getElementById('studio-copies').value : 1;
+        const nameCopies = document.getElementById('studio-name-copies') ? document.getElementById('studio-name-copies').value : 1;
         
         const sessionData = {
             bgColor: color,
             bulkNames: bulkNames,
+            copies: copies,
+            nameCopies: nameCopies,
             images: studioImages
         };
         
@@ -4009,6 +4013,16 @@ window.loadStudioPreset = function() {
                 if(bulkInput) bulkInput.value = data.bulkNames;
             }
             
+            if (data.copies !== undefined) {
+                const copiesInput = document.getElementById('studio-copies');
+                if(copiesInput) copiesInput.value = data.copies;
+            }
+            
+            if (data.nameCopies !== undefined) {
+                const nameCopiesInput = document.getElementById('studio-name-copies');
+                if(nameCopiesInput) nameCopiesInput.value = data.nameCopies;
+            }
+            
             if (data.images && Array.isArray(data.images)) {
                 // Wipe array and refill to maintain reference
                 studioImages.length = 0;
@@ -4018,6 +4032,13 @@ window.loadStudioPreset = function() {
         }
     } catch (e) {
         console.error("Load Session Error: ", e);
+    }
+};
+
+window.toggleStudioDownloadDropdown = function() {
+    const dropdown = document.getElementById('studio-download-dropdown');
+    if (dropdown) {
+        dropdown.style.display = dropdown.style.display === 'none' || dropdown.style.display === '' ? 'flex' : 'none';
     }
 };
 
@@ -4101,6 +4122,8 @@ window.generateA4PDF = function() {
     }
     
     const copies = parseInt(document.getElementById('studio-copies').value) || 1;
+    const nameCopies = parseInt(document.getElementById('studio-name-copies').value);
+    const validNameCopies = isNaN(nameCopies) ? copies : nameCopies;
     if(window.showToast) window.showToast(`Generating A4 PDF (${copies} copies each)...`, "#10b981");
     
     // A4 Dimensions in mm: 210 x 297
@@ -4164,7 +4187,7 @@ window.generateA4PDF = function() {
             }
             
             // 3. Draw Nameplate conditionally
-            const text = img.nameText ? img.nameText.trim() : "";
+            const text = (copy < validNameCopies && img.nameText) ? img.nameText.trim() : "";
             
             if (text !== "") {
                 const nameplateHeight = 7;
@@ -4216,6 +4239,8 @@ window.generatePowerPoint = function() {
     }
     
     const copies = parseInt(document.getElementById('studio-copies').value) || 1;
+    const nameCopies = parseInt(document.getElementById('studio-name-copies').value);
+    const validNameCopies = isNaN(nameCopies) ? copies : nameCopies;
     if(window.showToast) window.showToast(`Generating PowerPoint (${copies} copies each)...`, "#10b981");
     
     let pptx = new pptxgen();
@@ -4263,7 +4288,7 @@ window.generatePowerPoint = function() {
             // PptxGenJS accepts data URI directly
             slide.addImage({ data: imgData, x: currentX, y: currentY, w: photoWidth, h: photoHeight });
             
-            const text = img.nameText ? img.nameText.trim() : "";
+            const text = (copy < validNameCopies && img.nameText) ? img.nameText.trim() : "";
             if (text !== "") {
                 const nameplateY = currentY + photoHeight - nameplateHeight;
                 slide.addShape(pptx.ShapeType.rect, { 
@@ -4294,6 +4319,8 @@ window.generateMSWord = function() {
     }
     
     const copies = parseInt(document.getElementById('studio-copies').value) || 1;
+    const nameCopies = parseInt(document.getElementById('studio-name-copies').value);
+    const validNameCopies = isNaN(nameCopies) ? copies : nameCopies;
     if(window.showToast) window.showToast(`Generating Word Doc (${copies} copies each)...`, "#10b981");
     
     const bgColor = document.getElementById('studio-bg-color').value || '#FF0000';
@@ -4310,7 +4337,7 @@ window.generateMSWord = function() {
                 colIndex = 0;
             }
             
-            const text = img.nameText ? img.nameText.trim() : "";
+            const text = (copy < validNameCopies && img.nameText) ? img.nameText.trim() : "";
             const imgData = img.processedBase64 || img.originalBase64;
             
             if (text !== "") {

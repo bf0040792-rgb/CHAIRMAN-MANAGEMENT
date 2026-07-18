@@ -453,15 +453,22 @@
                                         <input type="color" id="studio-bg-color" value="#FF0000" style="width: 50px; height: 40px; padding: 2px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer;">
                                     </div>
                                     <div>
-                                        <label style="font-size: 12px; font-weight: bold; color: #666; margin-bottom: 5px; display: block;">Copies</label>
+                                        <label style="font-size: 12px; font-weight: bold; color: #666; margin-bottom: 5px; display: block;" title="Total Copies Per Photo">Total Copies</label>
                                         <input type="number" id="studio-copies" value="1" min="1" max="50" style="width: 60px; height: 40px; padding: 2px 5px; border: 1px solid #ccc; border-radius: 4px; text-align: center;" class="input-premium">
+                                    </div>
+                                    <div>
+                                        <label style="font-size: 12px; font-weight: bold; color: #666; margin-bottom: 5px; display: block;" title="How many of those copies should have the nameplate?">Name Copies</label>
+                                        <input type="number" id="studio-name-copies" value="1" min="0" max="50" style="width: 60px; height: 40px; padding: 2px 5px; border: 1px solid #ccc; border-radius: 4px; text-align: center;" class="input-premium">
                                     </div>
                                     <button onclick="saveStudioPreset()" class="submit-btn btn-blue" style="width: auto; margin: 0;"><i class="fas fa-save"></i> Save Preset</button>
                                     
-                                    <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-                                        <button onclick="generateA4PDF()" class="submit-btn btn-green" style="width: auto; margin: 0; padding: 0 10px;" title="Download PDF"><i class="fas fa-file-pdf"></i> PDF</button>
-                                        <button onclick="generateMSWord()" class="submit-btn btn-blue" style="width: auto; margin: 0; padding: 0 10px; background: #2563eb;" title="Download Word"><i class="fas fa-file-word"></i> Word</button>
-                                        <button onclick="generatePowerPoint()" class="submit-btn btn-red" style="width: auto; margin: 0; padding: 0 10px; background: #ea4335;" title="Download PPT"><i class="fas fa-file-powerpoint"></i> PPT</button>
+                                    <div style="position: relative; display: inline-block;">
+                                        <button onclick="window.toggleStudioDownloadDropdown()" class="submit-btn btn-green" style="width: auto; margin: 0; padding: 0 15px;"><i class="fas fa-download"></i> Download Export <i class="fas fa-chevron-down" style="font-size: 10px; margin-left: 5px;"></i></button>
+                                        <div id="studio-download-dropdown" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 5px; background: white; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 100; min-width: 150px; flex-direction: column;">
+                                            <button onclick="generateA4PDF(); window.toggleStudioDownloadDropdown();" style="padding: 10px 15px; border: none; background: none; text-align: left; width: 100%; cursor: pointer; border-bottom: 1px solid #eee; color: #10b981; font-weight: bold;"><i class="fas fa-file-pdf"></i> Download PDF</button>
+                                            <button onclick="generateMSWord(); window.toggleStudioDownloadDropdown();" style="padding: 10px 15px; border: none; background: none; text-align: left; width: 100%; cursor: pointer; border-bottom: 1px solid #eee; color: #2563eb; font-weight: bold;"><i class="fas fa-file-word"></i> Download Word</button>
+                                            <button onclick="generatePowerPoint(); window.toggleStudioDownloadDropdown();" style="padding: 10px 15px; border: none; background: none; text-align: left; width: 100%; cursor: pointer; color: #ea4335; font-weight: bold;"><i class="fas fa-file-powerpoint"></i> Download PPT</button>
+                                        </div>
                                     </div>
                                 </div>
                                 
