@@ -477,6 +477,8 @@
                                     </div>
                                     <button onclick="saveStudioPreset()" class="submit-btn btn-blue" style="width: auto; margin: 0;"><i class="fas fa-save"></i> Save Preset</button>
                                     
+                                    <button onclick="window.generateLivePreview()" class="submit-btn btn-blue" style="width: auto; margin: 0; background-color: #8b5cf6; margin-right: 10px;"><i class="fas fa-eye"></i> Live Preview</button>
+                                    
                                     <div style="position: relative; display: inline-block;">
                                         <button onclick="window.toggleStudioDownloadDropdown()" class="submit-btn btn-green" style="width: auto; margin: 0; padding: 0 15px;"><i class="fas fa-download"></i> Download Export <i class="fas fa-chevron-down" style="font-size: 10px; margin-left: 5px;"></i></button>
                                         <div id="studio-download-dropdown" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 5px; background: white; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 100; min-width: 150px; flex-direction: column;">
@@ -2042,6 +2044,92 @@
                     <button class="action-btn" style="background:#e2e8f0; color:#333;" onclick="closeCustomModal('cropper-modal')">Cancel</button>
                     <button class="action-btn btn-blue" onclick="window.applyCropperCrop()"><i class="fas fa-check"></i> Apply Crop</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mask Editor Modal -->
+    <div id="mask-editor-modal" class="custom-modal-overlay">
+        <div class="custom-modal-box" style="max-width: 1000px; width: 95%; max-height: 95vh; height: 80vh; display: flex; flex-direction: column; background: #e0e0e0; border-radius: 0; padding: 0;">
+            <!-- Header (Photoshop style) -->
+            <div style="background: #2b2b2b; color: #fff; padding: 10px; font-size: 14px; display: flex; justify-content: space-between; align-items: center;">
+                <span><i class="fas fa-magic"></i> Mask Adjustment (Uniform Restoration)</span>
+                <button onclick="closeCustomModal('mask-editor-modal')" style="background:none; border:none; color:#fff; cursor:pointer;"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <!-- Tool Options Bar -->
+            <div style="background: #d4d0c8; padding: 5px 10px; display: flex; gap: 15px; border-bottom: 1px solid #808080; align-items: center; font-size: 12px; color: #000;">
+                <div style="display: flex; gap: 10px; align-items: center; border-right: 1px solid #808080; padding-right: 15px;">
+                    <label style="display:flex; align-items:center; gap:3px; cursor:pointer;"><input type="radio" name="mask-mode" value="add" checked> Add (Restore)</label>
+                    <label style="display:flex; align-items:center; gap:3px; cursor:pointer;"><input type="radio" name="mask-mode" value="subtract"> Subtract (Erase)</label>
+                </div>
+                
+                <div id="mask-brush-options" style="display: flex; gap: 5px; align-items: center;">
+                    <label>Brush Size:</label>
+                    <input type="range" id="mask-brush-size" min="1" max="100" value="20" style="width: 100px;">
+                    <span id="mask-brush-size-val" style="width: 30px;">20px</span>
+                </div>
+                
+                <div id="mask-wand-options" style="display: none; gap: 5px; align-items: center;">
+                    <label>Tolerance:</label>
+                    <input type="range" id="mask-wand-tolerance" min="0" max="100" value="32" style="width: 100px;">
+                    <span id="mask-wand-tolerance-val" style="width: 30px;">32</span>
+                </div>
+                
+                <div style="flex:1; text-align:right;">
+                    <button onclick="window.resetMaskEditor()" style="padding: 2px 8px; border: 1px solid #808080; background: #eee; cursor: pointer;"><i class="fas fa-undo"></i> Reset Mask</button>
+                </div>
+            </div>
+            
+            <!-- Main Editor Area -->
+            <div style="display: flex; flex: 1; overflow: hidden; background: #808080;">
+                <!-- Tools Panel -->
+                <div style="width: 40px; background: #d4d0c8; display: flex; flex-direction: column; gap: 5px; padding: 5px; border-right: 1px solid #fff;">
+                    <button id="tool-btn-brush" class="mask-tool-btn" title="Brush Tool (Mode 2)" onclick="window.selectMaskTool('brush')" style="width:30px; height:30px; border:1px solid #808080; background:#eee; cursor:pointer; display:flex; justify-content:center; align-items:center;"><i class="fas fa-paint-brush"></i></button>
+                    <button id="tool-btn-lasso" class="mask-tool-btn" title="Polygonal Lasso (Mode 3)" onclick="window.selectMaskTool('lasso')" style="width:30px; height:30px; border:1px solid #808080; background:#eee; cursor:pointer; display:flex; justify-content:center; align-items:center;"><i class="fas fa-draw-polygon"></i></button>
+                    <button id="tool-btn-wand" class="mask-tool-btn" title="Magic Wand (Mode 1)" onclick="window.selectMaskTool('wand')" style="width:30px; height:30px; border:1px solid #808080; background:#eee; cursor:pointer; display:flex; justify-content:center; align-items:center;"><i class="fas fa-magic"></i></button>
+                </div>
+                
+                <!-- Canvas Container -->
+                <div style="flex: 1; display: flex; justify-content: center; align-items: center; overflow: auto; position: relative;" id="mask-canvas-container">
+                    <div style="position: relative; box-shadow: 0 0 10px rgba(0,0,0,0.5);" id="mask-canvas-wrapper">
+                        <!-- Layer 1: True Original Image (Background) -->
+                        <canvas id="mask-layer-img" style="position: absolute; top:0; left:0; z-index: 1;"></canvas>
+                        <!-- Layer 2: Mask Canvas (Red Overlay) -->
+                        <canvas id="mask-layer-red" style="position: absolute; top:0; left:0; z-index: 2; opacity: 0.5; pointer-events: none;"></canvas>
+                        <!-- Layer 3: Interaction Canvas (for drawing brush/lasso lines) -->
+                        <canvas id="mask-layer-ui" style="position: absolute; top:0; left:0; z-index: 3; cursor: crosshair;"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div style="background: #d4d0c8; padding: 10px; border-top: 1px solid #808080; text-align: right; display:flex; justify-content: space-between; align-items: center;">
+                <span style="font-size:12px; color:#666;" id="mask-hint-text">Use the Brush tool to paint over uniform areas you want to restore.</span>
+                <div>
+                    <button onclick="closeCustomModal('mask-editor-modal')" style="padding: 5px 15px; border: 1px solid #808080; background: #eee; cursor: pointer;">Cancel</button>
+                    <button onclick="window.applyMaskEditor()" style="padding: 5px 15px; border: 1px solid #808080; background: #2b2b2b; color: #fff; cursor: pointer; margin-left: 10px;"><i class="fas fa-check"></i> Apply Mask</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Preview Modal -->
+    <div id="live-preview-modal" class="custom-modal-overlay">
+        <div class="custom-modal-box" style="max-width: 1200px; width: 95%; max-height: 95vh; height: 90vh; display: flex; flex-direction: column; background: #f3f4f6; border-radius: 8px; padding: 0; overflow: hidden;">
+            <div class="custom-modal-header" style="background: #1e293b; color: white; border-radius: 8px 8px 0 0;">
+                <span><i class="fas fa-eye"></i> Live A4 Print Preview</span>
+                <button class="action-btn btn-red" onclick="closeCustomModal('live-preview-modal')" style="background: transparent; color: white; border: none;"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div style="flex: 1; overflow-y: auto; overflow-x: auto; padding: 30px; display: flex; flex-direction: column; align-items: center; background: #9ca3af;">
+                <div id="live-preview-container" style="display: flex; flex-direction: column; gap: 20px;">
+                    <!-- A4 Pages will be injected here -->
+                </div>
+            </div>
+            
+            <div style="padding: 15px; background: white; border-top: 1px solid #e5e7eb; text-align: right;">
+                <button onclick="closeCustomModal('live-preview-modal')" class="action-btn btn-blue"><i class="fas fa-check"></i> Done Reviewing</button>
             </div>
         </div>
     </div>

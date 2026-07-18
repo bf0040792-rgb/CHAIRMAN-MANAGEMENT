@@ -3875,6 +3875,7 @@ document.getElementById('studio-upload')?.addEventListener('change', function(e)
                 const newIndex = studioImages.length;
                 studioImages.push({
                     id: Date.now() + Math.random().toString(36).substr(2, 9),
+                    rawUploadedBase64: event.target.result, // Retain true original for cropping memory
                     originalBase64: compressedBase64,
                     processedBase64: null,
                     nameText: "",
@@ -3933,6 +3934,7 @@ function renderStudioGrid() {
             <input type="text" class="input-premium w-full mt-2 px-2 py-1 text-xs text-center font-mono rounded" placeholder="Enter Name..." value="${img.nameText}" oninput="updateStudioName(${index}, this.value)">
             <div style="display:flex; justify-content:space-between; margin-top:5px;">
                 <button onclick="window.openCropperModal(${index})" class="text-blue-500 text-[10px] hover:text-blue-400 font-mono"><i class="fas fa-crop-alt"></i> Crop</button>
+                <button onclick="window.openMaskEditor(${index})" class="text-purple-500 text-[10px] hover:text-purple-400 font-mono"><i class="fas fa-magic"></i> Adjust</button>
                 <button onclick="removeStudioImage(${index})" class="text-rose-500 text-[10px] hover:text-rose-400 font-mono"><i class="fas fa-trash"></i> Remove</button>
             </div>
         `;
@@ -3968,8 +3970,8 @@ window.openCropperModal = function(index) {
     if(!studioImages[index]) return;
     currentCropIndex = index;
     const imgObj = studioImages[index];
-    // Always crop the original base64 to avoid stacking background removal artifacts
-    const imgSrc = imgObj.originalBase64;
+    // Load the RAW uncropped uploaded photo for permanent crop memory, fallback to original if missing
+    const imgSrc = imgObj.rawUploadedBase64 || imgObj.originalBase64;
     
     const modal = document.getElementById('cropper-modal');
     const imageElement = document.getElementById('cropper-image');
@@ -4500,3 +4502,486 @@ window.generateMSWord = function() {
         document.body.removeChild(downloadLink);
     }
 };
+
+// ==========================================
+// MASK EDITOR (PHOTOSHOP-STYLE) LOGIC
+// ==========================================
+
+let maskEditorIndex = -1;
+let maskTool = 'brush'; // brush, lasso, wand
+let isMaskDrawing = false;
+let maskLassoPoints = [];
+let maskLastX = 0, maskLastY = 0;
+
+const workingMaskCanvas = document.createElement('canvas');
+const workingMaskCtx = workingMaskCanvas.getContext('2d');
+
+window.selectMaskTool = function(tool) {
+    maskTool = tool;
+    document.querySelectorAll('.mask-tool-btn').forEach(b => {
+        b.style.background = '#eee';
+        b.style.borderColor = '#808080';
+    });
+    const activeBtn = document.getElementById('tool-btn-' + tool);
+    if(activeBtn) {
+        activeBtn.style.background = '#fff';
+        activeBtn.style.borderColor = '#000';
+    }
+    
+    document.getElementById('mask-brush-options').style.display = (tool === 'brush') ? 'flex' : 'none';
+    document.getElementById('mask-wand-options').style.display = (tool === 'wand') ? 'flex' : 'none';
+    
+    if(tool !== 'lasso') {
+        maskLassoPoints = [];
+        const ctxUI = document.getElementById('mask-layer-ui').getContext('2d');
+        ctxUI.clearRect(0,0, ctxUI.canvas.width, ctxUI.canvas.height);
+    }
+};
+
+document.getElementById('mask-brush-size')?.addEventListener('input', function(e) {
+    document.getElementById('mask-brush-size-val').innerText = e.target.value + 'px';
+});
+document.getElementById('mask-wand-tolerance')?.addEventListener('input', function(e) {
+    document.getElementById('mask-wand-tolerance-val').innerText = e.target.value;
+});
+
+window.openMaskEditor = function(index) {
+    if(!studioImages[index]) return;
+    maskEditorIndex = index;
+    const imgObj = studioImages[index];
+    const rawSrc = imgObj.rawUploadedBase64 || imgObj.originalBase64;
+    const processedSrc = imgObj.processedBase64 || rawSrc; 
+    
+    const rawImg = new Image();
+    const procImg = new Image();
+    
+    rawImg.onload = () => {
+        procImg.onload = () => {
+            setupMaskEditor(rawImg, procImg);
+        };
+        procImg.src = processedSrc;
+    };
+    rawImg.src = rawSrc;
+};
+
+function setupMaskEditor(rawImg, procImg) {
+    const w = rawImg.width;
+    const h = rawImg.height;
+    
+    const layerImg = document.getElementById('mask-layer-img');
+    const layerRed = document.getElementById('mask-layer-red');
+    const layerUI = document.getElementById('mask-layer-ui');
+    const wrapper = document.getElementById('mask-canvas-wrapper');
+    
+    // Scale for display
+    const maxW = window.innerWidth * 0.8;
+    const maxH = window.innerHeight * 0.7;
+    let scale = 1;
+    if(w > maxW || h > maxH) {
+        scale = Math.min(maxW/w, maxH/h);
+    }
+    
+    const displayW = w * scale;
+    const displayH = h * scale;
+    
+    wrapper.style.width = displayW + 'px';
+    wrapper.style.height = displayH + 'px';
+    
+    [layerImg, layerRed, layerUI].forEach(c => {
+        c.width = w;
+        c.height = h;
+        c.style.width = displayW + 'px';
+        c.style.height = displayH + 'px';
+    });
+    
+    workingMaskCanvas.width = w;
+    workingMaskCanvas.height = h;
+    
+    // Draw raw image
+    const ctxImg = layerImg.getContext('2d', { willReadFrequently: true });
+    ctxImg.drawImage(rawImg, 0, 0);
+    
+    // Init working mask: White = kept, Transparent = removed
+    workingMaskCtx.clearRect(0, 0, w, h);
+    workingMaskCtx.drawImage(procImg, 0, 0);
+    workingMaskCtx.globalCompositeOperation = 'source-in';
+    workingMaskCtx.fillStyle = '#ffffff';
+    workingMaskCtx.fillRect(0, 0, w, h);
+    workingMaskCtx.globalCompositeOperation = 'source-over'; 
+    
+    updateRedLayer();
+    document.getElementById('mask-editor-modal').style.display = 'flex';
+    window.selectMaskTool('brush');
+    
+    layerUI.onmousedown = onMaskMouseDown;
+    layerUI.onmousemove = onMaskMouseMove;
+    window.onmouseup = onMaskMouseUp;
+    
+    // Lasso Double Click
+    layerUI.ondblclick = function(e) {
+        if(maskTool === 'lasso' && maskLassoPoints.length >= 3) {
+            const mode = getMaskMode();
+            workingMaskCtx.globalCompositeOperation = (mode === 'add') ? 'source-over' : 'destination-out';
+            workingMaskCtx.fillStyle = '#ffffff';
+            workingMaskCtx.beginPath();
+            workingMaskCtx.moveTo(maskLassoPoints[0].x, maskLassoPoints[0].y);
+            for(let i=1; i<maskLassoPoints.length; i++) {
+                workingMaskCtx.lineTo(maskLassoPoints[i].x, maskLassoPoints[i].y);
+            }
+            workingMaskCtx.closePath();
+            workingMaskCtx.fill();
+            workingMaskCtx.globalCompositeOperation = 'source-over';
+            
+            maskLassoPoints = [];
+            const ctxUI = layerUI.getContext('2d');
+            ctxUI.clearRect(0,0, w, h);
+            updateRedLayer();
+        }
+    };
+}
+
+window.resetMaskEditor = function() {
+    if(maskEditorIndex !== -1) {
+        window.openMaskEditor(maskEditorIndex);
+    }
+};
+
+function updateRedLayer() {
+    const layerRed = document.getElementById('mask-layer-red');
+    const ctxRed = layerRed.getContext('2d');
+    const w = layerRed.width;
+    const h = layerRed.height;
+    
+    // Draw solid red, then punch out the mask (so removed areas are RED)
+    ctxRed.clearRect(0, 0, w, h);
+    ctxRed.fillStyle = 'rgba(255, 0, 0, 0.5)';
+    ctxRed.fillRect(0, 0, w, h);
+    
+    ctxRed.globalCompositeOperation = 'destination-out';
+    ctxRed.drawImage(workingMaskCanvas, 0, 0);
+    ctxRed.globalCompositeOperation = 'source-over'; 
+}
+
+function getMaskEventCoords(e) {
+    const layerUI = document.getElementById('mask-layer-ui');
+    const rect = layerUI.getBoundingClientRect();
+    const scaleX = layerUI.width / rect.width;
+    const scaleY = layerUI.height / rect.height;
+    return {
+        x: (e.clientX - rect.left) * scaleX,
+        y: (e.clientY - rect.top) * scaleY
+    };
+}
+
+function getMaskMode() {
+    const radios = document.getElementsByName('mask-mode');
+    for(let r of radios) {
+        if(r.checked) return r.value; 
+    }
+    return 'add';
+}
+
+function onMaskMouseDown(e) {
+    isMaskDrawing = true;
+    const coords = getMaskEventCoords(e);
+    maskLastX = coords.x;
+    maskLastY = coords.y;
+    
+    if(maskTool === 'brush') {
+        applyBrush(coords.x, coords.y);
+    } else if (maskTool === 'lasso') {
+        maskLassoPoints.push({x: coords.x, y: coords.y});
+        drawLassoUI();
+    } else if (maskTool === 'wand') {
+        applyWand(Math.floor(coords.x), Math.floor(coords.y));
+    }
+}
+
+function onMaskMouseMove(e) {
+    if(!isMaskDrawing) return;
+    const coords = getMaskEventCoords(e);
+    
+    if(maskTool === 'brush') {
+        applyBrush(coords.x, coords.y, true);
+        maskLastX = coords.x;
+        maskLastY = coords.y;
+    }
+}
+
+function onMaskMouseUp(e) {
+    isMaskDrawing = false;
+}
+
+function applyBrush(x, y, isLine = false) {
+    const mode = getMaskMode();
+    const size = parseInt(document.getElementById('mask-brush-size').value);
+    
+    workingMaskCtx.globalCompositeOperation = (mode === 'add') ? 'source-over' : 'destination-out';
+    workingMaskCtx.fillStyle = '#ffffff';
+    workingMaskCtx.strokeStyle = '#ffffff';
+    workingMaskCtx.lineWidth = size * 2;
+    workingMaskCtx.lineCap = 'round';
+    workingMaskCtx.lineJoin = 'round';
+    
+    if(isLine) {
+        workingMaskCtx.beginPath();
+        workingMaskCtx.moveTo(maskLastX, maskLastY);
+        workingMaskCtx.lineTo(x, y);
+        workingMaskCtx.stroke();
+    } else {
+        workingMaskCtx.beginPath();
+        workingMaskCtx.arc(x, y, size, 0, Math.PI * 2);
+        workingMaskCtx.fill();
+    }
+    
+    workingMaskCtx.globalCompositeOperation = 'source-over';
+    updateRedLayer();
+}
+
+function drawLassoUI() {
+    const layerUI = document.getElementById('mask-layer-ui');
+    const ctxUI = layerUI.getContext('2d');
+    ctxUI.clearRect(0,0, layerUI.width, layerUI.height);
+    if(maskLassoPoints.length === 0) return;
+    
+    ctxUI.strokeStyle = '#00f0ff';
+    ctxUI.lineWidth = 2;
+    ctxUI.beginPath();
+    ctxUI.moveTo(maskLassoPoints[0].x, maskLassoPoints[0].y);
+    for(let i=1; i<maskLassoPoints.length; i++) {
+        ctxUI.lineTo(maskLassoPoints[i].x, maskLassoPoints[i].y);
+        ctxUI.fillStyle = '#fff';
+        ctxUI.fillRect(maskLassoPoints[i].x - 2, maskLassoPoints[i].y - 2, 4, 4);
+    }
+    ctxUI.stroke();
+}
+
+function applyWand(startX, startY) {
+    const mode = getMaskMode();
+    const tolerance = parseInt(document.getElementById('mask-wand-tolerance').value);
+    
+    const layerImg = document.getElementById('mask-layer-img');
+    const ctxImg = layerImg.getContext('2d');
+    const w = layerImg.width;
+    const h = layerImg.height;
+    
+    const imgData = ctxImg.getImageData(0, 0, w, h);
+    const data = imgData.data;
+    
+    const startPos = (startY * w + startX) * 4;
+    const startR = data[startPos];
+    const startG = data[startPos+1];
+    const startB = data[startPos+2];
+    
+    const selectionData = new ImageData(w, h);
+    const selData = selectionData.data;
+    
+    const stack = [[startX, startY]];
+    const visited = new Uint8Array(w * h);
+    
+    while(stack.length > 0) {
+        const [x, y] = stack.pop();
+        const p = y * w + x;
+        if(visited[p]) continue;
+        visited[p] = 1;
+        
+        const i = p * 4;
+        const r = data[i];
+        const g = data[i+1];
+        const b = data[i+2];
+        
+        const dist = Math.sqrt((r-startR)**2 + (g-startG)**2 + (b-startB)**2);
+        if(dist <= tolerance) {
+            selData[i] = 255;
+            selData[i+1] = 255;
+            selData[i+2] = 255;
+            selData[i+3] = 255;
+            
+            if(x > 0) stack.push([x-1, y]);
+            if(x < w-1) stack.push([x+1, y]);
+            if(y > 0) stack.push([x, y-1]);
+            if(y < h-1) stack.push([x, y+1]);
+        }
+    }
+    
+    const tmpCanvas = document.createElement('canvas');
+    tmpCanvas.width = w; tmpCanvas.height = h;
+    tmpCanvas.getContext('2d').putImageData(selectionData, 0, 0);
+    
+    workingMaskCtx.globalCompositeOperation = (mode === 'add') ? 'source-over' : 'destination-out';
+    workingMaskCtx.drawImage(tmpCanvas, 0, 0);
+    workingMaskCtx.globalCompositeOperation = 'source-over';
+    
+    updateRedLayer();
+}
+
+window.applyMaskEditor = function() {
+    if(maskEditorIndex === -1) return;
+    
+    const layerImg = document.getElementById('mask-layer-img');
+    const w = layerImg.width;
+    const h = layerImg.height;
+    
+    const finalCanvas = document.createElement('canvas');
+    finalCanvas.width = w;
+    finalCanvas.height = h;
+    const finalCtx = finalCanvas.getContext('2d');
+    
+    // Draw user mask
+    finalCtx.drawImage(workingMaskCanvas, 0, 0);
+    // Composite true original image INTO the user mask
+    finalCtx.globalCompositeOperation = 'source-in';
+    finalCtx.drawImage(layerImg, 0, 0);
+    
+    // Must be PNG for transparency to remain transparent
+    const finalBase64 = finalCanvas.toDataURL('image/png'); 
+    
+    studioImages[maskEditorIndex].processedBase64 = finalBase64;
+    studioImages[maskEditorIndex].isProcessed = true;
+    
+    closeCustomModal('mask-editor-modal');
+    renderStudioGrid();
+};
+
+// ==========================================
+// LIVE PREVIEW LOGIC
+// ==========================================
+
+window.generateLivePreview = function() {
+    if (!studioImages.length) {
+        if(window.showToast) window.showToast("No images to preview!", "#e11d48");
+        return;
+    }
+    
+    const container = document.getElementById('live-preview-container');
+    container.innerHTML = ''; // clear old
+    
+    const copies = parseInt(document.getElementById('studio-copies').value) || 1;
+    const nameCopies = parseInt(document.getElementById('studio-name-copies').value);
+    const validNameCopies = isNaN(nameCopies) ? copies : nameCopies;
+    
+    const primaryWInches = parseFloat(document.getElementById('studio-primary-size').value) || 1.8;
+    const dupWInches = parseFloat(document.getElementById('studio-duplicate-size').value) || 1.5;
+    
+    const bgColorHex = document.getElementById('studio-bg-color').value || '#FF0000';
+    const borderColorHex = document.getElementById('studio-border-color') ? document.getElementById('studio-border-color').value : '#000000';
+    
+    // A4 dimensions in CSS pixels (using 96 DPI for web display, 1 inch = 96px)
+    // A4 is 8.27 x 11.69 inches
+    const DPI = 96;
+    const a4W = 8.27 * DPI;
+    const a4H = 11.69 * DPI;
+    
+    const marginX = (10 / 25.4) * DPI;
+    const marginY = (10 / 25.4) * DPI;
+    const gapX = (3.75 / 25.4) * DPI;
+    const gapY = (5 / 25.4) * DPI;
+    
+    let currentX = marginX;
+    let currentY = marginY;
+    let rowMaxHeight = 0;
+    
+    let currentPageDiv = createA4PageDiv(a4W, a4H, bgColorHex);
+    container.appendChild(currentPageDiv);
+    
+    studioImages.forEach((img) => {
+        for(let copy = 0; copy < copies; copy++) {
+            const isNameCopy = copy < validNameCopies;
+            
+            const wInches = isNameCopy ? primaryWInches : dupWInches;
+            const wPx = wInches * DPI;
+            const hPx = wPx * (45/35);
+            
+            if (currentX + wPx > (a4W - marginX)) {
+                currentX = marginX;
+                currentY += rowMaxHeight + gapY;
+                rowMaxHeight = 0;
+                
+                if (currentY + hPx > (a4H - marginY)) {
+                    currentPageDiv = createA4PageDiv(a4W, a4H, bgColorHex);
+                    container.appendChild(currentPageDiv);
+                    currentX = marginX;
+                    currentY = marginY;
+                }
+            }
+            
+            if (hPx > rowMaxHeight) rowMaxHeight = hPx;
+            
+            const text = (isNameCopy && img.nameText) ? img.nameText.trim() : "";
+            const uppercaseText = text.toUpperCase();
+            
+            const imgSrc = img.processedBase64 || img.originalBase64;
+            
+            // Create Photo Wrapper
+            const photoDiv = document.createElement('div');
+            photoDiv.style.position = 'absolute';
+            photoDiv.style.left = currentX + 'px';
+            photoDiv.style.top = currentY + 'px';
+            photoDiv.style.width = wPx + 'px';
+            photoDiv.style.height = hPx + 'px';
+            photoDiv.style.border = '1px solid ' + borderColorHex;
+            photoDiv.style.boxSizing = 'border-box';
+            photoDiv.style.backgroundColor = '#fff';
+            photoDiv.style.overflow = 'hidden';
+            
+            const nameplateHeight = hPx * (7/45);
+            const picHeight = text !== "" ? (hPx - nameplateHeight) : hPx;
+            
+            // Create Image Element
+            const imgEl = document.createElement('img');
+            imgEl.src = imgSrc;
+            imgEl.style.width = '100%';
+            imgEl.style.height = picHeight + 'px';
+            imgEl.style.objectFit = 'fill';
+            photoDiv.appendChild(imgEl);
+            
+            // Create Nameplate Element
+            if (text !== "") {
+                const nameDiv = document.createElement('div');
+                nameDiv.style.position = 'absolute';
+                nameDiv.style.bottom = '0';
+                nameDiv.style.left = '0';
+                nameDiv.style.width = '100%';
+                nameDiv.style.height = nameplateHeight + 'px';
+                nameDiv.style.backgroundColor = '#fff';
+                nameDiv.style.borderTop = '1px solid ' + borderColorHex;
+                nameDiv.style.boxSizing = 'border-box';
+                nameDiv.style.display = 'flex';
+                nameDiv.style.justifyContent = 'center';
+                nameDiv.style.alignItems = 'center';
+                nameDiv.style.fontFamily = 'sans-serif';
+                nameDiv.style.fontWeight = 'bold';
+                nameDiv.style.color = '#000';
+                nameDiv.style.whiteSpace = 'nowrap';
+                nameDiv.style.overflow = 'hidden';
+                
+                // Scale font size linearly with width (mimics jsPDF logic)
+                const fontSizePx = 8 * (wInches / 1.37) * (DPI / 72); // rough pt to px conversion
+                nameDiv.style.fontSize = fontSizePx + 'px';
+                nameDiv.innerText = uppercaseText;
+                
+                photoDiv.appendChild(nameDiv);
+            }
+            
+            currentPageDiv.appendChild(photoDiv);
+            
+            currentX += wPx + gapX;
+        }
+    });
+    
+    document.getElementById('live-preview-modal').style.display = 'flex';
+};
+
+function createA4PageDiv(w, h, bgColor) {
+    const page = document.createElement('div');
+    page.style.width = w + 'px';
+    page.style.height = h + 'px';
+    page.style.backgroundColor = bgColor;
+    page.style.position = 'relative';
+    page.style.boxShadow = '0 10px 25px rgba(0,0,0,0.2)';
+    page.style.flexShrink = '0';
+    // Scaling container logic so it fits nicely on any screen while preserving exact A4 proportions
+    page.style.transformOrigin = 'top center';
+    // Since width is around 793px, let's just let it render full size in the scrollable container
+    return page;
+}
