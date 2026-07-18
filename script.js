@@ -3977,12 +3977,14 @@ window.syncBulkNames = function() {
 window.saveStudioPreset = function() {
     try {
         const color = document.getElementById('studio-bg-color').value;
+        const borderColor = document.getElementById('studio-border-color') ? document.getElementById('studio-border-color').value : '#000000';
         const bulkNames = document.getElementById('studio-bulk-names').value;
         const copies = document.getElementById('studio-copies') ? document.getElementById('studio-copies').value : 1;
         const nameCopies = document.getElementById('studio-name-copies') ? document.getElementById('studio-name-copies').value : 1;
         
         const sessionData = {
             bgColor: color,
+            borderColor: borderColor,
             bulkNames: bulkNames,
             copies: copies,
             nameCopies: nameCopies,
@@ -4006,6 +4008,11 @@ window.loadStudioPreset = function() {
             if (data.bgColor) {
                 const colorInput = document.getElementById('studio-bg-color');
                 if(colorInput) colorInput.value = data.bgColor;
+            }
+            
+            if (data.borderColor) {
+                const borderInput = document.getElementById('studio-border-color');
+                if(borderInput) borderInput.value = data.borderColor;
             }
             
             if (data.bulkNames !== undefined) {
@@ -4145,6 +4152,11 @@ window.generateA4PDF = function() {
     const g = parseInt(bgColorHex.slice(3, 5), 16) || 0;
     const b = parseInt(bgColorHex.slice(5, 7), 16) || 0;
     
+    const borderColorHex = document.getElementById('studio-border-color') ? document.getElementById('studio-border-color').value : '#000000';
+    const br = parseInt(borderColorHex.slice(1, 3), 16) || 0;
+    const bg = parseInt(borderColorHex.slice(3, 5), 16) || 0;
+    const bb = parseInt(borderColorHex.slice(5, 7), 16) || 0;
+    
     const marginX = 10;
     const marginY = 10;
     const gapX = 3.75;
@@ -4226,6 +4238,11 @@ window.generateA4PDF = function() {
                 pdf.text(uppercaseText, textX, textY);
             }
             
+            // Draw Border
+            pdf.setDrawColor(br, bg, bb);
+            pdf.setLineWidth(0.5);
+            pdf.rect(currentX, currentY, w, h, 'S');
+            
             // Move to next column position
             currentX += w + gapX;
         }
@@ -4258,6 +4275,7 @@ window.generatePowerPoint = function() {
     pptx.layout = { name:'A4', width:8.27, height:11.69 };
     
     const bgColorHex = document.getElementById('studio-bg-color').value || '#FF0000';
+    const borderColorHex = document.getElementById('studio-border-color') ? document.getElementById('studio-border-color').value : '#000000';
     
     const marginX = 10 / 25.4;
     const marginY = 10 / 25.4;
@@ -4308,7 +4326,7 @@ window.generatePowerPoint = function() {
                 slide.addShape(pptx.ShapeType.rect, { 
                     x: currentX, y: nameplateY, w: w, h: nameplateHeight, 
                     fill: { color: 'FFFFFF' },
-                    line: { color: '000000', width: 1 }
+                    line: { color: borderColorHex.replace('#', ''), width: 1 }
                 });
                 
                 const fontSize = 8 * (w / (35/25.4));
@@ -4318,6 +4336,13 @@ window.generatePowerPoint = function() {
                     margin: 0
                 });
             }
+            
+            // Draw Border Around Entire Photo
+            slide.addShape(pptx.ShapeType.rect, { 
+                x: currentX, y: currentY, w: w, h: h, 
+                fill: { transparency: 100 },
+                line: { color: borderColorHex.replace('#', ''), width: 1 }
+            });
             
             currentX += w + gapX;
         }
@@ -4342,11 +4367,12 @@ window.generateMSWord = function() {
     if(window.showToast) window.showToast(`Generating Word Doc (${copies} copies each)...`, "#10b981");
     
     const bgColor = document.getElementById('studio-bg-color').value || '#FF0000';
+    const borderColorHex = document.getElementById('studio-border-color') ? document.getElementById('studio-border-color').value : '#000000';
     
     const maxWidthInches = 8.27 - (2 * (10 / 25.4)); // A4 width minus margins
     const gapXInches = 3.75 / 25.4;
     
-    let html = "<html xmlns:v='urn:schemas-microsoft-com:vml' xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><style>@page Section1 { size: 210mm 297mm; margin: 10mm; } div.Section1 { page: Section1; } table { border-collapse: separate; border-spacing: 3.75mm 5mm; } td { padding: 0; margin: 0; vertical-align: top; background-color: " + bgColor + "; } </style></head><body><div class='Section1'><table><tr>";
+    let html = "<html xmlns:v='urn:schemas-microsoft-com:vml' xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><style>@page Section1 { size: 210mm 297mm; margin: 10mm; } div.Section1 { page: Section1; } table { border-collapse: separate; border-spacing: 3.75mm 5mm; } td { padding: 0; margin: 0; vertical-align: top; background-color: " + bgColor + "; border: 1pt solid " + borderColorHex + "; } </style></head><body><div class='Section1'><table><tr>";
     
     let currentXInches = 0;
     const imagesToEmbed = [];
@@ -4382,7 +4408,7 @@ window.generateMSWord = function() {
             if (text !== "") {
                 const nameHeightMm = hMm * (7/45);
                 const picHeightMm = hMm - nameHeightMm;
-                html += `<td style='width:${wMm}mm; height:${hMm}mm;'><img src='cid:${cid}' style='width:${wMm}mm; height:${picHeightMm}mm; display:block;' /><div style='width:${wMm - 0.5}mm; height:${nameHeightMm - 0.5}mm; background:white; border:0.5pt solid black; text-align:center; font-family:sans-serif; font-size:8pt; font-weight:bold; line-height:${nameHeightMm - 0.5}mm; overflow:hidden; white-space:nowrap;'>${text.toUpperCase()}</div></td>`;
+                html += `<td style='width:${wMm}mm; height:${hMm}mm;'><img src='cid:${cid}' style='width:${wMm}mm; height:${picHeightMm}mm; display:block;' /><div style='width:${wMm - 0.5}mm; height:${nameHeightMm - 0.5}mm; background:white; border-top:0.5pt solid ${borderColorHex}; text-align:center; font-family:sans-serif; font-size:8pt; font-weight:bold; line-height:${nameHeightMm - 0.5}mm; overflow:hidden; white-space:nowrap;'>${text.toUpperCase()}</div></td>`;
             } else {
                 html += `<td style='width:${wMm}mm; height:${hMm}mm;'><img src='cid:${cid}' style='width:${wMm}mm; height:${hMm}mm; display:block;' /></td>`;
             }
