@@ -3931,7 +3931,10 @@ function renderStudioGrid() {
                 </div>
             </div>
             <input type="text" class="input-premium w-full mt-2 px-2 py-1 text-xs text-center font-mono rounded" placeholder="Enter Name..." value="${img.nameText}" oninput="updateStudioName(${index}, this.value)">
-            <button onclick="removeStudioImage(${index})" class="mt-2 text-rose-500 text-[10px] hover:text-rose-400 font-mono"><i class="fas fa-trash"></i> Remove</button>
+            <div style="display:flex; justify-content:space-between; margin-top:5px;">
+                <button onclick="window.openCropperModal(${index})" class="text-blue-500 text-[10px] hover:text-blue-400 font-mono"><i class="fas fa-crop-alt"></i> Crop</button>
+                <button onclick="removeStudioImage(${index})" class="text-rose-500 text-[10px] hover:text-rose-400 font-mono"><i class="fas fa-trash"></i> Remove</button>
+            </div>
         `;
         grid.appendChild(card);
     });
@@ -3957,6 +3960,61 @@ window.removeStudioImage = function(index) {
     studioImages.splice(index, 1);
     renderStudioGrid();
 }
+
+let currentCropper = null;
+let currentCropIndex = -1;
+
+window.openCropperModal = function(index) {
+    if(!studioImages[index]) return;
+    currentCropIndex = index;
+    const imgObj = studioImages[index];
+    // Always crop the original base64 to avoid stacking background removal artifacts
+    const imgSrc = imgObj.originalBase64;
+    
+    const modal = document.getElementById('cropper-modal');
+    const imageElement = document.getElementById('cropper-image');
+    
+    imageElement.src = imgSrc;
+    modal.style.display = 'flex';
+    
+    if(currentCropper) {
+        currentCropper.destroy();
+    }
+    
+    currentCropper = new Cropper(imageElement, {
+        aspectRatio: 35 / 45,
+        viewMode: 1,
+        autoCropArea: 0.9,
+        background: false,
+        zoomable: true,
+        responsive: true
+    });
+};
+
+window.applyCropperCrop = function() {
+    if(!currentCropper || currentCropIndex === -1) return;
+    
+    const canvas = currentCropper.getCroppedCanvas({
+        width: 350,
+        height: 450,
+        fillColor: '#fff',
+        imageSmoothingEnabled: true,
+        imageSmoothingQuality: 'high'
+    });
+    
+    const croppedBase64 = canvas.toDataURL('image/jpeg', 0.9);
+    
+    studioImages[currentCropIndex].originalBase64 = croppedBase64;
+    studioImages[currentCropIndex].processedBase64 = null;
+    studioImages[currentCropIndex].isProcessed = false;
+    
+    currentCropper.destroy();
+    currentCropper = null;
+    closeCustomModal('cropper-modal');
+    
+    renderStudioGrid();
+    processSingleBG(currentCropIndex);
+};
 
 window.syncBulkNames = function() {
     const text = document.getElementById('studio-bulk-names').value;

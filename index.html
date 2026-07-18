@@ -10,6 +10,9 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Cropper.js for Photo Cropping -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -2018,6 +2021,26 @@
                 <div style="display: flex; gap: 10px; align-items: center;">
                     <input type="file" id="mail-reply-attachment" class="input-premium" style="flex: 1;">
                     <button class="action-btn btn-blue" id="mail-reply-btn" onclick="replyToMailThread()"><i class="fas fa-reply"></i> Reply</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Cropper Modal -->
+    <div id="cropper-modal" class="custom-modal-overlay">
+        <div class="custom-modal-box" style="max-width: 800px; width: 90%; max-height: 90vh; display: flex; flex-direction: column;">
+            <div class="custom-modal-header">
+                <span><i class="fas fa-crop-alt"></i> Adjust Photo Crop (35:45)</span>
+                <button class="action-btn btn-red" onclick="closeCustomModal('cropper-modal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div style="flex:1; min-height: 400px; max-height: 60vh; background: #000; display:flex; justify-content:center; align-items:center; overflow:hidden;">
+                <img id="cropper-image" src="" style="max-width: 100%; max-height: 100%; display:block;">
+            </div>
+            <div style="padding: 15px; border-top: 1px solid #e2e8f0; background: #fff; text-align: right; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 12px; color: #666;"><i class="fas fa-info-circle"></i> Drag the box to perfectly center the face.</span>
+                <div>
+                    <button class="action-btn" style="background:#e2e8f0; color:#333;" onclick="closeCustomModal('cropper-modal')">Cancel</button>
+                    <button class="action-btn btn-blue" onclick="window.applyCropperCrop()"><i class="fas fa-check"></i> Apply Crop</button>
                 </div>
             </div>
         </div>
