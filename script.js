@@ -4100,7 +4100,8 @@ window.generateA4PDF = function() {
         return;
     }
     
-    if(window.showToast) window.showToast("Generating A4 Grid PDF...", "#10b981");
+    const copies = parseInt(document.getElementById('studio-copies').value) || 1;
+    if(window.showToast) window.showToast(`Generating A4 PDF (${copies} copies each)...`, "#10b981");
     
     // A4 Dimensions in mm: 210 x 297
     const pdf = new window.jspdf.jsPDF({
@@ -4123,10 +4124,6 @@ window.generateA4PDF = function() {
     const totalWidth = 210;
     const marginX = 10;
     const marginY = 10;
-    // Available width = 210 - (2 * 10) = 190.
-    // 5 photos = 5 * 35 = 175.
-    // Remaining = 190 - 175 = 15.
-    // 4 gaps = 15 / 4 = 3.75 mm gap.
     const gapX = 3.75;
     const gapY = 5; // vertical gap
     
@@ -4135,49 +4132,50 @@ window.generateA4PDF = function() {
     let colIndex = 0;
     
     studioImages.forEach((img, idx) => {
-        // Wrap to next line if needed
-        if (colIndex >= cols) {
-            colIndex = 0;
-            currentX = marginX;
-            currentY += photoHeight + gapY;
-        }
-        
-        // Check for page overflow
-        if (currentY + photoHeight > 297 - marginY) {
-            pdf.addPage();
-            currentX = marginX;
-            currentY = marginY;
-            colIndex = 0;
-        }
-        
-        // 1. Draw Background Color Rectangle
-        pdf.setFillColor(r, g, b);
-        pdf.rect(currentX, currentY, photoWidth, photoHeight, 'F');
-        
-        // 2. Draw Image
-        const imgData = img.processedBase64 || img.originalBase64;
-        try {
-            let format = 'JPEG';
-            if(imgData.includes('image/png')) format = 'PNG';
+        for (let copy = 0; copy < copies; copy++) {
+            // Wrap to next line if needed
+            if (colIndex >= cols) {
+                colIndex = 0;
+                currentX = marginX;
+                currentY += photoHeight + gapY;
+            }
             
-            pdf.addImage(imgData, format, currentX, currentY, photoWidth, photoHeight);
-        } catch(e) {
-            console.error("Failed to add image to PDF", e);
-        }
-        
-        // 3. Draw Nameplate conditionally
-        const text = img.nameText ? img.nameText.trim() : "";
-        
-        if (text !== "") {
-            const nameplateHeight = 7;
-            const nameplateY = currentY + photoHeight - nameplateHeight;
-            pdf.setFillColor(255, 255, 255); // white
-            pdf.setDrawColor(0, 0, 0); // black border
-            pdf.rect(currentX, nameplateY, photoWidth, nameplateHeight, 'DF');
+            // Check for page overflow
+            if (currentY + photoHeight > 297 - marginY) {
+                pdf.addPage();
+                currentX = marginX;
+                currentY = marginY;
+                colIndex = 0;
+            }
             
-            // 4. Draw Text
-            const uppercaseText = text.toUpperCase();
-            pdf.setTextColor(0, 0, 0); // black text
+            // 1. Draw Background Color Rectangle
+            pdf.setFillColor(r, g, b);
+            pdf.rect(currentX, currentY, photoWidth, photoHeight, 'F');
+            
+            // 2. Draw Image
+            const imgData = img.processedBase64 || img.originalBase64;
+            try {
+                let format = 'JPEG';
+                if(imgData.includes('image/png')) format = 'PNG';
+                
+                pdf.addImage(imgData, format, currentX, currentY, photoWidth, photoHeight);
+            } catch(e) {
+                console.error("Failed to add image to PDF", e);
+            }
+            
+            // 3. Draw Nameplate conditionally
+            const text = img.nameText ? img.nameText.trim() : "";
+            
+            if (text !== "") {
+                const nameplateHeight = 7;
+                const nameplateY = currentY + photoHeight - nameplateHeight;
+                pdf.setFillColor(255, 255, 255); // white
+                pdf.setDrawColor(0, 0, 0); // black border
+                pdf.rect(currentX, nameplateY, photoWidth, nameplateHeight, 'DF');
+                
+                // 4. Draw Text
+                const uppercaseText = text.toUpperCase();
+                pdf.setTextColor(0, 0, 0); // black text
             pdf.setFont("helvetica", "bold");
             
             let fontSize = 8;
@@ -4194,13 +4192,152 @@ window.generateA4PDF = function() {
             const textX = currentX + (photoWidth - textWidth) / 2;
             const textY = nameplateY + (nameplateHeight / 2) + 1.5;
             
-            pdf.text(uppercaseText, textX, textY);
+                pdf.text(uppercaseText, textX, textY);
+            }
+            
+            // Move to next column
+            currentX += photoWidth + gapX;
+            colIndex++;
         }
-        
-        // Move to next column
-        currentX += photoWidth + gapX;
-        colIndex++;
     });
     
     pdf.save("Batch_Studio_Photos.pdf");
 }
+
+window.generatePowerPoint = function() {
+    if (!studioImages.length) {
+        if(window.showToast) window.showToast("No images to export!", "#e11d48");
+        return;
+    }
+    
+    if (typeof pptxgen === 'undefined') {
+        if(window.showToast) window.showToast("PowerPoint library is still loading, please wait...", "#e11d48");
+        return;
+    }
+    
+    const copies = parseInt(document.getElementById('studio-copies').value) || 1;
+    if(window.showToast) window.showToast(`Generating PowerPoint (${copies} copies each)...`, "#10b981");
+    
+    let pptx = new pptxgen();
+    pptx.layout = { name:'A4', width:8.27, height:11.69 };
+    
+    const bgColorHex = document.getElementById('studio-bg-color').value || '#FF0000';
+    
+    const inToMm = 25.4;
+    const photoWidth = 35 / inToMm;
+    const photoHeight = 45 / inToMm;
+    const nameplateHeight = 7 / inToMm;
+    const marginX = 10 / inToMm;
+    const marginY = 10 / inToMm;
+    const gapX = 3.75 / inToMm;
+    const gapY = 5 / inToMm;
+    
+    let currentX = marginX;
+    let currentY = marginY;
+    let colIndex = 0;
+    const cols = 5;
+    
+    let slide = pptx.addSlide();
+    
+    studioImages.forEach((img, idx) => {
+        for(let copy = 0; copy < copies; copy++) {
+            if (colIndex >= cols) {
+                colIndex = 0;
+                currentX = marginX;
+                currentY += photoHeight + gapY;
+            }
+            
+            if (currentY + photoHeight > (297 / inToMm) - marginY) {
+                slide = pptx.addSlide();
+                currentX = marginX;
+                currentY = marginY;
+                colIndex = 0;
+            }
+            
+            slide.addShape(pptx.ShapeType.rect, { 
+                x: currentX, y: currentY, w: photoWidth, h: photoHeight, 
+                fill: { color: bgColorHex.replace('#', '') } 
+            });
+            
+            const imgData = img.processedBase64 || img.originalBase64;
+            // PptxGenJS accepts data URI directly
+            slide.addImage({ data: imgData, x: currentX, y: currentY, w: photoWidth, h: photoHeight });
+            
+            const text = img.nameText ? img.nameText.trim() : "";
+            if (text !== "") {
+                const nameplateY = currentY + photoHeight - nameplateHeight;
+                slide.addShape(pptx.ShapeType.rect, { 
+                    x: currentX, y: nameplateY, w: photoWidth, h: nameplateHeight, 
+                    fill: { color: 'FFFFFF' },
+                    line: { color: '000000', width: 1 }
+                });
+                
+                slide.addText(text.toUpperCase(), { 
+                    x: currentX, y: nameplateY, w: photoWidth, h: nameplateHeight, 
+                    color: '000000', fontSize: 8, bold: true, align: 'center', valign: 'middle',
+                    margin: 0
+                });
+            }
+            
+            currentX += photoWidth + gapX;
+            colIndex++;
+        }
+    });
+    
+    pptx.writeFile({ fileName: 'Batch_Studio_Photos.pptx' });
+};
+
+window.generateMSWord = function() {
+    if (!studioImages.length) {
+        if(window.showToast) window.showToast("No images to export!", "#e11d48");
+        return;
+    }
+    
+    const copies = parseInt(document.getElementById('studio-copies').value) || 1;
+    if(window.showToast) window.showToast(`Generating Word Doc (${copies} copies each)...`, "#10b981");
+    
+    const bgColor = document.getElementById('studio-bg-color').value || '#FF0000';
+    
+    let html = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><style>@page Section1 { size: 210mm 297mm; margin: 10mm; } div.Section1 { page: Section1; } table { border-collapse: separate; border-spacing: 3.75mm 5mm; } td { width: 35mm; height: 45mm; background-color: " + bgColor + "; padding: 0; margin: 0; vertical-align: top; } </style></head><body><div class='Section1'><table><tr>";
+    
+    const cols = 5;
+    let colIndex = 0;
+    
+    studioImages.forEach((img) => {
+        for(let copy = 0; copy < copies; copy++) {
+            if (colIndex >= cols) {
+                html += "</tr><tr>";
+                colIndex = 0;
+            }
+            
+            const text = img.nameText ? img.nameText.trim() : "";
+            const imgData = img.processedBase64 || img.originalBase64;
+            
+            if (text !== "") {
+                html += "<td><img src='" + imgData + "' style='width:35mm; height:38mm; display:block;' /><div style='width:34.5mm; height:6.5mm; background:white; border:0.5pt solid black; text-align:center; font-family:sans-serif; font-size:8pt; font-weight:bold; line-height:6.5mm; overflow:hidden; white-space:nowrap;'>" + text.toUpperCase() + "</div></td>";
+            } else {
+                html += "<td><img src='" + imgData + "' style='width:35mm; height:45mm; display:block;' /></td>";
+            }
+            colIndex++;
+        }
+    });
+    
+    while(colIndex < cols) {
+        html += "<td style='background: transparent;'></td>";
+        colIndex++;
+    }
+    
+    html += "</tr></table></div></body></html>";
+    
+    const blob = new Blob(['\\ufeff', html], { type: 'application/msword' });
+    if (window.saveAs) {
+        window.saveAs(blob, 'Batch_Studio_Photos.doc');
+    } else {
+        const downloadLink = document.createElement("a");
+        document.body.appendChild(downloadLink);
+        downloadLink.href = URL.createObjectURL(blob);
+        downloadLink.download = 'Batch_Studio_Photos.doc';
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+    }
+};

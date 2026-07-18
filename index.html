@@ -452,8 +452,17 @@
                                         <label style="font-size: 12px; font-weight: bold; color: #666; margin-bottom: 5px; display: block;">BG Color</label>
                                         <input type="color" id="studio-bg-color" value="#FF0000" style="width: 50px; height: 40px; padding: 2px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer;">
                                     </div>
+                                    <div>
+                                        <label style="font-size: 12px; font-weight: bold; color: #666; margin-bottom: 5px; display: block;">Copies</label>
+                                        <input type="number" id="studio-copies" value="1" min="1" max="50" style="width: 60px; height: 40px; padding: 2px 5px; border: 1px solid #ccc; border-radius: 4px; text-align: center;" class="input-premium">
+                                    </div>
                                     <button onclick="saveStudioPreset()" class="submit-btn btn-blue" style="width: auto; margin: 0;"><i class="fas fa-save"></i> Save Preset</button>
-                                    <button onclick="generateA4PDF()" class="submit-btn btn-green" style="width: auto; margin: 0;"><i class="fas fa-file-pdf"></i> Download A4 PDF</button>
+                                    
+                                    <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                                        <button onclick="generateA4PDF()" class="submit-btn btn-green" style="width: auto; margin: 0; padding: 0 10px;" title="Download PDF"><i class="fas fa-file-pdf"></i> PDF</button>
+                                        <button onclick="generateMSWord()" class="submit-btn btn-blue" style="width: auto; margin: 0; padding: 0 10px; background: #2563eb;" title="Download Word"><i class="fas fa-file-word"></i> Word</button>
+                                        <button onclick="generatePowerPoint()" class="submit-btn btn-red" style="width: auto; margin: 0; padding: 0 10px; background: #ea4335;" title="Download PPT"><i class="fas fa-file-powerpoint"></i> PPT</button>
+                                    </div>
                                 </div>
                                 
                                 <div id="studio-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 15px; margin-top: 10px;"></div>
@@ -1972,6 +1981,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <!-- PptxGenJS for PowerPoint Exports -->
+    <script src="https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
     
     <!-- Mail View Modal -->
     <div id="mail-view-modal" class="custom-modal-overlay">
