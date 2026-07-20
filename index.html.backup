@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -335,171 +335,75 @@
     </div>
 
     <!-- DASHBOARD SECTION -->
-    <div id="dashboard-wrapper" class="min-h-screen text-slate-100 flex flex-col font-sans select-none bg-[#020810]">
-    
-    <!-- DESKTOP SIDEBAR -->
-    <aside class="hidden lg:flex flex-col w-64 bg-[#050e14] border-r border-[#0ef6cc]/10 fixed inset-y-0 left-0 z-50">
-        <div class="flex flex-col justify-between h-full py-6">
-            <div class="flex flex-col gap-6">
-                <!-- Brand Header -->
-                <div class="px-6 flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full border border-[#0ef6cc]/40 flex items-center justify-center bg-teal-950/20">
-                        <i class="fas fa-fingerprint text-[#0ef6cc] text-lg"></i>
-                    </div>
-                    <div>
-                        <h2 class="text-xs uppercase font-mono tracking-widest text-[#0ef6cc]" id="desktop-school-name-shell">Hill Top</h2>
-                        <p class="text-[10px] text-slate-400 font-mono">Command Center</p>
-                    </div>
-                </div>
+    <div id="dashboard-wrapper">
+        <div class="top-navbar">
+            <div class="brand">
+                <img src="" id="top-school-logo" class="school-logo" style="display:none;">
+                <span id="top-school-name" class="desktop-name">School Name</span>
+                <span id="top-school-name-mobile" class="mobile-name" style="display:none;">SN</span>
+            </div>
+            <label class="device-toggle"><input type="checkbox" id="deviceModeToggle"> 💻 PC Mode</label>
+        </div>
 
-                <!-- Sidebar Menu -->
-                <nav class="flex-1 px-4 flex flex-col gap-1 overflow-y-auto max-h-[70vh] custom-scrollbar" id="desktop-sidebar-menu">
-                    <button class="sidebar-btn active" onclick="window.switchTab('tab-dashboard')">
-                        <i class="fas fa-home"></i> <span>Dashboard</span>
-                    </button>
-                    <button class="sidebar-btn" onclick="window.switchTab('tab-students')">
-                        <i class="fas fa-user-graduate"></i> <span>Students DB</span>
-                    </button>
-                    <button class="sidebar-btn" onclick="window.switchTab('tab-admit-cards-module')">
-                        <i class="fas fa-id-card-alt"></i> <span>Admit Cards</span>
-                    </button>
-                    <button class="sidebar-btn" onclick="window.switchTab('tab-finance')">
-                        <i class="fas fa-rupee-sign"></i> <span>Finance & Fees</span>
-                    </button>
-                    <button class="sidebar-btn" onclick="window.switchTab('tab-fee-approvals')">
-                        <i class="fas fa-check-circle"></i> <span>Fee Approvals</span>
-                    </button>
-                    <button class="sidebar-btn" onclick="window.switchTab('tab-academics')">
-                        <i class="fas fa-book-open"></i> <span>Academic Veto</span>
-                    </button>
-                    <button class="sidebar-btn" onclick="window.switchTab('tab-notices')">
-                        <i class="fas fa-bullhorn"></i> <span>Notices</span>
-                    </button>
-                    <button class="sidebar-btn" onclick="window.switchTab('tab-mailbox')">
-                        <i class="fas fa-envelope"></i> <span>Mail Box</span> <span id="badge-mailbox" style="display:none; background:red; color:white; border-radius:50%; width:18px; height:18px; text-align:center; font-size:10px; line-height:18px; margin-left:10px; display:inline-block;"></span>
-                    </button>
+        <div class="dashboard-body">
+            <div class="sidebar">
+                <div class="menu-container">
+                    <div class="menu-item active" data-target="tab-dashboard"><i class="fas fa-home"></i> Dashboard</div>
+                    <div class="menu-item" data-target="tab-students"><i class="fas fa-user-graduate"></i> Students & Certs</div>
+                    <div class="menu-item" data-target="tab-admit-cards-module"><i class="fas fa-id-card-alt"></i> Admit Cards</div>
+                    <div class="menu-item" data-target="tab-staff"><i class="fas fa-user-tie"></i> Staff Manager</div>
+                    <div class="menu-item" data-target="tab-finance"><i class="fas fa-rupee-sign"></i> Finance & Fees</div>
+                    <div class="menu-item" data-target="tab-fee-approvals"><i class="fas fa-check-circle"></i> Fee Approvals</div>
+                    <div class="menu-item" data-target="tab-academics"><i class="fas fa-book-open"></i> Academic Veto</div>
+                    <div class="menu-item" data-target="tab-notices"><i class="fas fa-bullhorn"></i> Notices & Ticker</div>
+                    <div class="menu-item" data-target="tab-mailbox"><i class="fas fa-envelope"></i> Mail Box <span id="badge-mailbox" style="display:none; background:red; color:white; border-radius:50%; width:18px; height:18px; text-align:center; font-size:10px; line-height:18px; margin-left:10px; display:inline-block;"></span></div>
                     
-                    <hr class="border-slate-800 my-2" />
+                    <div style="padding: 10px 20px; border-left: 4px solid transparent; display: flex; flex-direction: column; cursor: pointer; transition: 0.3s; color: var(--text-color);" id="nav-comm-hub-wrapper">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                            <span><i class="fab fa-whatsapp" style="color: #25D366; font-size: 1.2rem;"></i> Comm Hub</span>
+                            <span id="badge-coreedu" style="display:none; background:red; color:white; border-radius:50%; width:18px; height:18px; text-align:center; font-size:10px; line-height:18px; display:inline-block;"></span>
+                        </div>
+                        <select id="sidebar-comm-select" style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 4px; padding: 5px; outline: none; font-size: 12px;">
+                            <option value="master">CoreEdu Teach</option>
+                        </select>
+                    </div>
+                    
+                    <div id="module-qr-fee" class="menu-item" data-target="tab-qr-fee" style="display:none"><i class="fas fa-qrcode"></i> QR Fee Module</div>
+                    <div id="module-admit-card" class="menu-item" data-target="tab-admit-card" style="display:none"><i class="fas fa-id-badge"></i> Admit Card Module</div>
+                    <div id="module-whatsapp" class="menu-item" data-target="tab-whatsapp" style="display:none"><i class="fas fa-brands fa-whatsapp"></i> WhatsApp Module</div>
+                    
+                    <div class="menu-item" data-target="tab-ms-studio"><i class="fas fa-camera"></i> MS Studio</div>
+                    
+                    <div class="menu-item" data-target="tab-transport"><i class="fas fa-bus"></i> Transport Manager</div>
+                    <div class="menu-item" data-target="tab-inventory"><i class="fas fa-boxes"></i> Inventory & Assets</div>
+                    <div class="menu-item" data-target="tab-daily-attendance"><i class="fas fa-clipboard-user"></i> Daily Attendance</div>
 
-                    <button class="sidebar-btn" onclick="window.switchTab('tab-ms-studio')">
-                        <i class="fas fa-camera"></i> <span>MS Studio</span>
-                    </button>
-                    <button class="sidebar-btn" onclick="window.switchTab('tab-transport')">
-                        <i class="fas fa-bus"></i> <span>Transport Manager</span>
-                    </button>
-                    <button class="sidebar-btn" onclick="window.switchTab('tab-inventory')">
-                        <i class="fas fa-boxes"></i> <span>Inventory & Assets</span>
-                    </button>
-                    <button class="sidebar-btn" onclick="window.switchTab('tab-daily-attendance')">
-                        <i class="fas fa-clipboard-user"></i> <span>Daily Attendance</span>
-                    </button>
-                    <button class="sidebar-btn" onclick="window.switchTab('tab-staff')">
-                        <i class="fas fa-user-tie"></i> <span>Global Staff Manager</span>
-                    </button>
-                    <button class="sidebar-btn" onclick="window.switchTab('tab-settings')">
-                        <i class="fas fa-cogs"></i> <span>Settings</span>
-                    </button>
-                    <button class="sidebar-btn" onclick="window.switchTab('tab-password')">
-                        <i class="fas fa-key"></i> <span>Password</span>
-                    </button>
-                </nav>
-            </div>
-
-            <!-- Sidebar Footer -->
-            <div class="px-6 border-t border-slate-800 pt-4 flex items-center justify-between">
-                <span class="text-[10px] font-mono text-slate-400">CHAIRMAN MODE</span>
-                <button onclick="doLogout()" class="text-rose-500 hover:text-rose-400 text-sm">
-                    <i class="fas fa-power-off"></i>
-                </button>
-            </div>
-        </div>
-    </aside>
-
-    <!-- MOBILE TOP HEADER -->
-    <header class="flex lg:hidden h-14 px-4 justify-between items-center border-b border-[#0ef6cc]/10 bg-[#020810]/80 backdrop-blur-md sticky top-0 z-40">
-        <div class="flex items-center gap-2">
-            <div class="w-8 h-8 rounded-full border border-[#0ef6cc]/30 flex items-center justify-center bg-teal-950/20">
-                <i class="fas fa-fingerprint text-[#0ef6cc] text-xs"></i>
-            </div>
-            <span class="text-xs font-mono font-bold tracking-wider text-slate-200 uppercase" id="mobile-school-name-shell">School Name</span>
-        </div>
-        <button class="text-slate-400 hover:text-[#0ef6cc]"><i class="fas fa-bell"></i></button>
-    </header>
-
-    <!-- MAIN CONTENT AREA -->
-    <main class="flex-1 flex flex-col lg:ml-64 overflow-hidden h-[calc(100vh-56px)] lg:h-screen pb-16 lg:pb-0 relative bg-[#020810]">
-        
-        <!-- Background Overlay -->
-        <div class="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-teal-950/20 via-transparent to-transparent opacity-80 z-0"></div>
-
-        <!-- DESKTOP TOP HEADER -->
-        <header class="hidden lg:flex h-16 border-b border-[#0ef6cc]/10 px-8 justify-between items-center bg-[#041218]/40 backdrop-blur-md shrink-0 relative z-10">
-            <h1 class="text-sm font-mono tracking-wider font-semibold text-slate-200">
-                <span id="desktop-top-school-name">SCHOOL</span> <span class="text-slate-500 mx-2">|</span> <span class="text-[#0ef6cc]" id="desktop-active-tab-title">DASHBOARD</span>
-            </h1>
-            <div class="flex items-center gap-4">
-                <button class="text-slate-400 hover:text-[#0ef6cc] transition-colors"><i class="fas fa-bell"></i></button>
-                <div class="w-8 h-8 rounded-full bg-teal-500/10 border border-[#0ef6cc]/30 flex items-center justify-center">
-                    <span class="text-xs font-mono font-bold text-[#0ef6cc]">C</span>
+                    <div class="menu-item" data-target="tab-password"><i class="fas fa-key"></i> Change Password</div>
+                    <div class="menu-item" data-target="tab-settings"><i class="fas fa-cogs"></i> School Settings</div>
+                    <div class="logout-btn" id="logoutBtn" onclick="doLogout()"><i class="fas fa-power-off"></i> Secure Logout</div>
                 </div>
             </div>
-        </header>
 
-        <!-- TABS CONTAINER -->
-        <div class="flex-1 p-4 lg:p-8 overflow-y-auto custom-scrollbar relative z-10" id="main-tab-container">
-            
-                
+            <div class="main-content">
+                <div class="header-title"><h1 id="tab-title">Dashboard</h1></div>
 
                 <!-- TAB: DASHBOARD -->
-                <div id="tab-dashboard" class="tab-content active space-y-4 lg:space-y-6 animate-fadeIn">
-                    <!-- Quick Metrics Grid -->
-                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-5">
-                        <div class="bg-[#050e14] border border-[#0ef6cc]/10 p-4 lg:p-5 rounded-xl lg:rounded-2xl relative shadow-lg cursor-pointer hover:border-[#0ef6cc]/40 transition" onclick="filterByStatus('all')">
-                            <span class="text-[9px] lg:text-[10px] text-[#0ef6cc] font-mono block uppercase tracking-widest">Enrolled Students</span>
-                            <h3 class="text-xl lg:text-3xl font-bold font-mono text-slate-100 mt-1 lg:mt-2"><span id="count-students">0</span></h3>
-                            <p class="hidden lg:block text-[10px] text-slate-400 mt-1">Class Quota capacity: 500 Max</p>
-                        </div>
-
-                        <div onclick="window.switchTab('tab-finance')" class="bg-[#050e14] border border-[#0ef6cc]/10 p-4 lg:p-5 rounded-xl lg:rounded-2xl relative shadow-lg cursor-pointer hover:border-[#0ef6cc]/40 transition group">
-                            <span class="text-[9px] lg:text-[10px] text-amber-400 font-mono block uppercase tracking-widest">Outstanding Dues</span>
-                            <h3 class="text-xl lg:text-3xl font-bold font-mono text-slate-100 mt-1 lg:mt-2">₹<span id="total-dues">0</span></h3>
-                            <p class="hidden lg:block text-[10px] text-slate-400 mt-1 flex items-center gap-1">Click to open fee ledgers <i class="fas fa-chevron-right text-[8px]"></i></p>
-                        </div>
-
-                        <div class="hidden lg:block bg-[#050e14] border border-[#0ef6cc]/10 p-5 rounded-2xl relative shadow-lg cursor-pointer hover:border-[#0ef6cc]/40 transition" onclick="filterByStatus('Pending')">
-                            <span class="text-[10px] text-rose-400 font-mono block uppercase tracking-widest">Pending Approvals</span>
-                            <h3 class="text-3xl font-bold font-mono text-slate-100 mt-2"><span id="count-pending">0</span></h3>
-                            <p class="text-[10px] text-slate-400 mt-1">Requires admin review</p>
-                        </div>
-
-                        <div class="hidden lg:block bg-[#050e14] border border-[#0ef6cc]/10 p-5 rounded-2xl relative shadow-lg cursor-pointer hover:border-[#0ef6cc]/40 transition" onclick="switchTab('tab-staff')">
-                            <span class="text-[10px] text-emerald-400 font-mono block uppercase tracking-widest">Total Staff</span>
-                            <h3 class="text-3xl font-bold font-mono text-slate-100 mt-2"><span id="count-staff">0</span></h3>
-                            <p class="text-[10px] text-slate-400 mt-1">Live telemetry: Synchronized</p>
-                        </div>
+                <div id="tab-dashboard" class="tab-content active">
+                    <div class="stats-grid">
+                        <div class="stat-card" style="cursor: pointer;" onclick="filterByStatus('all')"><h3>Total Students</h3><h2 id="count-students">0</h2></div>
+                        <div class="stat-card" style="border-bottom-color: #3182ce; cursor: pointer;" onclick="switchTab('tab-students')"><h3>Today's Attendance</h3><h2 id="count-attendance" style="color:#3182ce">0%</h2></div>
+                        <div class="stat-card" style="border-bottom-color: #e53e3e; cursor: pointer;" onclick="filterByStatus('Pending')"><h3>Pending Approvals</h3><h2 id="count-pending" style="color:#e53e3e">0</h2></div>
+                        <div class="stat-card" style="border-bottom-color: #38a169; cursor: pointer;" onclick="switchTab('tab-staff')"><h3>Total Staff</h3><h2 id="count-staff">0</h2></div>
+                        <div class="stat-card" style="border-bottom-color: #f39c12; cursor: pointer;" onclick="switchTab('tab-notices')"><h3>Active Notices</h3><h2 id="count-notices">0</h2></div>
+                        <div class="stat-card" style="border-bottom-color: #27ae60; cursor: pointer;" onclick="switchTab('tab-finance')"><h3>Total Revenue</h3><h2 id="count-revenue" style="color:#27ae60">₹ 0</h2></div>
                     </div>
 
-                    <!-- Main Welcome Dashboard Banner -->
-                    <div class="bg-gradient-to-r from-[#031118] to-[#01080d] border border-[#0ef6cc]/10 rounded-xl lg:rounded-2xl p-4 lg:p-6 shadow-xl">
-                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                            <div>
-                                <h2 class="text-xs lg:text-lg font-mono text-slate-200 uppercase tracking-wider">Education System Controller</h2>
-                                <p class="text-[10px] lg:text-xs text-slate-400 font-mono mt-1 max-w-xl">
-                                    Hill Top Public School cloud manager integrates online admission registers, real-time digital print servers, and UPI zero-commission local payment nodes.
-                                </p>
-                            </div>
-                            <button onclick="window.switchTab('tab-students')" class="hidden lg:flex px-5 py-2.5 bg-gradient-to-r from-teal-950/40 to-teal-900/40 hover:from-teal-950/80 border border-[#0ef6cc]/20 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold tracking-wider transition-all">
-                                Registry DB &rarr;
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200" style="border-left: 4px solid #8b5cf6; margin-top: 20px;">
+                    <div class="card" style="border-left: 4px solid #8b5cf6;">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
                             <h3 style="margin:0;"><i class="fas fa-chart-pie"></i> Visual Analytics</h3>
                             <div style="display:flex; gap:10px;">
-                                <input type="date" id="chart-specific-date" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full" style="padding: 5px 10px; font-size: 12px; width: auto;" onchange="window.initDashboardChart()">
-                                <select id="chart-date-filter" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full" style="padding: 5px 10px; font-size: 12px; width: auto;" onchange="window.initDashboardChart()">
+                                <input type="date" id="chart-specific-date" class="input-premium" style="padding: 5px 10px; font-size: 12px; width: auto;" onchange="window.initDashboardChart()">
+                                <select id="chart-date-filter" class="input-premium" style="padding: 5px 10px; font-size: 12px; width: auto;" onchange="window.initDashboardChart()">
                                     <option value="All Time">All Time</option>
                                     <option value="This Month">This Month</option>
                                     <option value="Last Month">Last Month</option>
@@ -510,7 +414,7 @@
                         <canvas id="dashboardChart" style="max-height: 350px; width: 100%; margin-top: 15px;"></canvas>
                     </div>
 
-                    <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200" style="border-left: 4px solid #38b2ac;">
+                    <div class="card" style="border-left: 4px solid #38b2ac;">
                         <h3><i class="fas fa-link"></i> Admission Link Settings</h3>
                         <div style="display: flex; justify-content: space-between; align-items: center; background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #eee;">
                             <div>
@@ -519,7 +423,7 @@
                             </div>
                             <label class="switch"><input type="checkbox" id="admissionToggle"><span class="slider"></span></label>
                         </div>
-                        <button class="px-4 py-2 bg-[#0ef6cc]/20 hover:bg-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md w-full mt-4" onclick="generateRegistrationLink()" style="margin-top:15px; width:100%;"><i class="fas fa-magic"></i> Generate & Show Link</button>
+                        <button class="submit-btn" onclick="generateRegistrationLink()" style="margin-top:15px; width:100%;"><i class="fas fa-magic"></i> Generate & Show Link</button>
                         
                         <div id="link-display-box" class="link-display-box" style="display:none;">
                             <input type="text" id="short-link-input" readonly>
@@ -530,14 +434,14 @@
 
                 <!-- TAB: MS STUDIO -->
                 <div id="tab-ms-studio" class="tab-content hidden-el space-y-8">
-                    <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200" style="border-left: 4px solid #8b5cf6;">
+                    <div class="card" style="border-left: 4px solid #8b5cf6;">
                         <h3 style="margin-bottom: 20px;"><i class="fas fa-camera-retro text-purple-600"></i> MS Studio (Batch Photo Processor)</h3>
                         <div style="display: flex; flex-direction: column; md:flex-direction: row; gap: 20px;">
                             
                             <!-- Left Side: Bulk Names Input -->
                             <div style="flex: 1; max-width: 250px; display: flex; flex-direction: column; gap: 10px;">
                                 <h4>Bulk Names List</h4>
-                                <textarea id="studio-bulk-names" rows="15" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full" style="width: 100%; height: 100%; resize: none; font-family: monospace; font-size: 12px;" placeholder="Paste names here...&#10;1. John Doe&#10;2. Jane Doe" oninput="syncBulkNames()"></textarea>
+                                <textarea id="studio-bulk-names" rows="15" class="input-premium" style="width: 100%; height: 100%; resize: none; font-family: monospace; font-size: 12px;" placeholder="Paste names here...&#10;1. John Doe&#10;2. Jane Doe" oninput="syncBulkNames()"></textarea>
                             </div>
                             
                             <!-- Right Side: Controls and Grid -->
@@ -545,7 +449,7 @@
                                 <div style="display: flex; gap: 15px; align-items: flex-end; margin-bottom: 20px; flex-wrap: wrap;">
                                     <div style="flex: 1; min-width: 200px;">
                                         <label style="font-size: 12px; font-weight: bold; color: #666; margin-bottom: 5px; display: block;">Upload Photos</label>
-                                        <input type="file" id="studio-upload" multiple accept="image/*" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full" style="width: 100%;">
+                                        <input type="file" id="studio-upload" multiple accept="image/*" class="input-premium" style="width: 100%;">
                                     </div>
                                     <div>
                                         <label style="font-size: 12px; font-weight: bold; color: #666; margin-bottom: 5px; display: block;">BG Color</label>
@@ -557,19 +461,19 @@
                                     </div>
                                     <div>
                                         <label style="font-size: 12px; font-weight: bold; color: #666; margin-bottom: 5px; display: block;" title="Total Copies Per Photo">Total Copies</label>
-                                        <input type="number" id="studio-copies" value="1" min="1" max="50" style="width: 60px; height: 40px; padding: 2px 5px; border: 1px solid #ccc; border-radius: 4px; text-align: center;" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full">
+                                        <input type="number" id="studio-copies" value="1" min="1" max="50" style="width: 60px; height: 40px; padding: 2px 5px; border: 1px solid #ccc; border-radius: 4px; text-align: center;" class="input-premium">
                                     </div>
                                     <div>
                                         <label style="font-size: 12px; font-weight: bold; color: #666; margin-bottom: 5px; display: block;" title="How many of those copies should have the nameplate?">Name Copies</label>
-                                        <input type="number" id="studio-name-copies" value="1" min="0" max="50" style="width: 60px; height: 40px; padding: 2px 5px; border: 1px solid #ccc; border-radius: 4px; text-align: center;" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full">
+                                        <input type="number" id="studio-name-copies" value="1" min="0" max="50" style="width: 60px; height: 40px; padding: 2px 5px; border: 1px solid #ccc; border-radius: 4px; text-align: center;" class="input-premium">
                                     </div>
                                     <div>
                                         <label style="font-size: 12px; font-weight: bold; color: #666; margin-bottom: 5px; display: block;" title="Width in inches for primary copies (with names)">Primary Size</label>
-                                        <input type="number" id="studio-primary-size" value="1.8" step="0.1" min="0.5" max="3" style="width: 60px; height: 40px; padding: 2px 5px; border: 1px solid #ccc; border-radius: 4px; text-align: center;" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full">
+                                        <input type="number" id="studio-primary-size" value="1.8" step="0.1" min="0.5" max="3" style="width: 60px; height: 40px; padding: 2px 5px; border: 1px solid #ccc; border-radius: 4px; text-align: center;" class="input-premium">
                                     </div>
                                     <div>
                                         <label style="font-size: 12px; font-weight: bold; color: #666; margin-bottom: 5px; display: block;" title="Width in inches for duplicate copies (no names)">Dup Size</label>
-                                        <input type="number" id="studio-duplicate-size" value="1.5" step="0.1" min="0.5" max="3" style="width: 60px; height: 40px; padding: 2px 5px; border: 1px solid #ccc; border-radius: 4px; text-align: center;" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full">
+                                        <input type="number" id="studio-duplicate-size" value="1.5" step="0.1" min="0.5" max="3" style="width: 60px; height: 40px; padding: 2px 5px; border: 1px solid #ccc; border-radius: 4px; text-align: center;" class="input-premium">
                                     </div>
                                     <button onclick="saveStudioPreset()" class="submit-btn btn-blue" style="width: auto; margin: 0;"><i class="fas fa-save"></i> Save Preset</button>
                                     
@@ -577,7 +481,7 @@
                                     
                                     <div style="position: relative; display: inline-block;">
                                         <button onclick="window.toggleStudioDownloadDropdown()" class="submit-btn btn-green" style="width: auto; margin: 0; padding: 0 15px;"><i class="fas fa-download"></i> Download Export <i class="fas fa-chevron-down" style="font-size: 10px; margin-left: 5px;"></i></button>
-                                        <div id="studio-download-dropdown" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 5px;  border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 100; min-width: 150px; flex-direction: column;">
+                                        <div id="studio-download-dropdown" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 5px; background: white; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 100; min-width: 150px; flex-direction: column;">
                                             <button onclick="generateA4PDF(); window.toggleStudioDownloadDropdown();" style="padding: 10px 15px; border: none; background: none; text-align: left; width: 100%; cursor: pointer; border-bottom: 1px solid #eee; color: #10b981; font-weight: bold;"><i class="fas fa-file-pdf"></i> Download PDF</button>
                                             <button onclick="generateMSWord(); window.toggleStudioDownloadDropdown();" style="padding: 10px 15px; border: none; background: none; text-align: left; width: 100%; cursor: pointer; border-bottom: 1px solid #eee; color: #2563eb; font-weight: bold;"><i class="fas fa-file-word"></i> Download Word</button>
                                             <button onclick="generatePowerPoint(); window.toggleStudioDownloadDropdown();" style="padding: 10px 15px; border: none; background: none; text-align: left; width: 100%; cursor: pointer; color: #ea4335; font-weight: bold;"><i class="fas fa-file-powerpoint"></i> Download PPT</button>
@@ -589,15 +493,15 @@
                             </div>
                         </div>
                     </div>
-                </div> <!-- END DASHBOARD -->
+                </div>
 
                 <!-- TAB: STUDENTS & CERTS -->
                 <div id="tab-students" class="tab-content">                    
-                    <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200">
+                    <div class="card">
                         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom: 15px;">
                             <h3 style="margin:0;"><i class="fas fa-list"></i> Student Database & Certificates</h3>
                             <div style="display: flex; gap: 10px; align-items: center;">
-                                <select id="bulk_class_select" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full" style="width: auto; padding: 8px 10px;">
+                                <select id="bulk_class_select" class="input-premium" style="width: auto; padding: 8px 10px;">
                                     <option value="ALL">All Classes</option>
                                     <option value="Nursery">Nursery</option>
                                     <option value="LKG">LKG</option>
@@ -615,9 +519,9 @@
                                     <option value="11th">11th</option>
                                     <option value="12th">12th</option>
                                 </select>
-                                <input type="text" id="searchStudentInput" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full" placeholder="Search Student..." onkeyup="searchStudent()" style="padding: 8px 10px; width: 200px;">
-                                <button id="bulk-id-btn" class="px-4 py-2 bg-gradient-to-r from-[#0ef6cc]/20 to-teal-900/30 hover:from-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md" style="padding:5px 10px; font-size:12px;" onclick="window.openBulkActionModal('id')"><i class="fas fa-id-badge"></i> Generate ID Cards</button>
-                                <button id="bulk-marksheet-btn" class="px-4 py-2 bg-[#050e14] border border-[#0ef6cc]/30 hover:bg-[#0ef6cc]/10 text-slate-200 rounded-xl text-xs font-mono font-bold transition shadow-md" style="background:#10b981; padding:5px 10px; font-size:12px; color:white;" onclick="window.openBulkActionModal('marksheet')"><i class="fas fa-file-invoice"></i> Generate Marksheets</button>
+                                <input type="text" id="searchStudentInput" class="input-premium" placeholder="Search Student..." onkeyup="searchStudent()" style="padding: 8px 10px; width: 200px;">
+                                <button id="bulk-id-btn" class="action-btn btn-blue" style="padding:5px 10px; font-size:12px;" onclick="window.openBulkActionModal('id')"><i class="fas fa-id-badge"></i> Generate ID Cards</button>
+                                <button id="bulk-marksheet-btn" class="action-btn" style="background:#10b981; padding:5px 10px; font-size:12px; color:white;" onclick="window.openBulkActionModal('marksheet')"><i class="fas fa-file-invoice"></i> Generate Marksheets</button>
                                 <button class="action-btn btn-dark" style="background:#e67e22; padding:5px 10px; font-size:12px;" onclick="window.openBulkActionModal('bonafide')">🎓 Generate Bonafide</button>
                                 <button class="action-btn btn-dark" style="padding:5px 10px; font-size:12px;" onclick="runDefaulterLockdown()"><i class="fas fa-lock"></i> Auto-Lock Defaulters</button>
                             </div>
@@ -631,12 +535,12 @@
                         
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                             <div class="class-filter-container" id="class-filters" style="flex: 1; margin-bottom: 0;"></div>
-                            <button class="px-4 py-2 bg-gradient-to-r from-[#0ef6cc]/20 to-teal-900/30 hover:from-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md" onclick="openStudentModal()" style="margin-left: 10px; padding: 8px 15px;"><i class="fas fa-plus"></i> Add Student</button>
+                            <button class="action-btn btn-blue" onclick="openStudentModal()" style="margin-left: 10px; padding: 8px 15px;"><i class="fas fa-plus"></i> Add Student</button>
                         </div>
 
                         <div style="overflow-x:auto;">
-                            <table class="w-full text-left border-collapse font-mono text-xs">
-                                <th class="p-4"ead class="bg-[#030d12] text-[#0ef6cc]/80 uppercase text-[9px] tracking-widest border-b border-[#0ef6cc]/15"><tr class="hover:bg-slate-900/30 transition-colors border-b border-slate-800/50"><th class="p-4">Photo</th><th class="p-4">Name & Contact</th><th class="p-4">Roll No</th><th class="p-4">Class</th><th class="p-4">Parents</th><th class="p-4">Status</th><th class="p-4">Actions</th></tr></thead>
+                            <table>
+                                <thead><tr><th>Photo</th><th>Name & Contact</th><th>Roll No</th><th>Class</th><th>Parents</th><th>Status</th><th>Actions</th></tr></thead>
                                 <tbody id="student-table"></tbody>
                             </table>
                         </div>
@@ -645,7 +549,7 @@
 
                 <!-- TAB: STAFF MANAGER -->
                 <div id="tab-staff" class="tab-content">
-                    <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200">
+                    <div class="card">
                         <h3><i class="fas fa-user-plus"></i> Create Staff ID</h3>
                         <div class="form-row">
                             <div class="form-group"><label>Staff Photo</label><input type="file" id="s_photo" accept="image/*"></div>
@@ -664,14 +568,14 @@
                                 </select>
                             </div>
                         </div>
-                        <button class="px-4 py-2 bg-[#0ef6cc]/20 hover:bg-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md w-full mt-4" id="s_btn" onclick="saveStaff()"><i class="fas fa-save"></i> Add Staff Member</button>
+                        <button class="submit-btn" id="s_btn" onclick="saveStaff()"><i class="fas fa-save"></i> Add Staff Member</button>
                     </div>
                     
-                    <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200">
+                    <div class="card">
                         <h3>Staff Life-Cycle & Auth Control</h3>
                         <div style="overflow-x:auto;">
-                            <table class="w-full text-left border-collapse font-mono text-xs">
-                                <th class="p-4"ead class="bg-[#030d12] text-[#0ef6cc]/80 uppercase text-[9px] tracking-widest border-b border-[#0ef6cc]/15"><tr class="hover:bg-slate-900/30 transition-colors border-b border-slate-800/50"><th class="p-4">Photo</th><th class="p-4">Name & Role</th><th class="p-4">Credentials</th><th class="p-4">Privileges</th><th class="p-4">Status</th><th class="p-4">Action</th></tr></thead>
+                            <table>
+                                <thead><tr><th>Photo</th><th>Name & Role</th><th>Credentials</th><th>Privileges</th><th>Status</th><th>Action</th></tr></thead>
                                 <tbody id="staff-table"></tbody>
                             </table>
                         </div>
@@ -680,7 +584,7 @@
 
                 <!-- TAB: FINANCE, FEES & EXPENSES -->
                 <div id="tab-finance" class="tab-content">
-                    <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200" style="border-left: 4px solid #805ad5;">
+                    <div class="card" style="border-left: 4px solid #805ad5;">
                         <h3 style="color:#805ad5;"><i class="fas fa-sliders-h"></i> Fee Structure Master</h3>
                         <div class="form-row">
                             <div class="form-group">
@@ -700,7 +604,7 @@
                         <button class="submit-btn btn-purple" onclick="saveFeeStructure()"><i class="fas fa-save"></i> Update Fee Structure</button>
                     </div>
 
-                    <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200">
+                    <div class="card">
                         <h3><i class="fas fa-hand-holding-usd"></i> Collect Student Fees</h3>
                         <div class="form-row">
                             <div class="form-group"><label>Select Class</label><select id="fee_class" onchange="populateFeeStudents()"><option value="">-- Select --</option></select></div>
@@ -710,10 +614,10 @@
                             <div class="form-group"><label>Payment Mode</label><select id="fee_mode"><option>Cash</option><option>Online</option></select></div>
                             <div class="form-group"><label>Date</label><input type="date" id="fee_date"></div>
                         </div>
-                        <button class="px-4 py-2 bg-[#0ef6cc]/20 hover:bg-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md w-full mt-4" onclick="saveStudentFee()"><i class="fas fa-plus"></i> Add Fee Record</button>
+                        <button class="submit-btn" onclick="saveStudentFee()"><i class="fas fa-plus"></i> Add Fee Record</button>
                     </div>
 
-                    <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200" style="border-left: 4px solid #e67e22;">
+                    <div class="card" style="border-left: 4px solid #e67e22;">
                         <h3 style="color:#e67e22;"><i class="fas fa-money-check-alt"></i> Staff Salary Approval</h3>
                         <div class="form-row">
                             <div class="form-group"><label>Select Staff Member</label><select id="salary_staff"><option value="">-- Loading Staff --</option></select></div>
@@ -721,10 +625,10 @@
                             <div class="form-group"><label>Payment Mode</label><select id="salary_mode"><option>Cash</option><option>Bank Transfer</option></select></div>
                             <div class="form-group"><label>Date</label><input type="date" id="salary_date"></div>
                         </div>
-                        <button class="px-4 py-2 bg-[#0ef6cc]/20 hover:bg-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md w-full mt-4" style="background:#e67e22;" onclick="saveStaffSalary()"><i class="fas fa-check-circle"></i> Approve Disbursement</button>
+                        <button class="submit-btn" style="background:#e67e22;" onclick="saveStaffSalary()"><i class="fas fa-check-circle"></i> Approve Disbursement</button>
                     </div>
 
-                    <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200" style="border-left: 4px solid #e53e3e;">
+                    <div class="card" style="border-left: 4px solid #e53e3e;">
                         <h3 style="color:#e53e3e;"><i class="fas fa-file-invoice-dollar"></i> Expense Tracker</h3>
                         <div class="form-row">
                             <div class="form-group"><label>Expense Title / Bill</label><input type="text" id="exp_title" placeholder="e.g. Electricity Bill"></div>
@@ -734,10 +638,10 @@
                         <button class="submit-btn btn-red" onclick="saveExpense()"><i class="fas fa-minus-circle"></i> Log Expense</button>
                     </div>
 
-                    <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200">
+                    <div class="card">
                         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom: 15px;">
                             <h3 style="margin:0;"><i class="fas fa-history"></i> Combined Financial Ledger</h3>
-                            <button class="px-4 py-2 bg-gradient-to-r from-[#0ef6cc]/20 to-teal-900/30 hover:from-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md" style="padding:8px 12px;" onclick="window.downloadLedgerPDF()"><i class="fas fa-file-pdf"></i> Download Ledger Report (PDF)</button>
+                            <button class="action-btn btn-blue" style="padding:8px 12px;" onclick="window.downloadLedgerPDF()"><i class="fas fa-file-pdf"></i> Download Ledger Report (PDF)</button>
                         </div>
                         
                         <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
@@ -763,8 +667,8 @@
                         </div>
                         
                         <div style="display:flex; gap:10px; margin-bottom:15px;" id="ledger-filters">
-                            <input type="text" id="ledger-search-name" placeholder="Search by Name/Title..." class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full" onkeyup="renderTransactionsTable()" style="flex:1; max-width:300px;">
-                            <select id="ledger-search-class" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full" onchange="renderTransactionsTable()" style="display:none; max-width:150px;">
+                            <input type="text" id="ledger-search-name" placeholder="Search by Name/Title..." class="input-premium" onkeyup="renderTransactionsTable()" style="flex:1; max-width:300px;">
+                            <select id="ledger-search-class" class="input-premium" onchange="renderTransactionsTable()" style="display:none; max-width:150px;">
                                 <option value="">All Classes</option>
                                 <option value="Nursery">Nursery</option>
                                 <option value="LKG">LKG</option>
@@ -782,14 +686,14 @@
                                 <option value="11th">11th</option>
                                 <option value="12th">12th</option>
                             </select>
-                            <select id="ledger-search-staff" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full" onchange="renderTransactionsTable()" style="display:none; max-width:150px;">
+                            <select id="ledger-search-staff" class="input-premium" onchange="renderTransactionsTable()" style="display:none; max-width:150px;">
                                 <option value="">All Staff</option>
                             </select>
                         </div>
 
                         <div style="overflow-x:auto;">
-                            <table class="w-full text-left border-collapse font-mono text-xs">
-                                <th class="p-4"ead class="bg-[#030d12] text-[#0ef6cc]/80 uppercase text-[9px] tracking-widest border-b border-[#0ef6cc]/15"><tr class="hover:bg-slate-900/30 transition-colors border-b border-slate-800/50"><th class="p-4">Date</th><th class="p-4">Type</th><th class="p-4">Name/Title</th><th class="p-4">Details</th><th class="p-4">Amount</th><th class="p-4">Mode</th><th class="p-4">Action</th></tr></thead>
+                            <table>
+                                <thead><tr><th>Date</th><th>Type</th><th>Name/Title</th><th>Details</th><th>Amount</th><th>Mode</th><th>Action</th></tr></thead>
                                 <tbody id="transaction-table"></tbody>
                             </table>
                         </div>
@@ -798,7 +702,7 @@
 
                 <!-- TAB: ACADEMIC VETO -->
                 <div id="tab-academics" class="tab-content">
-                    <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200" style="margin-bottom: 20px; border-left: 4px solid #10b981;">
+                    <div class="card" style="margin-bottom: 20px; border-left: 4px solid #10b981;">
                         <h3 style="color:#10b981;"><i class="fas fa-pen"></i> Enter Student Marks</h3>
                         <p style="font-size:13px; color:#666; margin-bottom:15px;">Enter real subject marks. This data will be used to generate the final Marksheet PDFs.</p>
                         
@@ -845,13 +749,13 @@
                         </div>
 
                         <div style="overflow-x:auto;">
-                            <table class="w-full text-left border-collapse font-mono text-xs" style="width:100%; border-collapse:collapse; margin-bottom:15px;">
-                                <th class="p-4"ead class="bg-[#030d12] text-[#0ef6cc]/80 uppercase text-[9px] tracking-widest border-b border-[#0ef6cc]/15">
-                                    <tr class="hover:bg-slate-900/30 transition-colors border-b border-slate-800/50" style="background:#f4f4f4;">
-                                        <th class="p-4" style="padding:10px; border:1px solid #ccc; text-align:left;">Subject</th>
-                                        <th class="p-4" style="padding:10px; border:1px solid #ccc; text-align:center;">Max Marks</th>
-                                        <th class="p-4" style="padding:10px; border:1px solid #ccc; text-align:center;">Min Marks</th>
-                                        <th class="p-4" style="padding:10px; border:1px solid #ccc; text-align:center;">Obtained</th>
+                            <table style="width:100%; border-collapse:collapse; margin-bottom:15px;">
+                                <thead>
+                                    <tr style="background:#f4f4f4;">
+                                        <th style="padding:10px; border:1px solid #ccc; text-align:left;">Subject</th>
+                                        <th style="padding:10px; border:1px solid #ccc; text-align:center;">Max Marks</th>
+                                        <th style="padding:10px; border:1px solid #ccc; text-align:center;">Min Marks</th>
+                                        <th style="padding:10px; border:1px solid #ccc; text-align:center;">Obtained</th>
                                     </tr>
                                 </thead>
                                 <tbody id="marks_entry_table">
@@ -859,16 +763,16 @@
                                 </tbody>
                             </table>
                         </div>
-                        <button class="px-4 py-2 bg-[#0ef6cc]/20 hover:bg-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md w-full mt-4" style="background:#10b981;" onclick="window.saveStudentMarks()"><i class="fas fa-save"></i> Save Marks to Database</button>
+                        <button class="submit-btn" style="background:#10b981;" onclick="window.saveStudentMarks()"><i class="fas fa-save"></i> Save Marks to Database</button>
                     </div>
 
-                    <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200">
+                    <div class="card">
                         <h3><i class="fas fa-balance-scale"></i> Final Result Veto</h3>
                         <p style="font-size:13px; color:#666; margin-bottom:15px;">Review marks entered by teachers. Students cannot see results until you approve them.</p>
                         <div style="overflow-x:auto;">
-                            <table class="w-full text-left border-collapse font-mono text-xs">
-                                <th class="p-4"ead class="bg-[#030d12] text-[#0ef6cc]/80 uppercase text-[9px] tracking-widest border-b border-[#0ef6cc]/15"><tr class="hover:bg-slate-900/30 transition-colors border-b border-slate-800/50"><th class="p-4">Submission Date</th><th class="p-4">Student Info</th><th class="p-4">Exam & Subject</th><th class="p-4">Marks</th><th class="p-4">Action</th></tr></thead>
-                                <tbody id="veto-table"><tr class="hover:bg-slate-900/30 transition-colors border-b border-slate-800/50"><td class="p-4" colspan='5' style='text-align:center;'>Loading pending results...</td></tr></tbody>
+                            <table>
+                                <thead><tr><th>Submission Date</th><th>Student Info</th><th>Exam & Subject</th><th>Marks</th><th>Action</th></tr></thead>
+                                <tbody id="veto-table"><tr><td colspan='5' style='text-align:center;'>Loading pending results...</td></tr></tbody>
                             </table>
                         </div>
                     </div>
@@ -876,7 +780,7 @@
 
                 <!-- TAB: NOTICES & TICKER -->
                 <div id="tab-notices" class="tab-content">
-                    <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200" style="border-left: 4px solid #e53e3e;">
+                    <div class="card" style="border-left: 4px solid #e53e3e;">
                         <h3 style="color:#e53e3e;"><i class="fas fa-exclamation-triangle"></i> School-Level Emergency Ticker</h3>
                         <p style="font-size:13px; color:#666; margin-bottom:10px;">Publish an urgent red marquee banner for all staff and students to see instantly.</p>
                         <div style="display:flex; gap:10px; margin-bottom: 10px;">
@@ -886,7 +790,7 @@
                         </div>
                     </div>
 
-                    <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200">
+                    <div class="card">
                         <h3><i class="fas fa-bullhorn"></i> Post Digital Notice</h3>
                         <div class="form-group">
                             <label>Target Audience</label>
@@ -895,34 +799,34 @@
                         <div class="form-group"><label>Notice Title</label><input type="text" id="n_title"></div>
                         <div class="form-group"><label>Message Details</label><textarea id="n_body" rows="4"></textarea>
                     </div>
-                        <button class="px-4 py-2 bg-[#0ef6cc]/20 hover:bg-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md w-full mt-4" onclick="saveNotice()">Publish Notice</button>
+                        <button class="submit-btn" onclick="saveNotice()">Publish Notice</button>
                     </div>
-                    <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200">
+                    <div class="card">
                         <h3>Notice Board Log</h3>
                         <div style="overflow-x:auto;">
-                            <table class="w-full text-left border-collapse font-mono text-xs">
-                                <th class="p-4"ead class="bg-[#030d12] text-[#0ef6cc]/80 uppercase text-[9px] tracking-widest border-b border-[#0ef6cc]/15"><tr class="hover:bg-slate-900/30 transition-colors border-b border-slate-800/50"><th class="p-4">Date</th><th class="p-4">Target</th><th class="p-4">Title</th><th class="p-4">Message</th><th class="p-4">Visibility</th><th class="p-4">Action</th></tr></thead>
+                            <table>
+                                <thead><tr><th>Date</th><th>Target</th><th>Title</th><th>Message</th><th>Visibility</th><th>Action</th></tr></thead>
                                 <tbody id="notice-table"></tbody>
                             </table>
                         </div>
                     </div>
                     
-                    <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200">
+                    <div class="card">
                         <h3><i class="fas fa-brands fa-whatsapp" style="color: #25D366;"></i> Official WhatsApp Group Broadcast</h3>
                         <p style="font-size:13px; color:#666; margin-bottom:15px;">Configure your school's WhatsApp Group link and broadcast messages directly.</p>
                         <div class="form-group" style="display: flex; gap: 10px;">
-                            <input type="text" id="wa_group_link" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full" style="flex: 1;" placeholder="https://chat.whatsapp.com/...">
-                            <button class="px-4 py-2 bg-[#0ef6cc]/20 hover:bg-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md w-full mt-4" style="width: auto; padding: 0 20px;" onclick="saveWhatsappLink()">Save Link</button>
+                            <input type="text" id="wa_group_link" class="input-premium" style="flex: 1;" placeholder="https://chat.whatsapp.com/...">
+                            <button class="submit-btn" style="width: auto; padding: 0 20px;" onclick="saveWhatsappLink()">Save Link</button>
                         </div>
                         <hr style="margin: 20px 0; border: 0; border-top: 1px solid #e2e8f0;">
                         <div class="form-group"><label>Broadcast Message</label><textarea id="wa_message" rows="3" placeholder="Write your message here..."></textarea></div>
-                        <button class="px-4 py-2 bg-[#0ef6cc]/20 hover:bg-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md w-full mt-4" style="background-color: #25D366;" onclick="broadcastToWhatsapp()"><i class="fas fa-paper-plane"></i> Broadcast to WhatsApp</button>
+                        <button class="submit-btn" style="background-color: #25D366;" onclick="broadcastToWhatsapp()"><i class="fas fa-paper-plane"></i> Broadcast to WhatsApp</button>
                     </div>
                 </div>
 
                 <!-- TAB: UNIVERSAL COMM HUB -->
                 <div id="tab-coreedu-comm" class="tab-content">
-                    <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200" style="height: 70vh; display: flex; flex-direction: column; padding: 0; overflow: hidden; background: #efeae2;">
+                    <div class="card" style="height: 70vh; display: flex; flex-direction: column; padding: 0; overflow: hidden; background: #efeae2;">
                         <div style="background: #075e54; color: white; padding: 15px 20px; display: flex; align-items: center; gap: 15px;">
                             <i class="fab fa-whatsapp" style="font-size: 2rem;"></i>
                             <h3 id="comm-hub-header-title" style="margin: 0; font-size: 1.2rem; font-weight: 500;">CoreEdu Teach Direct Comm Hub</h3>
@@ -933,8 +837,8 @@
                         <div style="display:flex; gap:10px; align-items:center;">
                             <label for="coreedu-attachment" style="cursor:pointer; padding:10px; background:#f0f0f0; border-radius:50%; width:40px; height:40px; text-align:center;"><i class="fas fa-paperclip"></i></label>
                             <input type="file" id="coreedu-attachment" style="display:none;">
-                            <input type="text" id="coreedu-message-input" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full" style="flex:1;" placeholder="Type your message to CoreEdu...">
-                            <button id="coreedu-send-btn" class="px-4 py-2 bg-gradient-to-r from-[#0ef6cc]/20 to-teal-900/30 hover:from-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md" onclick="sendUniversalMessage()"><i class="fas fa-paper-plane"></i></button>
+                            <input type="text" id="coreedu-message-input" class="input-premium" style="flex:1;" placeholder="Type your message to CoreEdu...">
+                            <button id="coreedu-send-btn" class="action-btn btn-blue" onclick="sendUniversalMessage()"><i class="fas fa-paper-plane"></i></button>
                         </div>
                         <style>
                             .chat-bubble { max-width: 80%; padding: 10px 15px; border-radius: 15px; position: relative; font-size: 14px; }
@@ -947,7 +851,7 @@
 
                 <!-- TAB: MAILBOX -->
                 <div id="tab-mailbox" class="tab-content">
-                    <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200" style="margin-bottom: 20px;">
+                    <div class="card" style="margin-bottom: 20px;">
                         <h3><i class="fas fa-paper-plane"></i> Internal Mail Audit & Compose</h3>
                         <p style="font-size:13px; color:#666; margin-bottom:15px;">Send private warnings or direct messages to specific staff members or groups.</p>
                         <div class="form-group">
@@ -970,8 +874,8 @@
                         </div>
                         <div class="form-group"><label>Message Title</label><input type="text" id="mail_title" placeholder="Enter subject..."></div>
                         <div class="form-group"><label>Message Body</label><textarea id="mail_body" rows="4" placeholder="Type your message here..."></textarea></div>
-                        <div class="form-group"><label>Attach File (Optional)</label><input type="file" id="mail_attachment" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full"></div>
-                        <button class="px-4 py-2 bg-[#0ef6cc]/20 hover:bg-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md w-full mt-4" id="mail_send_btn" onclick="sendChairmanMessage()"><i class="fas fa-paper-plane"></i> Send Message</button>
+                        <div class="form-group"><label>Attach File (Optional)</label><input type="file" id="mail_attachment" class="input-premium"></div>
+                        <button class="submit-btn" id="mail_send_btn" onclick="sendChairmanMessage()"><i class="fas fa-paper-plane"></i> Send Message</button>
                     </div>
 
                     <style>
@@ -987,14 +891,14 @@
                         .gmail-snippet { font-size: 13px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
                     </style>
 
-                    <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200" style="margin-bottom: 20px;">
+                    <div class="card" style="margin-bottom: 20px;">
                         <h3><i class="fas fa-inbox"></i> Inbox (Incoming Messages)</h3>
                         <div id="inbox-list" class="gmail-list">
                             <div style="text-align:center; padding:20px; color:#888;">Loading messages...</div>
                         </div>
                     </div>
                     
-                    <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200">
+                    <div class="card">
                         <h3><i class="fas fa-paper-plane"></i> Sent Messages</h3>
                         <div id="sent-list" class="gmail-list">
                             <div style="text-align:center; padding:20px; color:#888;">Loading sent messages...</div>
@@ -1006,37 +910,37 @@
 
                 <!-- TAB: CHANGE PASSWORD -->
                 <div id="tab-password" class="tab-content">
-                    <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200">
+                    <div class="card">
                         <h3><i class="fas fa-key"></i> Request Password Change</h3>
                         <p style="color:#666; font-size:13px; margin-bottom:15px;">Enter a new password below. A request will be sent to the Super Admin. Once approved, your password will be updated.</p>
                         
                         <div class="form-group"><label>Current Password</label><input type="text" id="req_old_pass" readonly style="background:#e9ecef; cursor:not-allowed;"></div>
                         <div class="form-group"><label>New Requested Password</label><input type="text" id="req_new_pass" placeholder="Enter new strong password"></div>
-                        <button class="px-4 py-2 bg-[#0ef6cc]/20 hover:bg-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md w-full mt-4" onclick="sendPasswordRequest()"><i class="fas fa-paper-plane"></i> Send Request to Super Admin</button>
+                        <button class="submit-btn" onclick="sendPasswordRequest()"><i class="fas fa-paper-plane"></i> Send Request to Super Admin</button>
                     </div>
                 </div>
 
                 <!-- TAB: FEE APPROVALS -->
                 <div id="tab-fee-approvals" class="tab-content">
-                    <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200">
+                    <div class="card">
                         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom: 15px;">
                             <h3 style="margin:0;"><i class="fas fa-check-circle"></i> Fee Verification Inbox</h3>
-                            <button onclick="loadFeeVerifications()" class="px-4 py-2 bg-[#050e14] border border-[#0ef6cc]/30 hover:bg-[#0ef6cc]/10 text-slate-200 rounded-xl text-xs font-mono font-bold transition shadow-md" style="background:#3182ce;"><i class="fas fa-sync"></i> Refresh Inbox</button>
+                            <button onclick="loadFeeVerifications()" class="action-btn" style="background:#3182ce;"><i class="fas fa-sync"></i> Refresh Inbox</button>
                         </div>
                         <div class="table-container">
-                            <table class="w-full text-left border-collapse font-mono text-xs" class="data-table">
-                                <th class="p-4"ead class="bg-[#030d12] text-[#0ef6cc]/80 uppercase text-[9px] tracking-widest border-b border-[#0ef6cc]/15">
-                                    <tr class="hover:bg-slate-900/30 transition-colors border-b border-slate-800/50">
-                                        <th class="p-4">Date & Time</th>
-                                        <th class="p-4">Student Details</th>
-                                        <th class="p-4">Transaction Ref (UTR)</th>
-                                        <th class="p-4">Amount</th>
-                                        <th class="p-4">Screenshot</th>
-                                        <th class="p-4">Status/Action</th>
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date & Time</th>
+                                        <th>Student Details</th>
+                                        <th>Transaction Ref (UTR)</th>
+                                        <th>Amount</th>
+                                        <th>Screenshot</th>
+                                        <th>Status/Action</th>
                                     </tr>
                                 </thead>
                                 <tbody id="fee-verifications-body">
-                                    <tr class="hover:bg-slate-900/30 transition-colors border-b border-slate-800/50"><td class="p-4" colspan="6" style="text-align:center;">Loading Inbox...</td></tr>
+                                    <tr><td colspan="6" style="text-align:center;">Loading Inbox...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -1045,7 +949,7 @@
 
                 <!-- TAB: SETTINGS -->
                 <div id="tab-settings" class="tab-content">
-                    <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200">
+                    <div class="card">
                         <h3><i class="fas fa-cogs"></i> School White-Labeling & ID Settings</h3>
                         
                         <div class="setting-row" style="flex-direction: column; align-items: flex-start;">
@@ -1122,7 +1026,7 @@
                                 <label>Color 2 (Secondary Color)</label>
                                 <input type="color" id="school_secondary_color" value="#ffffff" style="width: 100%; height: 40px; padding: 2px; cursor: pointer;">
                             </div>
-                            <button class="px-4 py-2 bg-[#0ef6cc]/20 hover:bg-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md w-full mt-4" style="flex:1;" onclick="saveThemeSettings()"><i class="fas fa-palette"></i> Save Design</button>
+                            <button class="submit-btn" style="flex:1;" onclick="saveThemeSettings()"><i class="fas fa-palette"></i> Save Design</button>
                         </div>
 
                         <div class="setting-row" style="display: flex; gap: 20px; align-items: flex-end; margin-top: 15px;">
@@ -1140,14 +1044,14 @@
                             </div>
                             <div class="form-group" style="flex:1;">
                                 <label>Photo Background Color</label>
-                                <input type="color" id="idPhotoBgColor" value="#ffffff" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full" style="width: 100%; height: 40px; padding: 2px; cursor: pointer;">
+                                <input type="color" id="idPhotoBgColor" value="#ffffff" class="input-premium" style="width: 100%; height: 40px; padding: 2px; cursor: pointer;">
                             </div>
-                            <button class="px-4 py-2 bg-[#0ef6cc]/20 hover:bg-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md w-full mt-4" style="flex:1;" onclick="saveIDColorSettings()"><i class="fas fa-font"></i> Save Colors</button>
+                            <button class="submit-btn" style="flex:1;" onclick="saveIDColorSettings()"><i class="fas fa-font"></i> Save Colors</button>
                         </div>
 
                         <div class="setting-row">
                             <div class="form-group" style="flex:1;"><label>School Emergency Mobile No. (Prints on ID)</label><input type="text" id="school_emergency" placeholder="e.g. +91 9876543210"></div>
-                            <button class="px-4 py-2 bg-[#0ef6cc]/20 hover:bg-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md w-full mt-4" onclick="saveEmergency()"><i class="fas fa-phone"></i> Save Number</button>
+                            <button class="submit-btn" onclick="saveEmergency()"><i class="fas fa-phone"></i> Save Number</button>
                         </div>
 
                         <div class="setting-row" style="flex-direction: column; align-items: stretch;">
@@ -1162,25 +1066,25 @@
                                 <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:14px;"><input type="checkbox" id="sig_on_bonafide" checked> Bonafide Certificate</label>
                                 <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:14px;"><input type="checkbox" id="sig_on_admit" checked> Admit Cards</label>
                             </div>
-                            <button class="px-4 py-2 bg-[#0ef6cc]/20 hover:bg-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md w-full mt-4" id="sig_btn" onclick="saveSignature()"><i class="fas fa-pen-nib"></i> Save Signature & Preferences</button>
+                            <button class="submit-btn" id="sig_btn" onclick="saveSignature()"><i class="fas fa-pen-nib"></i> Save Signature & Preferences</button>
                         </div>
 
 
                     </div>
 
-                    <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200">
+                    <div class="card">
                         <h3><i class="fas fa-qrcode"></i> Zero-Commission Manual QR Fee System</h3>
                         <div class="form-group" style="margin-bottom: 15px;">
                             <label style="font-weight: bold; display: block; margin-bottom: 5px;">Payment QR Code Image</label>
-                            <input type="file" id="payment_qr_upload" accept="image/*" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full">
+                            <input type="file" id="payment_qr_upload" accept="image/*" class="input-premium">
                             <br>
                             <img id="payment_qr_preview" src="https://via.placeholder.com/150" style="max-width: 150px; margin-top: 10px; border-radius: 8px; border: 1px solid #ddd; object-fit: cover;">
                         </div>
                         <div class="form-group" style="margin-bottom: 15px;">
                             <label style="font-weight: bold; display: block; margin-bottom: 5px;">School UPI ID</label>
-                            <input type="text" id="upi_id_input" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full" placeholder="e.g. school@upi">
+                            <input type="text" id="upi_id_input" class="input-premium" placeholder="e.g. school@upi">
                         </div>
-                        <button class="px-4 py-2 bg-[#0ef6cc]/20 hover:bg-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md w-full mt-4" id="save_qr_btn" onclick="savePaymentSettings()"><i class="fas fa-save"></i> Save Payment Settings</button>
+                        <button class="submit-btn" id="save_qr_btn" onclick="savePaymentSettings()"><i class="fas fa-save"></i> Save Payment Settings</button>
                     </div>
                 </div>
 
@@ -1189,23 +1093,23 @@
                     <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
                         <div class="glass-panel" style="flex: 1; min-width: 300px;">
                             <h3><i class="fas fa-plus-circle"></i> Add Bus Route</h3>
-                            <input type="text" id="transportRouteName" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full" placeholder="Route Name / Number" style="margin-bottom: 10px;">
-                            <input type="text" id="transportDriverName" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full" placeholder="Driver Name" style="margin-bottom: 10px;">
-                            <input type="text" id="transportDriverContact" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full" placeholder="Driver Contact No." style="margin-bottom: 10px;">
-                            <input type="number" id="transportBusFee" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full" placeholder="Monthly Bus Fee (₹)" style="margin-bottom: 10px;">
-                            <button class="px-4 py-2 bg-[#0ef6cc]/20 hover:bg-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md w-full mt-4" onclick="saveBusRoute()"><i class="fas fa-save"></i> Save Route</button>
+                            <input type="text" id="transportRouteName" class="input-premium" placeholder="Route Name / Number" style="margin-bottom: 10px;">
+                            <input type="text" id="transportDriverName" class="input-premium" placeholder="Driver Name" style="margin-bottom: 10px;">
+                            <input type="text" id="transportDriverContact" class="input-premium" placeholder="Driver Contact No." style="margin-bottom: 10px;">
+                            <input type="number" id="transportBusFee" class="input-premium" placeholder="Monthly Bus Fee (₹)" style="margin-bottom: 10px;">
+                            <button class="submit-btn" onclick="saveBusRoute()"><i class="fas fa-save"></i> Save Route</button>
                         </div>
                         <div class="glass-panel" style="flex: 2; min-width: 300px;">
                             <h3><i class="fas fa-route"></i> Active Routes</h3>
                             <div class="table-container">
-                                <table class="w-full text-left border-collapse font-mono text-xs" class="data-table" id="transport-table">
-                                    <th class="p-4"ead class="bg-[#030d12] text-[#0ef6cc]/80 uppercase text-[9px] tracking-widest border-b border-[#0ef6cc]/15">
-                                        <tr class="hover:bg-slate-900/30 transition-colors border-b border-slate-800/50">
-                                            <th class="p-4">Route</th>
-                                            <th class="p-4">Driver Name</th>
-                                            <th class="p-4">Contact</th>
-                                            <th class="p-4">Fee (₹)</th>
-                                            <th class="p-4">Action</th>
+                                <table class="data-table" id="transport-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Route</th>
+                                            <th>Driver Name</th>
+                                            <th>Contact</th>
+                                            <th>Fee (₹)</th>
+                                            <th>Action</th>
                                         </tr>
                                     </thead>
                                     <tbody id="transport-body">
@@ -1222,28 +1126,28 @@
                     <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
                         <div class="glass-panel" style="flex: 1; min-width: 300px;">
                             <h3><i class="fas fa-plus-circle"></i> Log New Asset</h3>
-                            <input type="text" id="inventoryItemName" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full" placeholder="Item Name (e.g. Projector)" style="margin-bottom: 10px;">
-                            <select id="inventoryCategory" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full" style="margin-bottom: 10px;">
+                            <input type="text" id="inventoryItemName" class="input-premium" placeholder="Item Name (e.g. Projector)" style="margin-bottom: 10px;">
+                            <select id="inventoryCategory" class="input-premium" style="margin-bottom: 10px;">
                                 <option value="Library">Library</option>
                                 <option value="Computer Lab">Computer Lab</option>
                                 <option value="Sports">Sports</option>
                                 <option value="Office">Office & Admin</option>
                             </select>
-                            <input type="number" id="inventoryQuantity" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full" placeholder="Quantity" style="margin-bottom: 10px;">
-                            <input type="date" id="inventoryDate" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full" style="margin-bottom: 10px;">
-                            <button class="px-4 py-2 bg-[#0ef6cc]/20 hover:bg-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md w-full mt-4" onclick="logAsset()"><i class="fas fa-save"></i> Save Asset</button>
+                            <input type="number" id="inventoryQuantity" class="input-premium" placeholder="Quantity" style="margin-bottom: 10px;">
+                            <input type="date" id="inventoryDate" class="input-premium" style="margin-bottom: 10px;">
+                            <button class="submit-btn" onclick="logAsset()"><i class="fas fa-save"></i> Save Asset</button>
                         </div>
                         <div class="glass-panel" style="flex: 2; min-width: 300px;">
                             <h3><i class="fas fa-boxes"></i> Master Inventory</h3>
                             <div class="table-container">
-                                <table class="w-full text-left border-collapse font-mono text-xs" class="data-table" id="inventory-table">
-                                    <th class="p-4"ead class="bg-[#030d12] text-[#0ef6cc]/80 uppercase text-[9px] tracking-widest border-b border-[#0ef6cc]/15">
-                                        <tr class="hover:bg-slate-900/30 transition-colors border-b border-slate-800/50">
-                                            <th class="p-4">Item Name</th>
-                                            <th class="p-4">Category</th>
-                                            <th class="p-4">Qty</th>
-                                            <th class="p-4">Date Acquired</th>
-                                            <th class="p-4">Action</th>
+                                <table class="data-table" id="inventory-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Item Name</th>
+                                            <th>Category</th>
+                                            <th>Qty</th>
+                                            <th>Date Acquired</th>
+                                            <th>Action</th>
                                         </tr>
                                     </thead>
                                     <tbody id="inventory-body">
@@ -1260,7 +1164,7 @@
                     <div class="glass-panel" style="margin-bottom: 20px;">
                         <h3 style="margin-bottom: 15px;"><i class="fas fa-calendar-day"></i> Select Class & Date</h3>
                         <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
-                            <select id="attendanceClassSelect" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full" style="flex: 1;">
+                            <select id="attendanceClassSelect" class="input-premium" style="flex: 1;">
                                 <option value="">-- Select Class --</option>
                                 <option value="Pre-Nursery">Pre-Nursery</option><option value="Nursery">Nursery</option>
                                 <option value="LKG">LKG</option><option value="UKG">UKG</option>
@@ -1269,23 +1173,23 @@
                                 <option value="7th">7th</option><option value="8th">8th</option><option value="9th">9th</option>
                                 <option value="10th">10th</option><option value="11th">11th</option><option value="12th">12th</option>
                             </select>
-                            <input type="date" id="attendanceDateSelect" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full" style="flex: 1;">
-                            <button class="px-4 py-2 bg-[#0ef6cc]/20 hover:bg-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md w-full mt-4" onclick="loadClassForAttendance()"><i class="fas fa-search"></i> Fetch Roster</button>
+                            <input type="date" id="attendanceDateSelect" class="input-premium" style="flex: 1;">
+                            <button class="submit-btn" onclick="loadClassForAttendance()"><i class="fas fa-search"></i> Fetch Roster</button>
                         </div>
                     </div>
                     <div class="glass-panel" id="attendance-roster-panel" style="display:none;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                             <h3><i class="fas fa-users"></i> Class Roster</h3>
-                            <button class="px-4 py-2 bg-[#0ef6cc]/20 hover:bg-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md w-full mt-4" onclick="saveDailyAttendance()"><i class="fas fa-save"></i> Submit Attendance</button>
+                            <button class="submit-btn" onclick="saveDailyAttendance()"><i class="fas fa-save"></i> Submit Attendance</button>
                         </div>
                         <div class="table-container">
-                            <table class="w-full text-left border-collapse font-mono text-xs" class="data-table">
-                                <th class="p-4"ead class="bg-[#030d12] text-[#0ef6cc]/80 uppercase text-[9px] tracking-widest border-b border-[#0ef6cc]/15">
-                                    <tr class="hover:bg-slate-900/30 transition-colors border-b border-slate-800/50">
-                                        <th class="p-4">Roll No</th>
-                                        <th class="p-4">Student Name</th>
-                                        <th class="p-4">Parentage</th>
-                                        <th class="p-4" style="text-align:center;">Status</th>
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Roll No</th>
+                                        <th>Student Name</th>
+                                        <th>Parentage</th>
+                                        <th style="text-align:center;">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody id="attendance-roster-body">
@@ -1297,11 +1201,11 @@
 
                 <!-- TAB: ADMIT CARDS -->
                 <div id="tab-admit-cards-module" class="tab-content hidden-el">                    
-                    <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200">
+                    <div class="card">
                         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom: 15px;">
                             <h3 style="margin:0;"><i class="fas fa-id-card-alt"></i> Student Admit Cards</h3>
                             <div style="display: flex; gap: 10px; align-items: center;">
-                                <select id="admit_class_select" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full" style="width: auto; padding: 8px 10px;" onchange="filterAdmitStudents(this.value)">
+                                <select id="admit_class_select" class="input-premium" style="width: auto; padding: 8px 10px;" onchange="filterAdmitStudents(this.value)">
                                     <option value="ALL">All Classes</option>
                                     <option value="Nursery">Nursery</option>
                                     <option value="LKG">LKG</option>
@@ -1319,22 +1223,22 @@
                                     <option value="11th">11th</option>
                                     <option value="12th">12th</option>
                                 </select>
-                                <input type="text" id="searchAdmitStudentInput" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full" placeholder="Search Student..." onkeyup="searchAdmitStudent()" style="padding: 8px 10px; width: 200px;">
+                                <input type="text" id="searchAdmitStudentInput" class="input-premium" placeholder="Search Student..." onkeyup="searchAdmitStudent()" style="padding: 8px 10px; width: 200px;">
                                 <button id="bulk-admit-btn" class="action-btn btn-purple" style="padding:5px 10px; font-size:12px;" onclick="window.openBulkActionModal('admit')"><i class="fas fa-file-alt"></i> Generate Admit Cards</button>
-                                <button id="exam-scheduler-btn" class="px-4 py-2 bg-[#050e14] border border-[#0ef6cc]/30 hover:bg-[#0ef6cc]/10 text-slate-200 rounded-xl text-xs font-mono font-bold transition shadow-md" style="background:#d97706; padding:5px 10px; font-size:12px;" onclick="window.openExamScheduler()">📅 Routine Scheduler</button>
+                                <button id="exam-scheduler-btn" class="action-btn" style="background:#d97706; padding:5px 10px; font-size:12px;" onclick="window.openExamScheduler()">📅 Routine Scheduler</button>
                             </div>
                         </div>
 
                         <div class="table-responsive">
-                            <table class="w-full text-left border-collapse font-mono text-xs" class="data-table">
-                                <th class="p-4"ead class="bg-[#030d12] text-[#0ef6cc]/80 uppercase text-[9px] tracking-widest border-b border-[#0ef6cc]/15">
-                                    <tr class="hover:bg-slate-900/30 transition-colors border-b border-slate-800/50">
-                                        <th class="p-4">Photo</th>
-                                        <th class="p-4">Student Details</th>
-                                        <th class="p-4">Class</th>
-                                        <th class="p-4">Fee Due</th>
-                                        <th class="p-4">Student View</th>
-                                        <th class="p-4">Actions</th>
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Photo</th>
+                                        <th>Student Details</th>
+                                        <th>Class</th>
+                                        <th>Fee Due</th>
+                                        <th>Student View</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="admit-student-table">
@@ -1428,30 +1332,30 @@
                 <div id="student-feature-grid" class="bg-[#E3EBF3] rounded-2xl p-6 mb-6"></div>
 
                 <!-- Due Balance Card (HIDDEN for SPA, it is moved to Fee module) -->
-                <div id="student-due-balance-card" class="card" style="display: none; text-align: center; padding: 30px 20px; border-radius:16px;  box-shadow:0 4px 15px rgba(0,0,0,0.06); margin-bottom:20px;">
-                    <div style=" border: 2px dashed #cbd5e1; border-radius: 15px; padding: 25px; margin-bottom: 20px;">
+                <div id="student-due-balance-card" class="card" style="display: none; text-align: center; padding: 30px 20px; border-radius:16px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.06); margin-bottom:20px;">
+                    <div style="background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 15px; padding: 25px; margin-bottom: 20px;">
                         <p style="font-size: 16px; color: #475569; margin-bottom: 8px; font-family:'Inter',sans-serif;">Total Due Balance</p>
                         <h2 style="font-size: 42px; color: #e53e3e; margin: 0; font-family:'Inter',sans-serif; font-weight:800;">₹ <span id="stu-due-balance">0</span></h2>
                     </div>
-                    <button id="stu-show-payment-btn" class="px-4 py-2 bg-[#0ef6cc]/20 hover:bg-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md w-full mt-4" onclick="openStudentView('student-payment-section')" style="font-size: 16px; padding: 14px 28px; background: #10b981; border-radius:12px;"><i class="fas fa-qrcode"></i> Pay Now (Zero Commission)</button>
+                    <button id="stu-show-payment-btn" class="submit-btn" onclick="openStudentView('student-payment-section')" style="font-size: 16px; padding: 14px 28px; background: #10b981; border-radius:12px;"><i class="fas fa-qrcode"></i> Pay Now (Zero Commission)</button>
                 </div>
             </div> <!-- End student-main-grid -->
 
             <!-- Digital ID Card Section -->
             <div id="student-idcard-section" class="student-view-section" style="display: none;">
                 <button onclick="openStudentView('student-main-grid')" class="mb-4 flex items-center gap-2 text-slate-600 font-semibold"><i class="fas fa-arrow-left"></i> Back to Dashboard</button>
-                <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200" style="text-align: center; padding: 25px; border-radius:16px;  box-shadow:0 4px 15px rgba(0,0,0,0.06);">
+                <div class="card" style="text-align: center; padding: 25px; border-radius:16px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.06);">
                     <i class="fas fa-id-badge" style="font-size: 36px; color: #1E3A8A; margin-bottom: 12px;"></i>
                     <h3 style="color: #1E3A8A; margin-bottom: 8px; font-family:'Inter',sans-serif;">My Digital ID Card</h3>
                     <p style="color: #64748b; font-size: 13px; margin-bottom: 16px;">Download your official digital student ID card.</p>
-                    <button id="stu-btn-download-id" class="px-4 py-2 bg-gradient-to-r from-[#0ef6cc]/20 to-teal-900/30 hover:from-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md" onclick="window.downloadStudentIDCard()" style="width: 100%; padding: 12px; font-size: 14px; border-radius:10px;"><i class="fas fa-download"></i> Print / Save PDF</button>
+                    <button id="stu-btn-download-id" class="action-btn btn-blue" onclick="window.downloadStudentIDCard()" style="width: 100%; padding: 12px; font-size: 14px; border-radius:10px;"><i class="fas fa-download"></i> Print / Save PDF</button>
                 </div>
             </div>
 
             <!-- Exam Admit Card Section -->
             <div id="student-admitcard-section" class="student-view-section" style="display: none;">
                 <button onclick="openStudentView('student-main-grid')" class="mb-4 flex items-center gap-2 text-slate-600 font-semibold"><i class="fas fa-arrow-left"></i> Back to Dashboard</button>
-                <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200" style="text-align: center; padding: 25px; border-radius:16px;  box-shadow:0 4px 15px rgba(0,0,0,0.06);">
+                <div class="card" style="text-align: center; padding: 25px; border-radius:16px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.06);">
                     <i class="fas fa-calendar-alt" style="font-size: 36px; color: #e67e22; margin-bottom: 12px;"></i>
                     <h3 style="color: #e67e22; margin-bottom: 8px; font-family:'Inter',sans-serif;">My Exam Admit Card</h3>
                     <p style="color: #64748b; font-size: 13px; margin-bottom: 16px;">Download exam schedule & admit card.</p>
@@ -1464,7 +1368,7 @@
             <!-- Complaint Section -->
             <div id="student-complaint-section" class="student-view-section" style="display: none;">
                 <button onclick="openStudentView('student-main-grid')" class="mb-4 flex items-center gap-2 text-slate-600 font-semibold"><i class="fas fa-arrow-left"></i> Back to Dashboard</button>
-                <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200 p-6 rounded-2xl bg-white shadow-sm border border-gray-100">
+                <div class="card p-6 rounded-2xl bg-white shadow-sm border border-gray-100">
                     <h3 class="text-xl font-bold text-[#1E3A8A] mb-2 flex items-center gap-2"><i class="fas fa-wrench"></i> Register Complaint</h3>
                     <p class="text-sm text-gray-500 mb-6">Send your complaints securely. They will be directed to the appropriate department.</p>
                     
@@ -1497,7 +1401,7 @@
             <!-- Generic Placeholder Section for under construction modules -->
             <div id="student-placeholder-section" class="student-view-section" style="display: none;">
                 <button onclick="openStudentView('student-main-grid')" class="mb-4 flex items-center gap-2 text-slate-600 font-semibold"><i class="fas fa-arrow-left"></i> Back to Dashboard</button>
-                <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200 p-8 rounded-2xl bg-white shadow-sm border border-gray-100 text-center flex flex-col items-center justify-center h-64">
+                <div class="card p-8 rounded-2xl bg-white shadow-sm border border-gray-100 text-center flex flex-col items-center justify-center h-64">
                     <i id="placeholder-icon" class="fas fa-tools text-5xl text-gray-300 mb-4"></i>
                     <h3 id="placeholder-title" class="text-xl font-bold text-gray-700 mb-2">Module Under Construction</h3>
                     <p class="text-sm text-gray-500">This feature is currently being built and will be available soon.</p>
@@ -1508,7 +1412,7 @@
             <div id="student-payment-section" class="student-view-section" style="display: none;">
                 <button onclick="openStudentView('student-main-grid')" class="mb-4 flex items-center gap-2 text-slate-600 font-semibold"><i class="fas fa-arrow-left"></i> Back to Dashboard</button>
                 <!-- Floating Stats Card -->
-                <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200" style="display: flex; align-items: center; justify-content: space-between; padding: 25px; border-radius: 16px; background: linear-gradient(135deg, #1E3A8A, #3182ce); color: white; box-shadow: 0 10px 25px rgba(30,58,138,0.2); margin-bottom: 20px;">
+                <div class="card" style="display: flex; align-items: center; justify-content: space-between; padding: 25px; border-radius: 16px; background: linear-gradient(135deg, #1E3A8A, #3182ce); color: white; box-shadow: 0 10px 25px rgba(30,58,138,0.2); margin-bottom: 20px;">
                     <div>
                         <p style="margin: 0; font-size: 14px; opacity: 0.9;">Total Fee</p>
                         <h2 style="margin: 0 0 10px 0; font-size: 28px;" id="stu-total-fee">₹0</h2>
@@ -1522,18 +1426,18 @@
                 </div>
 
                 <!-- Monthly Breakdown Table -->
-                <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200" style="padding: 20px; border-radius: 16px;  margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.06);">
+                <div class="card" style="padding: 20px; border-radius: 16px; background: white; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.06);">
                     <h3 style="color: #1E3A8A; margin-bottom: 15px; font-family: 'Inter', sans-serif;"><i class="fas fa-calendar-alt"></i> Monthly Breakdown</h3>
                     <div style="overflow-x: auto;">
-                        <table class="w-full text-left border-collapse font-mono text-xs" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
-                            <th class="p-4"ead class="bg-[#030d12] text-[#0ef6cc]/80 uppercase text-[9px] tracking-widest border-b border-[#0ef6cc]/15">
-                                <tr class="hover:bg-slate-900/30 transition-colors border-b border-slate-800/50" style=" color: #64748b;">
-                                    <th class="p-4" style="padding: 12px; border-bottom: 2px solid #e2e8f0;">Month</th>
-                                    <th class="p-4" style="padding: 12px; border-bottom: 2px solid #e2e8f0;">Amt</th>
-                                    <th class="p-4" style="padding: 12px; border-bottom: 2px solid #e2e8f0;">Paid</th>
-                                    <th class="p-4" style="padding: 12px; border-bottom: 2px solid #e2e8f0;">Due</th>
-                                    <th class="p-4" style="padding: 12px; border-bottom: 2px solid #e2e8f0; text-align: center;">Status</th>
-                                    <th class="p-4" style="padding: 12px; border-bottom: 2px solid #e2e8f0; text-align: center;">Action</th>
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
+                            <thead>
+                                <tr style="background: #f8fafc; color: #64748b;">
+                                    <th style="padding: 12px; border-bottom: 2px solid #e2e8f0;">Month</th>
+                                    <th style="padding: 12px; border-bottom: 2px solid #e2e8f0;">Amt</th>
+                                    <th style="padding: 12px; border-bottom: 2px solid #e2e8f0;">Paid</th>
+                                    <th style="padding: 12px; border-bottom: 2px solid #e2e8f0;">Due</th>
+                                    <th style="padding: 12px; border-bottom: 2px solid #e2e8f0; text-align: center;">Status</th>
+                                    <th style="padding: 12px; border-bottom: 2px solid #e2e8f0; text-align: center;">Action</th>
                                 </tr>
                             </thead>
                             <tbody id="stu-monthly-fee-table">
@@ -1544,17 +1448,17 @@
                 </div>
 
                 <!-- Scan & Pay Card -->
-                <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200" style="text-align: center; padding:30px; border-radius:16px;  box-shadow:0 4px 15px rgba(0,0,0,0.06);">
+                <div class="card" style="text-align: center; padding:30px; border-radius:16px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.06);">
                 <h2 style="color: #1E3A8A; margin-bottom: 15px; font-family:'Inter',sans-serif;"><i class="fas fa-mobile-alt"></i> Scan & Pay</h2>
                 <p style="color: #64748b; margin-bottom: 20px;">Use any UPI App to scan the QR code below or tap the direct link.</p>
 
-                <div style=" padding: 20px; border-radius: 15px; display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid #e2e8f0;">
+                <div style="background: white; padding: 20px; border-radius: 15px; display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid #e2e8f0;">
                     <img id="stu-qr-img" src="" alt="Payment QR" style="width: 220px; height: 220px; object-fit: contain;">
                     <p style="margin-top: 12px; font-weight: bold; color: #475569; font-family: monospace; font-size: 14px;" id="stu-upi-text"></p>
                 </div>
 
                 <br>
-                <a id="stu-upi-deep-link" href="#" class="px-4 py-2 bg-[#050e14] border border-[#0ef6cc]/30 hover:bg-[#0ef6cc]/10 text-slate-200 rounded-xl text-xs font-mono font-bold transition shadow-md" style="background: #3182ce; font-size: 14px; padding: 12px 24px; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; border-radius:10px;"><i class="fas fa-external-link-alt"></i> Open UPI App</a>
+                <a id="stu-upi-deep-link" href="#" class="action-btn" style="background: #3182ce; font-size: 14px; padding: 12px 24px; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; border-radius:10px;"><i class="fas fa-external-link-alt"></i> Open UPI App</a>
 
                 <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 30px 0;">
 
@@ -1564,45 +1468,45 @@
                 <form id="student-verification-form" style="max-width: 400px; margin: 0 auto; text-align: left;">
                     <div class="form-group">
                         <label>Amount Paid (₹)</label>
-                        <input type="number" id="stu-pay-amount" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full" required>
+                        <input type="number" id="stu-pay-amount" class="input-premium" required>
                     </div>
                     <div class="form-group">
                         <label>Transaction ID (UTR)</label>
-                        <input type="text" id="stu-pay-utr" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full" required placeholder="12-digit UTR Number">
+                        <input type="text" id="stu-pay-utr" class="input-premium" required placeholder="12-digit UTR Number">
                     </div>
                     <div class="form-group">
                         <label>Upload Payment Screenshot</label>
-                        <input type="file" id="stu-pay-screenshot" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full" accept="image/*" required>
+                        <input type="file" id="stu-pay-screenshot" class="input-premium" accept="image/*" required>
                     </div>
-                    <button type="submit" id="stu-submit-verification-btn" class="px-4 py-2 bg-[#0ef6cc]/20 hover:bg-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md w-full mt-4" style="width: 100%; border-radius:10px;"><i class="fas fa-cloud-upload-alt"></i> Submit for Verification</button>
+                    <button type="submit" id="stu-submit-verification-btn" class="submit-btn" style="width: 100%; border-radius:10px;"><i class="fas fa-cloud-upload-alt"></i> Submit for Verification</button>
                 </form>
                 </div>
             </div>
 
-            <div id="student-success-section" class="card" style="display: none; text-align: center; padding: 50px 20px; border-radius:16px; ">
+            <div id="student-success-section" class="card" style="display: none; text-align: center; padding: 50px 20px; border-radius:16px; background:white;">
                 <i class="fas fa-check-circle" style="font-size: 60px; color: #10b981; margin-bottom: 20px;"></i>
                 <h2 style="color: #1E3A8A; font-family:'Inter',sans-serif;">Verification Submitted!</h2>
                 <p style="color: #64748b;">Your payment details have been sent to the Chairman. Once verified, your due balance will be updated automatically.</p>
             </div>
 
             <!-- Fee Receipt Section -->
-            <div id="student-receipt-section" class="student-view-section card" style="display: none; padding: 25px; border-radius:16px;  box-shadow:0 4px 15px rgba(0,0,0,0.06); margin-bottom:20px;">
+            <div id="student-receipt-section" class="student-view-section card" style="display: none; padding: 25px; border-radius:16px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.06); margin-bottom:20px;">
                 <button onclick="openStudentView('student-main-grid')" class="mb-4 flex items-center gap-2 text-slate-600 font-semibold"><i class="fas fa-arrow-left"></i> Back to Dashboard</button>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <h2 style="color: #1E3A8A; font-family:'Inter',sans-serif; margin: 0;"><i class="fas fa-receipt"></i> Digital Fee Receipts</h2>
                 </div>
                 <div style="overflow-x: auto;">
-                    <table class="w-full text-left border-collapse font-mono text-xs" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
-                        <th class="p-4"ead class="bg-[#030d12] text-[#0ef6cc]/80 uppercase text-[9px] tracking-widest border-b border-[#0ef6cc]/15">
-                            <tr class="hover:bg-slate-900/30 transition-colors border-b border-slate-800/50" style=" color: #64748b; border-bottom: 2px solid #e2e8f0;">
-                                <th class="p-4" style="padding: 10px;">Rec. No.</th>
-                                <th class="p-4" style="padding: 10px;">Rec. Date</th>
-                                <th class="p-4" style="padding: 10px;">Period</th>
-                                <th class="p-4" style="padding: 10px;">Pay Mode</th>
-                                <th class="p-4" style="padding: 10px;">Total Due</th>
-                                <th class="p-4" style="padding: 10px;">Paid Amt</th>
-                                <th class="p-4" style="padding: 10px;">Due Amt</th>
-                                <th class="p-4" style="padding: 10px; text-align: center;">Print</th>
+                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                        <thead>
+                            <tr style="background: #f8fafc; color: #64748b; border-bottom: 2px solid #e2e8f0;">
+                                <th style="padding: 10px;">Rec. No.</th>
+                                <th style="padding: 10px;">Rec. Date</th>
+                                <th style="padding: 10px;">Period</th>
+                                <th style="padding: 10px;">Pay Mode</th>
+                                <th style="padding: 10px;">Total Due</th>
+                                <th style="padding: 10px;">Paid Amt</th>
+                                <th style="padding: 10px;">Due Amt</th>
+                                <th style="padding: 10px; text-align: center;">Print</th>
                             </tr>
                         </thead>
                         <tbody id="stu-receipt-table-body">
@@ -1637,33 +1541,36 @@
             </div>
 
             <div class="main-content">
-                
+                <div class="header-title">
+                    <h1 id="staff-tab-title">Teacher Dashboard</h1>
+                    <p style="color: #94a3b8; margin-top: 5px;">Welcome, <span id="staff-welcome-name" style="color: white; font-weight: bold;">Teacher Name</span>!</p>
+                </div>
 
                 <!-- STAFF TAB: ATTENDANCE -->
                 <div id="staff-tab-attendance" class="tab-content active">
-                    <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200" style="border-left: 4px solid #3b82f6;">
+                    <div class="card" style="border-left: 4px solid #3b82f6;">
                         <h3><i class="fas fa-clipboard-list"></i> Class Attendance</h3>
                         <p style="font-size:13px; color:#666;">Select your class to mark daily student attendance.</p>
                         <!-- Form fields for attendance will come here -->
-                        <button class="px-4 py-2 bg-[#0ef6cc]/20 hover:bg-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md w-full mt-4"><i class="fas fa-search"></i> Load Students</button>
+                        <button class="submit-btn"><i class="fas fa-search"></i> Load Students</button>
                     </div>
                 </div>
 
                 <!-- STAFF TAB: EXAM MARKS -->
                 <div id="staff-tab-marks" class="tab-content">
-                    <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200" style="border-left: 4px solid #10b981;">
+                    <div class="card" style="border-left: 4px solid #10b981;">
                         <h3><i class="fas fa-pen-alt"></i> Enter Students Marks</h3>
                         <p style="font-size:13px; color:#666;">Marks entered here will go to the Chairman for Final Veto Approval.</p>
                         <!-- Form fields for marks entry will come here -->
-                        <button class="px-4 py-2 bg-[#0ef6cc]/20 hover:bg-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md w-full mt-4" style="background: #10b981;"><i class="fas fa-upload"></i> Submit for Veto</button>
+                        <button class="submit-btn" style="background: #10b981;"><i class="fas fa-upload"></i> Submit for Veto</button>
                     </div>
                 </div>
 
                 <!-- STAFF TAB: NOTICES -->
                 <div id="staff-tab-notices" class="tab-content">
-                    <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200">
+                    <div class="card">
                         <h3><i class="fas fa-bullhorn"></i> School Notices</h3>
-                        <div style="padding: 20px; text-align: center; color: #888;  border-radius: 8px;">
+                        <div style="padding: 20px; text-align: center; color: #888; background: #f8fafc; border-radius: 8px;">
                             Loading latest announcements from Chairman...
                         </div>
                     </div>
@@ -1672,75 +1579,10 @@
             </div>
         </div>
 
-        <div id="role-footer" style="background: #1e293b; border-top: 2px solid #3b82f6;">System Access: STAFF AUTHORITY
-        </div>
-    </main>
-
-    <!-- MOBILE BOTTOM NAVIGATION -->
-    <nav class="flex lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#020810]/90 backdrop-blur-lg border-t border-slate-800 justify-around items-center z-50 px-2 pb-safe" id="mobile-bottom-nav">
-        <button onclick="window.switchTab('tab-dashboard')" class="mobile-nav-btn active" data-tab="tab-dashboard">
-            <i class="fas fa-home"></i> <span>Dash</span>
-        </button>
-        <button onclick="window.switchTab('tab-students')" class="mobile-nav-btn" data-tab="tab-students">
-            <i class="fas fa-user-graduate"></i> <span>Students</span>
-        </button>
-        <button onclick="window.switchTab('tab-admit-cards-module')" class="mobile-nav-btn" data-tab="tab-admit-cards-module">
-            <i class="fas fa-id-card-alt"></i> <span>Admit</span>
-        </button>
-        <button onclick="window.switchTab('tab-finance')" class="mobile-nav-btn" data-tab="tab-finance">
-            <i class="fas fa-rupee-sign"></i> <span>Finance</span>
-        </button>
-        <button onclick="window.toggleMoreDrawer()" class="mobile-nav-btn" id="btn-more-drawer">
-            <i class="fas fa-ellipsis-h"></i> <span>More</span>
-        </button>
-    </nav>
-
-    <!-- MOBILE MORE DRAWER -->
-    <div id="mobile-more-drawer" class="fixed inset-0 z-[9999] flex justify-end transition-opacity duration-300 opacity-0 pointer-events-none lg:hidden">
-        <!-- Backdrop -->
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="window.toggleMoreDrawer()"></div>
-        
-        <!-- Drawer Body -->
-        <div id="drawer-body" class="w-72 bg-[#050e14]/95 border-l border-[#0ef6cc]/10 h-full p-6 flex flex-col justify-between shadow-2xl relative z-10 transition-transform duration-300 transform translate-x-full">
-            <div class="flex flex-col gap-6">
-                <div class="flex justify-between items-center border-b border-[#0ef6cc]/10 pb-4">
-                    <span class="font-mono text-xs uppercase text-[#0ef6cc] tracking-widest">More Tools</span>
-                    <button onclick="window.toggleMoreDrawer()" class="text-slate-400 hover:text-rose-500"><i class="fas fa-times text-sm"></i></button>
-                </div>
-
-                <!-- Drawer Menu Options -->
-                <div class="flex flex-col gap-2 overflow-y-auto custom-scrollbar max-h-[60vh]">
-                    <button onclick="window.switchTab('tab-ms-studio'); window.toggleMoreDrawer()" class="drawer-item-btn">
-                        <i class="fas fa-camera text-blue-400"></i> <span>MS Studio</span>
-                    </button>
-                    <button onclick="window.switchTab('tab-transport'); window.toggleMoreDrawer()" class="drawer-item-btn">
-                        <i class="fas fa-bus text-amber-400"></i> <span>Transport</span>
-                    </button>
-                    <button onclick="window.switchTab('tab-inventory'); window.toggleMoreDrawer()" class="drawer-item-btn">
-                        <i class="fas fa-boxes text-purple-400"></i> <span>Inventory</span>
-                    </button>
-                    <button onclick="window.switchTab('tab-staff'); window.toggleMoreDrawer()" class="drawer-item-btn">
-                        <i class="fas fa-user-tie text-emerald-400"></i> <span>Staff Manager</span>
-                    </button>
-                    <button onclick="window.switchTab('tab-academics'); window.toggleMoreDrawer()" class="drawer-item-btn">
-                        <i class="fas fa-book-open text-indigo-400"></i> <span>Academics</span>
-                    </button>
-                    <button onclick="window.switchTab('tab-settings'); window.toggleMoreDrawer()" class="drawer-item-btn">
-                        <i class="fas fa-cogs text-rose-400"></i> <span>Settings</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Drawer Bottom Actions -->
-            <div class="flex flex-col gap-3">
-                <div class="text-[10px] font-mono text-slate-500 text-center">SYSTEM REFACTOR v4.2</div>
-                <button onclick="doLogout()" class="w-full py-3 bg-rose-950/20 hover:bg-rose-900/30 border border-rose-500/20 text-rose-500 rounded-xl font-bold flex items-center justify-center gap-2 transition-all">
-                    <i class="fas fa-sign-out-alt"></i> <span>Secure Logout</span>
-                </button>
-            </div>
-        </div>
+        <div id="role-footer" style="background: #1e293b; border-top: 2px solid #3b82f6;">System Access: STAFF AUTHORITY</div>
     </div>
-</div><div id="edit-staff-modal" class="custom-modal-overlay">
+    <!-- MODAL: EDIT STAFF & PRIVILEGES -->
+    <div id="edit-staff-modal" class="custom-modal-overlay">
         <div class="custom-modal-box">
             <div class="custom-modal-header"><span><i class="fas fa-user-shield"></i> Edit Staff & Privileges</span><button class="action-btn btn-red" onclick="closeCustomModal('edit-staff-modal')"><i class="fas fa-times"></i></button></div>
             <div class="form-group"><label>Email (Username)</label><input type="text" id="edit_s_email" readonly style="background:#eee;"></div>
@@ -1772,8 +1614,8 @@
             </div>
             
             <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
-                <button class="px-4 py-2 bg-[#0ef6cc]/20 hover:bg-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md w-full mt-4" style="background:#95a5a6;" onclick="closeCustomModal('edit-staff-modal')">Cancel</button>
-                <button class="px-4 py-2 bg-[#0ef6cc]/20 hover:bg-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md w-full mt-4" id="save_staff_edit_btn" onclick="saveStaffEdits()">Save Updates</button>
+                <button class="submit-btn" style="background:#95a5a6;" onclick="closeCustomModal('edit-staff-modal')">Cancel</button>
+                <button class="submit-btn" id="save_staff_edit_btn" onclick="saveStaffEdits()">Save Updates</button>
             </div>
         </div>
     </div>
@@ -1787,7 +1629,7 @@
             width: 450px;
             max-width: 100%;
             height: 100vh;
-            fff;
+            background: #ffffff;
             padding: 30px;
             box-shadow: -5px 0 25px rgba(0,0,0,0.15);
             animation: slideInRight 0.3s ease-out forwards;
@@ -1842,8 +1684,8 @@
                 <img src="" id="modal-student-photo-preview" style="max-width: 100px; max-height: 100px; margin-top: 10px; display: none; border-radius: 8px;">
             </div>
             <div style="display:flex; gap:10px; margin-top: auto; padding-top: 20px;">
-                <button class="px-4 py-2 bg-[#0ef6cc]/20 hover:bg-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md w-full mt-4" id="modal-save-btn" onclick="saveStudentModal()" style="flex:1;"><i class="fas fa-save"></i> Save</button>
-                <button class="px-4 py-2 bg-[#0ef6cc]/20 hover:bg-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md w-full mt-4" style="background:#e53e3e; flex:1;" onclick="document.getElementById('student-modal').style.display='none'">Cancel</button>
+                <button class="submit-btn" id="modal-save-btn" onclick="saveStudentModal()" style="flex:1;"><i class="fas fa-save"></i> Save</button>
+                <button class="submit-btn" style="background:#e53e3e; flex:1;" onclick="document.getElementById('student-modal').style.display='none'">Cancel</button>
             </div>
         </div>
     </div>
@@ -1877,8 +1719,8 @@
         <p id="generating-text" style="color:white; font-weight:bold; margin:10px 0;"><i class="fas fa-spinner fa-spin"></i> Generating...</p>
         <img id="final-id-image" src="" alt="Student ID Card">
         <div class="id-action-buttons" id="id-actions" style="display:none;">
-            <button class="px-4 py-2 bg-[#0ef6cc]/20 hover:bg-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md w-full mt-4" style="background:#3498db;" onclick="shareImage('final-id-image', 'ID_Card.png')"><i class="fas fa-share-alt"></i> Share</button>
-            <button class="px-4 py-2 bg-[#0ef6cc]/20 hover:bg-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md w-full mt-4" style="background:#e53e3e;" onclick="closeCustomModal('id-modal')"><i class="fas fa-times"></i> Close</button>
+            <button class="submit-btn" style="background:#3498db;" onclick="shareImage('final-id-image', 'ID_Card.png')"><i class="fas fa-share-alt"></i> Share</button>
+            <button class="submit-btn" style="background:#e53e3e;" onclick="closeCustomModal('id-modal')"><i class="fas fa-times"></i> Close</button>
         </div>
     </div>
 
@@ -1898,25 +1740,25 @@
             </div>
         </div>
         <p id="cert-generating-text" style="color:white; font-weight:bold; margin:10px 0;"><i class="fas fa-spinner fa-spin"></i> Generating Document...</p>
-        <iframe id="cert-preview-frame" style="width:90%; height:70vh; display:none; border:none;  margin:10px auto; border-radius:5px;"></iframe>
+        <iframe id="cert-preview-frame" style="width:90%; height:70vh; display:none; border:none; background:white; margin:10px auto; border-radius:5px;"></iframe>
         <img id="final-cert-image" src="" alt="Certificate" style="display:none;">
         <div class="id-action-buttons" id="cert-actions" style="display:none; justify-content:center; width:100%; gap:10px; margin-top:10px;">
-            <button class="px-4 py-2 bg-[#0ef6cc]/20 hover:bg-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md w-full mt-4" style="background:#3498db;" onclick="window.downloadCertPDF()"><i class="fas fa-download"></i> Download PDF</button>
-            <button class="px-4 py-2 bg-[#0ef6cc]/20 hover:bg-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md w-full mt-4" style="background:#e53e3e;" onclick="closeCustomModal('cert-modal')"><i class="fas fa-times"></i> Close</button>
+            <button class="submit-btn" style="background:#3498db;" onclick="window.downloadCertPDF()"><i class="fas fa-download"></i> Download PDF</button>
+            <button class="submit-btn" style="background:#e53e3e;" onclick="closeCustomModal('cert-modal')"><i class="fas fa-times"></i> Close</button>
         </div>
     </div>
 
     <!-- BULK ID MODAL -->
     <div id="bulk-id-modal" class="modal-overlay" style="display:none; z-index: 100000; position: fixed; inset: 0; background: rgba(0,0,0,0.8);">
-        <div class="modal-content" style="max-width:90%; width: 1000px; max-height: 90vh; overflow-y: auto;  margin: 5vh auto; padding: 20px; border-radius: 10px;">
+        <div class="modal-content" style="max-width:90%; width: 1000px; max-height: 90vh; overflow-y: auto; background: #fff; margin: 5vh auto; padding: 20px; border-radius: 10px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
-                <h2 style="margin:0; "><i class="fas fa-id-badge" style="color: #2563eb;"></i> Bulk Generated ID Cards</h2>
+                <h2 style="margin:0; color: #333;"><i class="fas fa-id-badge" style="color: #2563eb;"></i> Bulk Generated ID Cards</h2>
                 <div style="display: flex; gap: 10px;">
-                    <button class="px-4 py-2 bg-[#0ef6cc]/20 hover:bg-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md w-full mt-4" style="background:#10b981; padding: 10px 20px; border: none; border-radius: 5px; color: white; cursor: pointer;" onclick="window.downloadAllIdsAsPDF()"><i class="fas fa-file-archive"></i> Download as PDF</button>
-                    <button class="px-4 py-2 bg-[#0ef6cc]/20 hover:bg-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md w-full mt-4" style="background:#e53e3e; padding: 10px 20px; border: none; border-radius: 5px; color: white; cursor: pointer;" onclick="closeCustomModal('bulk-id-modal')"><i class="fas fa-times"></i> Close</button>
+                    <button class="submit-btn" style="background:#10b981; padding: 10px 20px; border: none; border-radius: 5px; color: white; cursor: pointer;" onclick="window.downloadAllIdsAsPDF()"><i class="fas fa-file-archive"></i> Download as PDF</button>
+                    <button class="submit-btn" style="background:#e53e3e; padding: 10px 20px; border: none; border-radius: 5px; color: white; cursor: pointer;" onclick="closeCustomModal('bulk-id-modal')"><i class="fas fa-times"></i> Close</button>
                 </div>
             </div>
-            <p id="bulk-generating-text" style="text-align:center; font-weight:bold; margin:20px 0; display:none; "><i class="fas fa-spinner fa-spin"></i> Generating IDs in bulk... Please wait!</p>
+            <p id="bulk-generating-text" style="text-align:center; font-weight:bold; margin:20px 0; display:none; color: #333;"><i class="fas fa-spinner fa-spin"></i> Generating IDs in bulk... Please wait!</p>
             <div id="bulk-id-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; padding: 10px;">
                 <!-- Generated IDs will appear here -->
             </div>
@@ -1925,15 +1767,15 @@
 
     <!-- Custom Defaulter Check Modal for Admit Cards -->
     <div id="defaulter-admit-modal" class="modal-overlay" style="display: none; z-index: 100000; position: fixed; inset: 0; background: rgba(0,0,0,0.8);">
-        <div class="modal-content" style="max-width: 450px;  margin: 15vh auto; padding: 20px; border-radius: 10px; text-align: center;">
-            <div class="modal-header" style="justify-content: center; 3cd; color: #856404; padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+        <div class="modal-content" style="max-width: 450px; background: #fff; margin: 15vh auto; padding: 20px; border-radius: 10px; text-align: center;">
+            <div class="modal-header" style="justify-content: center; background: #fff3cd; color: #856404; padding: 20px; border-radius: 8px; margin-bottom: 15px;">
                 <h3 style="margin:0;"><i class="fas fa-exclamation-triangle fa-2x"></i><br><br>Defaulters Detected</h3>
             </div>
             <div>
                 <p style="margin-bottom: 20px; color: #4a5568; font-size: 16px;">Some students have pending fees. Generate Admit Cards for them as well?</p>
                 <div style="display: flex; flex-direction: column; gap: 10px;">
-                    <button class="px-4 py-2 bg-[#050e14] border border-[#0ef6cc]/30 hover:bg-[#0ef6cc]/10 text-slate-200 rounded-xl text-xs font-mono font-bold transition shadow-md" style="background:#e53e3e; padding:12px; font-size:15px;" onclick="window.proceedAdmitCards('enable')"><i class="fas fa-check"></i> Enable (Generate for ALL with Watermark)</button>
-                    <button class="px-4 py-2 bg-[#050e14] border border-[#0ef6cc]/30 hover:bg-[#0ef6cc]/10 text-slate-200 rounded-xl text-xs font-mono font-bold transition shadow-md" style="background:#3182ce; padding:12px; font-size:15px;" onclick="window.proceedAdmitCards('disable')"><i class="fas fa-times"></i> Disable (Only Paid Students)</button>
+                    <button class="action-btn" style="background:#e53e3e; padding:12px; font-size:15px;" onclick="window.proceedAdmitCards('enable')"><i class="fas fa-check"></i> Enable (Generate for ALL with Watermark)</button>
+                    <button class="action-btn" style="background:#3182ce; padding:12px; font-size:15px;" onclick="window.proceedAdmitCards('disable')"><i class="fas fa-times"></i> Disable (Only Paid Students)</button>
                     <button class="action-btn btn-dark" style="padding:12px; font-size:15px;" onclick="document.getElementById('defaulter-admit-modal').style.display='none'">Cancel</button>
                 </div>
             </div>
@@ -1942,13 +1784,13 @@
 
     <!-- Exam Routine Scheduler Modal -->
     <div id="exam-scheduler-modal" class="modal-overlay" style="display: none; z-index: 100000; position: fixed; inset: 0; background: rgba(0,0,0,0.8);">
-        <div class="modal-content" style="max-width: 800px; width: 95%;  margin: 5vh auto; padding: 20px; border-radius: 10px; max-height: 90vh; overflow-y: auto;">
+        <div class="modal-content" style="max-width: 800px; width: 95%; background: #fff; margin: 5vh auto; padding: 20px; border-radius: 10px; max-height: 90vh; overflow-y: auto;">
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1e3c72; padding-bottom: 15px; margin-bottom: 20px;">
                 <h2 style="color: #1e3c72; margin: 0;"><i class="fas fa-calendar-alt"></i> Exam Routine Scheduler</h2>
                 <div style="display: flex; gap: 10px; align-items: center;">
                     <button class="action-btn btn-dark" style="background:#64748b; padding:5px 10px;" onclick="window.toggleSubjectSettings()"><i class="fas fa-cog"></i> Subjects</button>
-                    <label style="font-weight: bold; ">Select Class:</label>
-                    <select id="scheduler-class-select" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full" style="padding: 5px 10px; width: auto;" onchange="window.loadExamSchedule()">
+                    <label style="font-weight: bold; color: #333;">Select Class:</label>
+                    <select id="scheduler-class-select" class="input-premium" style="padding: 5px 10px; width: auto;" onchange="window.loadExamSchedule()">
                         <option value="All" style="font-weight:bold; color:#1e3c72;">All Classes</option>
                         <option value="Nursery">Nursery</option>
                         <option value="LKG">LKG</option>
@@ -1970,61 +1812,61 @@
                 </div>
             </div>
             
-            <div style=" padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e2e8f0;">
+            <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e2e8f0;">
                 <p style="margin: 0; color: #475569; font-size: 14px;"><i class="fas fa-info-circle"></i> <strong>Smart Inheritance:</strong> Changes here will clone to the next class you select to save typing. Make sure to click "Save Schedule" for each class!</p>
             </div>
 
-            <div id="subject-settings-panel" style="display: none;  padding: 15px; border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 20px;">
+            <div id="subject-settings-panel" style="display: none; background: #fff; padding: 15px; border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 20px;">
                 <h4 style="margin-top: 0; color: #1e3c72;">Master Subjects</h4>
                 <div id="master-subjects-list" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;"></div>
                 <div style="display: flex; gap: 10px;">
-                    <input type="text" id="new-custom-subject" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full" placeholder="New Subject Name" style="flex:1;">
+                    <input type="text" id="new-custom-subject" class="input-premium" placeholder="New Subject Name" style="flex:1;">
                     <button class="action-btn btn-green" onclick="window.addMasterSubject()"><i class="fas fa-plus"></i> Add</button>
                     <button class="action-btn btn-red" onclick="window.resetMasterSubjects()"><i class="fas fa-undo"></i> Reset Default</button>
                 </div>
             </div>
 
-            <table class="w-full text-left border-collapse font-mono text-xs" style="width: 100%; border-collapse: collapse; margin-bottom: 20px; text-align: left;">
-                <th class="p-4"ead class="bg-[#030d12] text-[#0ef6cc]/80 uppercase text-[9px] tracking-widest border-b border-[#0ef6cc]/15">
-                    <tr class="hover:bg-slate-900/30 transition-colors border-b border-slate-800/50" style="background: #1e3c72; color: white;">
-                        <th class="p-4" style="padding: 10px; border: 1px solid #ccc;">Date (e.g. 15-Mar)</th>
-                        <th class="p-4" style="padding: 10px; border: 1px solid #ccc;">Subject</th>
-                        <th class="p-4" style="padding: 10px; border: 1px solid #ccc;">Timing</th>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; text-align: left;">
+                <thead>
+                    <tr style="background: #1e3c72; color: white;">
+                        <th style="padding: 10px; border: 1px solid #ccc;">Date (e.g. 15-Mar)</th>
+                        <th style="padding: 10px; border: 1px solid #ccc;">Subject</th>
+                        <th style="padding: 10px; border: 1px solid #ccc;">Timing</th>
                     </tr>
                 </thead>
                 <datalist id="subjectsList"></datalist>
                 <datalist id="timingsList"></datalist>
                 <tbody id="scheduler-tbody">
                     <!-- 6 rows for subjects -->
-                    <tr class="hover:bg-slate-900/30 transition-colors border-b border-slate-800/50">
-                        <td class="p-4" style="padding: 5px; border: 1px solid #ccc;"><input type="date" class="sched-date" style="width:100%;"></td>
-                        <td class="p-4" style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="subjectsList" oninput="updateSchedulerDatalists()" class="sched-subj" style="width:100%;"></td>
-                        <td class="p-4" style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time" style="width:100%;" placeholder="e.g. 9:00 AM - 11:00 AM"></td>
+                    <tr>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="date" class="sched-date" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="subjectsList" oninput="updateSchedulerDatalists()" class="sched-subj" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time" style="width:100%;" placeholder="e.g. 9:00 AM - 11:00 AM"></td>
                     </tr>
-                    <tr class="hover:bg-slate-900/30 transition-colors border-b border-slate-800/50">
-                        <td class="p-4" style="padding: 5px; border: 1px solid #ccc;"><input type="date" class="sched-date" style="width:100%;"></td>
-                        <td class="p-4" style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="subjectsList" oninput="updateSchedulerDatalists()" class="sched-subj" style="width:100%;"></td>
-                        <td class="p-4" style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time" style="width:100%;" placeholder="e.g. 9:00 AM - 11:00 AM"></td>
+                    <tr>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="date" class="sched-date" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="subjectsList" oninput="updateSchedulerDatalists()" class="sched-subj" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time" style="width:100%;" placeholder="e.g. 9:00 AM - 11:00 AM"></td>
                     </tr>
-                    <tr class="hover:bg-slate-900/30 transition-colors border-b border-slate-800/50">
-                        <td class="p-4" style="padding: 5px; border: 1px solid #ccc;"><input type="date" class="sched-date" style="width:100%;"></td>
-                        <td class="p-4" style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="subjectsList" oninput="updateSchedulerDatalists()" class="sched-subj" style="width:100%;"></td>
-                        <td class="p-4" style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time" style="width:100%;" placeholder="e.g. 9:00 AM - 11:00 AM"></td>
+                    <tr>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="date" class="sched-date" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="subjectsList" oninput="updateSchedulerDatalists()" class="sched-subj" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time" style="width:100%;" placeholder="e.g. 9:00 AM - 11:00 AM"></td>
                     </tr>
-                    <tr class="hover:bg-slate-900/30 transition-colors border-b border-slate-800/50">
-                        <td class="p-4" style="padding: 5px; border: 1px solid #ccc;"><input type="date" class="sched-date" style="width:100%;"></td>
-                        <td class="p-4" style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="subjectsList" oninput="updateSchedulerDatalists()" class="sched-subj" style="width:100%;"></td>
-                        <td class="p-4" style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time" style="width:100%;" placeholder="e.g. 9:00 AM - 11:00 AM"></td>
+                    <tr>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="date" class="sched-date" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="subjectsList" oninput="updateSchedulerDatalists()" class="sched-subj" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time" style="width:100%;" placeholder="e.g. 9:00 AM - 11:00 AM"></td>
                     </tr>
-                    <tr class="hover:bg-slate-900/30 transition-colors border-b border-slate-800/50">
-                        <td class="p-4" style="padding: 5px; border: 1px solid #ccc;"><input type="date" class="sched-date" style="width:100%;"></td>
-                        <td class="p-4" style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="subjectsList" oninput="updateSchedulerDatalists()" class="sched-subj" style="width:100%;"></td>
-                        <td class="p-4" style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time" style="width:100%;" placeholder="e.g. 9:00 AM - 11:00 AM"></td>
+                    <tr>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="date" class="sched-date" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="subjectsList" oninput="updateSchedulerDatalists()" class="sched-subj" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time" style="width:100%;" placeholder="e.g. 9:00 AM - 11:00 AM"></td>
                     </tr>
-                    <tr class="hover:bg-slate-900/30 transition-colors border-b border-slate-800/50">
-                        <td class="p-4" style="padding: 5px; border: 1px solid #ccc;"><input type="date" class="sched-date" style="width:100%;"></td>
-                        <td class="p-4" style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="subjectsList" oninput="updateSchedulerDatalists()" class="sched-subj" style="width:100%;"></td>
-                        <td class="p-4" style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time" style="width:100%;" placeholder="e.g. 9:00 AM - 11:00 AM"></td>
+                    <tr>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="date" class="sched-date" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="subjectsList" oninput="updateSchedulerDatalists()" class="sched-subj" style="width:100%;"></td>
+                        <td style="padding: 5px; border: 1px solid #ccc;"><input type="text" list="timingsList" oninput="updateSchedulerDatalists()" class="sched-time" style="width:100%;" placeholder="e.g. 9:00 AM - 11:00 AM"></td>
                     </tr>
                 </tbody>
             </table>
@@ -2036,7 +1878,7 @@
     </div>
 
     <!-- Off-screen Admit Card Template for html2canvas -->
-    <div id="admit-card-template" style="position: absolute; top: -9999px; left: -9999px; width: 600px; height: 800px;  border: 2px solid #1e3c72; padding: 20px; font-family: 'Inter', sans-serif; box-sizing: border-box;">
+    <div id="admit-card-template" style="position: absolute; top: -9999px; left: -9999px; width: 600px; height: 800px; background: white; border: 2px solid #1e3c72; padding: 20px; font-family: 'Inter', sans-serif; box-sizing: border-box;">
         <div style="text-align: center; border-bottom: 2px solid #1e3c72; padding-bottom: 10px; margin-bottom: 20px;">
             <img id="admit-logo" src="" style="width: 80px; height: 80px; object-fit: contain;">
             <h1 id="admit-school" style="color: #1e3c72; margin: 10px 0 5px; font-size: 24px;">SCHOOL NAME</h1>
@@ -2055,22 +1897,22 @@
                 <img id="admit-photo" src="" style="width: 120px; height: 140px; border: 2px solid #ccc; object-fit: cover; border-radius: 8px;">
             </div>
         </div>
-        <table class="w-full text-left border-collapse font-mono text-xs" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-            <th class="p-4"ead class="bg-[#030d12] text-[#0ef6cc]/80 uppercase text-[9px] tracking-widest border-b border-[#0ef6cc]/15">
-                <tr class="hover:bg-slate-900/30 transition-colors border-b border-slate-800/50" style="background: #1e3c72; color: white;">
-                    <th class="p-4" style="padding: 10px; border: 1px solid #1e3c72;">Date</th>
-                    <th class="p-4" style="padding: 10px; border: 1px solid #1e3c72;">Subject</th>
-                    <th class="p-4" style="padding: 10px; border: 1px solid #1e3c72;">Timing</th>
-                    <th class="p-4" style="padding: 10px; border: 1px solid #1e3c72;">Invigilator Sign</th>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+            <thead>
+                <tr style="background: #1e3c72; color: white;">
+                    <th style="padding: 10px; border: 1px solid #1e3c72;">Date</th>
+                    <th style="padding: 10px; border: 1px solid #1e3c72;">Subject</th>
+                    <th style="padding: 10px; border: 1px solid #1e3c72;">Timing</th>
+                    <th style="padding: 10px; border: 1px solid #1e3c72;">Invigilator Sign</th>
                 </tr>
             </thead>
             <tbody id="admit-card-tbody">
-                <tr class="hover:bg-slate-900/30 transition-colors border-b border-slate-800/50"><td class="p-4" style="padding:12px; border:1px solid #ccc;"></td><td class="p-4" style="border:1px solid #ccc;"></td><td class="p-4" style="border:1px solid #ccc;"></td><td class="p-4" style="border:1px solid #ccc;"></td></tr>
-                <tr class="hover:bg-slate-900/30 transition-colors border-b border-slate-800/50"><td class="p-4" style="padding:12px; border:1px solid #ccc;"></td><td class="p-4" style="border:1px solid #ccc;"></td><td class="p-4" style="border:1px solid #ccc;"></td><td class="p-4" style="border:1px solid #ccc;"></td></tr>
-                <tr class="hover:bg-slate-900/30 transition-colors border-b border-slate-800/50"><td class="p-4" style="padding:12px; border:1px solid #ccc;"></td><td class="p-4" style="border:1px solid #ccc;"></td><td class="p-4" style="border:1px solid #ccc;"></td><td class="p-4" style="border:1px solid #ccc;"></td></tr>
-                <tr class="hover:bg-slate-900/30 transition-colors border-b border-slate-800/50"><td class="p-4" style="padding:12px; border:1px solid #ccc;"></td><td class="p-4" style="border:1px solid #ccc;"></td><td class="p-4" style="border:1px solid #ccc;"></td><td class="p-4" style="border:1px solid #ccc;"></td></tr>
-                <tr class="hover:bg-slate-900/30 transition-colors border-b border-slate-800/50"><td class="p-4" style="padding:12px; border:1px solid #ccc;"></td><td class="p-4" style="border:1px solid #ccc;"></td><td class="p-4" style="border:1px solid #ccc;"></td><td class="p-4" style="border:1px solid #ccc;"></td></tr>
-                <tr class="hover:bg-slate-900/30 transition-colors border-b border-slate-800/50"><td class="p-4" style="padding:12px; border:1px solid #ccc;"></td><td class="p-4" style="border:1px solid #ccc;"></td><td class="p-4" style="border:1px solid #ccc;"></td><td class="p-4" style="border:1px solid #ccc;"></td></tr>
+                <tr><td style="padding:12px; border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td></tr>
+                <tr><td style="padding:12px; border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td></tr>
+                <tr><td style="padding:12px; border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td></tr>
+                <tr><td style="padding:12px; border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td></tr>
+                <tr><td style="padding:12px; border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td></tr>
+                <tr><td style="padding:12px; border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td></tr>
             </tbody>
         </table>
         <div style="display: flex; justify-content: space-between; margin-top: 50px;">
@@ -2094,7 +1936,7 @@
             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <label style="font-weight:bold;">Class Filter:</label>
-                    <select id="bulk-action-class" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full" style="width:150px;" onchange="window.renderBulkActionStudents()">
+                    <select id="bulk-action-class" class="input-premium" style="width:150px;" onchange="window.renderBulkActionStudents()">
                         <option value="All">All Classes</option>
                     <option value="Nursery">Nursery</option>
                     <option value="LKG">LKG</option>
@@ -2115,7 +1957,7 @@
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <label style="font-weight:bold;">Paper Size:</label>
-                    <select id="bulk-paper-size" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full" style="width:120px;">
+                    <select id="bulk-paper-size" class="input-premium" style="width:120px;">
                         <option value="a4">A4</option>
                         <option value="letter">Letter</option>
                         <option value="legal">Legal</option>
@@ -2123,20 +1965,20 @@
                 </div>
             </div>
             <div style="max-height: 350px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
-                <table class="w-full text-left border-collapse font-mono text-xs" style="width: 100%; border-collapse: collapse; text-align: left;">
-                    <th class="p-4"ead class="bg-[#030d12] text-[#0ef6cc]/80 uppercase text-[9px] tracking-widest border-b border-[#0ef6cc]/15">
-                        <tr class="hover:bg-slate-900/30 transition-colors border-b border-slate-800/50" style=" border-bottom:2px solid #e2e8f0;">
-                            <th class="p-4" style="padding:10px;"><input type="checkbox" id="bulk-select-all" onclick="window.toggleAllBulkStudents(this)"></th>
-                            <th class="p-4" style="padding:10px;">Roll No</th>
-                            <th class="p-4" style="padding:10px;">Name</th>
-                            <th class="p-4" style="padding:10px;">Class</th>
+                <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                    <thead>
+                        <tr style="background:#f8fafc; border-bottom:2px solid #e2e8f0;">
+                            <th style="padding:10px;"><input type="checkbox" id="bulk-select-all" onclick="window.toggleAllBulkStudents(this)"></th>
+                            <th style="padding:10px;">Roll No</th>
+                            <th style="padding:10px;">Name</th>
+                            <th style="padding:10px;">Class</th>
                         </tr>
                     </thead>
                     <tbody id="bulk-action-list"></tbody>
                 </table>
             </div>
             <div style="margin-top:20px; display:flex; gap:10px;">
-                <button class="px-4 py-2 bg-gradient-to-r from-[#0ef6cc]/20 to-teal-900/30 hover:from-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md" id="bulk-trigger-btn" style="flex:1; padding:12px; font-size:16px;" onclick="window.triggerBulkAction()">Generate PDFs</button>
+                <button class="action-btn btn-blue" id="bulk-trigger-btn" style="flex:1; padding:12px; font-size:16px;" onclick="window.triggerBulkAction()">Generate PDFs</button>
             </div>
         </div>
     </div>
@@ -2150,10 +1992,10 @@
             </div>
             <div style="margin-top:15px;">
                 <p style="font-size:14px; margin-bottom:10px;">Sending message to: <strong id="dm-student-name"></strong></p>
-                <textarea id="dm-message-body" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full" style="width:100%; height:120px; resize:none;" placeholder="Type your message here..."></textarea>
+                <textarea id="dm-message-body" class="input-premium" style="width:100%; height:120px; resize:none;" placeholder="Type your message here..."></textarea>
             </div>
             <div style="margin-top:20px; text-align:right;">
-                <button class="px-4 py-2 bg-gradient-to-r from-[#0ef6cc]/20 to-teal-900/30 hover:from-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md" onclick="window.sendDirectMessage()"><i class="fas fa-paper-plane"></i> Send Message</button>
+                <button class="action-btn btn-blue" onclick="window.sendDirectMessage()"><i class="fas fa-paper-plane"></i> Send Message</button>
             </div>
         </div>
     </div>
@@ -2173,14 +2015,14 @@
                 <span id="mail-view-title"><i class="fas fa-envelope-open-text"></i> Message Thread</span>
                 <button class="action-btn btn-red" onclick="closeCustomModal('mail-view-modal')"><i class="fas fa-times"></i></button>
             </div>
-            <div id="mail-thread-container" style="flex:1; overflow-y:auto; padding: 15px; display:flex; flex-direction:column; gap:15px; ">
+            <div id="mail-thread-container" style="flex:1; overflow-y:auto; padding: 15px; display:flex; flex-direction:column; gap:15px; background: #f8fafc;">
                 <!-- Thread messages will be injected here -->
             </div>
-            <div style="padding: 15px; border-top: 1px solid #e2e8f0; ">
-                <textarea id="mail-reply-body" rows="3" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full" style="width:100%; margin-bottom: 10px;" placeholder="Type your reply..."></textarea>
+            <div style="padding: 15px; border-top: 1px solid #e2e8f0; background: #fff;">
+                <textarea id="mail-reply-body" rows="3" class="input-premium" style="width:100%; margin-bottom: 10px;" placeholder="Type your reply..."></textarea>
                 <div style="display: flex; gap: 10px; align-items: center;">
-                    <input type="file" id="mail-reply-attachment" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full" style="flex: 1;">
-                    <button class="px-4 py-2 bg-gradient-to-r from-[#0ef6cc]/20 to-teal-900/30 hover:from-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md" id="mail-reply-btn" onclick="replyToMailThread()"><i class="fas fa-reply"></i> Reply</button>
+                    <input type="file" id="mail-reply-attachment" class="input-premium" style="flex: 1;">
+                    <button class="action-btn btn-blue" id="mail-reply-btn" onclick="replyToMailThread()"><i class="fas fa-reply"></i> Reply</button>
                 </div>
             </div>
         </div>
@@ -2196,11 +2038,11 @@
             <div style="flex:1; min-height: 400px; max-height: 60vh; background: #000; display:flex; justify-content:center; align-items:center; overflow:hidden;">
                 <img id="cropper-image" src="" style="max-width: 100%; max-height: 100%; display:block;">
             </div>
-            <div style="padding: 15px; border-top: 1px solid #e2e8f0;  text-align: right; display: flex; justify-content: space-between; align-items: center;">
+            <div style="padding: 15px; border-top: 1px solid #e2e8f0; background: #fff; text-align: right; display: flex; justify-content: space-between; align-items: center;">
                 <span style="font-size: 12px; color: #666;"><i class="fas fa-info-circle"></i> Drag the box to perfectly center the face.</span>
                 <div>
-                    <button class="px-4 py-2 bg-[#050e14] border border-[#0ef6cc]/30 hover:bg-[#0ef6cc]/10 text-slate-200 rounded-xl text-xs font-mono font-bold transition shadow-md" style="background:#e2e8f0; " onclick="closeCustomModal('cropper-modal')">Cancel</button>
-                    <button class="px-4 py-2 bg-gradient-to-r from-[#0ef6cc]/20 to-teal-900/30 hover:from-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md" onclick="window.applyCropperCrop()"><i class="fas fa-check"></i> Apply Crop</button>
+                    <button class="action-btn" style="background:#e2e8f0; color:#333;" onclick="closeCustomModal('cropper-modal')">Cancel</button>
+                    <button class="action-btn btn-blue" onclick="window.applyCropperCrop()"><i class="fas fa-check"></i> Apply Crop</button>
                 </div>
             </div>
         </div>
@@ -2286,8 +2128,8 @@
                 </div>
             </div>
             
-            <div style="padding: 15px;  border-top: 1px solid #e5e7eb; text-align: right;">
-                <button onclick="closeCustomModal('live-preview-modal')" class="px-4 py-2 bg-gradient-to-r from-[#0ef6cc]/20 to-teal-900/30 hover:from-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md"><i class="fas fa-check"></i> Done Reviewing</button>
+            <div style="padding: 15px; background: white; border-top: 1px solid #e5e7eb; text-align: right;">
+                <button onclick="closeCustomModal('live-preview-modal')" class="action-btn btn-blue"><i class="fas fa-check"></i> Done Reviewing</button>
             </div>
         </div>
     </div>
@@ -2295,5 +2137,3 @@
     <script type="module" src="script.js"></script>
 </body>
 </html>
-
-

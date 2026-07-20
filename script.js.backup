@@ -1,4 +1,4 @@
-﻿import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs, query, where, deleteDoc, serverTimestamp, deleteField, onSnapshot, orderBy, limit, addDoc, writeBatch, increment } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
@@ -4985,76 +4985,3 @@ function createA4PageDiv(w, h, bgColor) {
     // Since width is around 793px, let's just let it render full size in the scrollable container
     return page;
 }
-
-
-// --- DUAL-VIEW PORTAL INTEGRATION LOGIC ---
-window.switchTab = function(tabId) {
-    // 1. Hide all tabs
-    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active', 'block'));
-    document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden-el'));
-    
-    // 2. Show target tab
-    const target = document.getElementById(tabId);
-    if(target) {
-        target.classList.remove('hidden-el');
-        target.classList.add('active');
-        if(!target.classList.contains('flex')) {
-            target.classList.add('block');
-        }
-    }
-    
-    // 3. Update active state on Sidebar
-    document.querySelectorAll('.sidebar-btn').forEach(btn => btn.classList.remove('active', 'border-l-4', 'border-[#0ef6cc]', 'bg-[#0ef6cc]/10'));
-    const sidebarBtn = document.querySelector(.sidebar-btn[onclick*=" + tabId + "]);
-    if(sidebarBtn) {
-        sidebarBtn.classList.add('active', 'border-l-4', 'border-[#0ef6cc]', 'bg-[#0ef6cc]/10');
-    }
-
-    // 4. Update active state on Mobile Bottom Nav
-    document.querySelectorAll('.mobile-nav-btn').forEach(btn => btn.classList.remove('active', 'text-[#0ef6cc]'));
-    const mobileBtn = document.querySelector(.mobile-nav-btn[data-tab=" + tabId + "]);
-    if(mobileBtn) {
-        mobileBtn.classList.add('active', 'text-[#0ef6cc]');
-    }
-
-    // 5. Update header title
-    const titleEl = document.getElementById('desktop-active-tab-title');
-    if(titleEl) {
-        titleEl.innerText = tabId.replace('tab-', '').toUpperCase().replace('-', ' ');
-    }
-
-    // Save state
-    sessionStorage.setItem('chairmanActiveTab', tabId);
-};
-
-window.toggleMoreDrawer = function() {
-    const drawer = document.getElementById('mobile-more-drawer');
-    const drawerBody = document.getElementById('drawer-body');
-    if(!drawer || !drawerBody) return;
-    
-    if(drawer.classList.contains('opacity-0')) {
-        drawer.classList.remove('opacity-0', 'pointer-events-none');
-        drawer.classList.add('opacity-100');
-        drawerBody.classList.remove('translate-x-full');
-        drawerBody.classList.add('translate-x-0');
-        
-        // Highlight more button
-        const btnMore = document.getElementById('btn-more-drawer');
-        if(btnMore) btnMore.classList.add('text-[#0ef6cc]');
-    } else {
-        drawer.classList.remove('opacity-100');
-        drawer.classList.add('opacity-0', 'pointer-events-none');
-        drawerBody.classList.remove('translate-x-0');
-        drawerBody.classList.add('translate-x-full');
-        
-        const btnMore = document.getElementById('btn-more-drawer');
-        if(btnMore) btnMore.classList.remove('text-[#0ef6cc]');
-    }
-};
-
-window.addEventListener('DOMContentLoaded', () => {
-    const savedTab = sessionStorage.getItem('chairmanActiveTab');
-    if(savedTab) {
-        window.switchTab(savedTab);
-    }
-});
