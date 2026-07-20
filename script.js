@@ -1,4 +1,4 @@
-﻿import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs, query, where, deleteDoc, serverTimestamp, deleteField, onSnapshot, orderBy, limit, addDoc, writeBatch, increment } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
@@ -5005,14 +5005,14 @@ window.switchTab = function(tabId) {
     
     // 3. Update active state on Sidebar
     document.querySelectorAll('.sidebar-btn').forEach(btn => btn.classList.remove('active', 'border-l-4', 'border-[#0ef6cc]', 'bg-[#0ef6cc]/10'));
-    const sidebarBtn = document.querySelector(.sidebar-btn[onclick*=" + tabId + "]);
+    const sidebarBtn = document.querySelector(`.sidebar-btn[onclick*="${tabId}"]`);
     if(sidebarBtn) {
         sidebarBtn.classList.add('active', 'border-l-4', 'border-[#0ef6cc]', 'bg-[#0ef6cc]/10');
     }
 
     // 4. Update active state on Mobile Bottom Nav
     document.querySelectorAll('.mobile-nav-btn').forEach(btn => btn.classList.remove('active', 'text-[#0ef6cc]'));
-    const mobileBtn = document.querySelector(.mobile-nav-btn[data-tab=" + tabId + "]);
+    const mobileBtn = document.querySelector(`.mobile-nav-btn[data-tab="${tabId}"]`);
     if(mobileBtn) {
         mobileBtn.classList.add('active', 'text-[#0ef6cc]');
     }
