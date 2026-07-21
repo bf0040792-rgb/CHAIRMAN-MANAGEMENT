@@ -21,10 +21,10 @@ const db = getFirestore(app);
 const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp");
 const secondaryAuth = getAuth(secondaryApp);
 
-// const appCheck = initializeAppCheck(app, {
-//   provider: new ReCaptchaV3Provider('6LeAT9csAAAAANn9sBk-BPOFASXX9liQLCwwO5_4'),
-//   isTokenAutoRefreshEnabled: true
-// });
+const appCheck = initializeAppCheck(app, {
+  provider: new ReCaptchaV3Provider('6LeAT9csAAAAANn9sBk-BPOFASXX9liQLCwwO5_4'),
+  isTokenAutoRefreshEnabled: true
+});
 
 let currentSchoolId = ""; let currentSchoolName = ""; let currentSignatureUrl = ""; let currentThemeColor = "#1e3c72"; let currentSecondaryColor = "#ffffff"; let currentTemplateStyle = "wave"; let currentIdTemplateUrl = "";
 let currentSchoolNameColor = "#ffffff"; let currentStudentNameColor = "#d32f2f"; let currentDetailsColor = "#333333"; let currentPhotoBgColor = "#ffffff";
@@ -157,26 +157,15 @@ onAuthStateChanged(auth, async (user) => {
                 }
                 // -----------------------------------------
 
-                const topSchoolName = document.getElementById('top-school-name');
-                if (topSchoolName) topSchoolName.innerText = data.schoolName;
-                
-                const reqOldPass = document.getElementById('req_old_pass');
-                if (reqOldPass) reqOldPass.value = data.plainPassword || '******';
+                document.getElementById('top-school-name').innerText = data.schoolName;
+                document.getElementById('req_old_pass').value = data.plainPassword || '******';
 
                 const initials = data.schoolName.split(' ').map(word => word.charAt(0).toUpperCase()).join('');
-                const topSchoolNameMobile = document.getElementById('top-school-name-mobile');
-                if (topSchoolNameMobile) topSchoolNameMobile.innerText = initials;
-                
-                const desktopSchoolNameShell = document.getElementById('desktop-school-name-shell');
-                if (desktopSchoolNameShell) desktopSchoolNameShell.innerText = data.schoolName;
-                const desktopTopSchoolName = document.getElementById('desktop-top-school-name');
-                if (desktopTopSchoolName) desktopTopSchoolName.innerText = data.schoolName;
+                document.getElementById('top-school-name-mobile').innerText = initials;
 
                 if(data.logoUrl) {
-                    const topSchoolLogo = document.getElementById('top-school-logo');
-                    if (topSchoolLogo) { topSchoolLogo.src = data.logoUrl; topSchoolLogo.style.display = 'block'; }
-                    const printSchoolLogo = document.getElementById('print_school_logo');
-                    if (printSchoolLogo) { printSchoolLogo.src = data.logoUrl; printSchoolLogo.style.display = 'block'; }
+                    document.getElementById('top-school-logo').src = data.logoUrl; document.getElementById('top-school-logo').style.display = 'block';
+                    document.getElementById('print_school_logo').src = data.logoUrl; document.getElementById('print_school_logo').style.display = 'block';
                 }
 
                 overlay.style.display = "none"; loginWrapper.style.display = "none"; 
@@ -198,7 +187,7 @@ onAuthStateChanged(auth, async (user) => {
                 }
                 
                 document.documentElement.style.setProperty('--theme-color', currentThemeColor);
-                checkAdmissionStatus(); if(window.listenToTicker) window.listenToTicker(); loadAllData();
+                checkAdmissionStatus(); listenToTicker(); loadAllData();
 
                 const today = new Date().toISOString().split('T')[0];
                 document.getElementById("fee_date").value = today; document.getElementById("salary_date").value = today; document.getElementById("exp_date").value = today;
@@ -251,7 +240,6 @@ onAuthStateChanged(auth, async (user) => {
                 }
             }
         } catch (e) { 
-            console.error("Login Error Catch Block:", e);
             document.getElementById('auth-overlay').style.display = 'none'; 
             showLoginScreen("Database error."); 
         }
@@ -296,10 +284,7 @@ window.doLogout = () => {
     signOut(auth);
 };
 
-const dmt = document.getElementById("deviceModeToggle");
-if(dmt) {
-    dmt.addEventListener("change", (e) => { e.target.checked ? document.body.classList.add("force-desktop") : document.body.classList.remove("force-desktop"); });
-}
+document.getElementById("deviceModeToggle").addEventListener("change", (e) => { e.target.checked ? document.body.classList.add("force-desktop") : document.body.classList.remove("force-desktop"); });
 
 document.querySelectorAll('.menu-item').forEach(item => {
     item.addEventListener('click', (e) => {
@@ -1188,7 +1173,6 @@ function renderStudentsTable(className, searchTerm = null, statusFilter = null) 
             <button class="action-btn btn-blue" onclick="showIDCard('${safeId}')"><i class="fas fa-id-card"></i> ID</button>
             <button class="action-btn" style="background:#3b82f6; color:white;" onclick="window.openDirectMessageModal('${safeId}', '${dt.name.replace(/'/g, "\\'")}')"><i class="fas fa-comment-dots"></i> Message</button>
             <button class="action-btn btn-purple" onclick="openStudentModal('${safeId}')"><i class="fas fa-edit"></i> Edit</button>
-            <button class="action-btn" style="background:#f39c12; color:white;" onclick="window.transferStudent('${safeId}')"><i class="fas fa-exchange-alt"></i> Transfer</button>
             ${lockBtn}`;
         
         html += `<tr class="${locked ? 'locked-row' : ''}">
@@ -1198,7 +1182,7 @@ function renderStudentsTable(className, searchTerm = null, statusFilter = null) 
             <td><span style="background:#eaf4ff; color:#2c7be5; padding:3px 8px; border-radius:12px; font-size:12px; font-weight:bold;">Class: ${dt.class || 'N/A'}</span></td>
             <td><span style="font-size:12px; display:block;"><b>P:</b> ${(dt.parentage || dt.fatherName) || 'N/A'}</span><span style="font-size:12px; display:block;"><b>M:</b> ${dt.motherName || 'N/A'}</span></td>
             <td><div style="font-size:11px; font-weight:bold; padding:2px 6px; border-radius:4px; display:inline-block; border:1px solid ${statusColor}; color:${statusColor};">${statusIcon} ${dt.status}</div><br><span style="font-size:11px; color:#7f8c8d;">Due: ?${dt.feeDue || 0}</span></td>
-            <td><div class="flex flex-wrap gap-1">${actionBtns} <button class="action-btn btn-red" onclick="deleteStudent('${safeId}')"><i class="fas fa-trash"></i></button></div></td>
+            <td><div class="action-btn-group">${actionBtns} <button class="action-btn btn-red" onclick="deleteStudent('${safeId}')"><i class="fas fa-trash"></i></button></div></td>
         </tr>`;
     });
     tbody.innerHTML = html || "<tr><td colspan='7' style='text-align:center; padding:30px; color:#999;'>No Students Found.</td></tr>";
@@ -5001,96 +4985,3 @@ function createA4PageDiv(w, h, bgColor) {
     // Since width is around 793px, let's just let it render full size in the scrollable container
     return page;
 }
-
-
-// --- DUAL-VIEW PORTAL INTEGRATION LOGIC ---
-window.switchTab = function(tabId) {
-    // 1. Hide all tabs
-    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active', 'block'));
-    document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden-el'));
-    
-    // 2. Show target tab
-    const target = document.getElementById(tabId);
-    if(target) {
-        target.classList.remove('hidden-el');
-        target.classList.add('active');
-        if(!target.classList.contains('flex')) {
-            target.classList.add('block');
-        }
-    }
-    
-    // 3. Update active state on Sidebar
-    document.querySelectorAll('.sidebar-btn').forEach(btn => btn.classList.remove('active', 'border-l-4', 'border-[#0ef6cc]', 'bg-[#0ef6cc]/10'));
-    const sidebarBtn = document.querySelector(`.sidebar-btn[onclick*="${tabId}"]`);
-    if(sidebarBtn) {
-        sidebarBtn.classList.add('active', 'border-l-4', 'border-[#0ef6cc]', 'bg-[#0ef6cc]/10');
-    }
-
-    // 4. Update active state on Mobile Bottom Nav
-    document.querySelectorAll('.mobile-nav-btn').forEach(btn => btn.classList.remove('active', 'text-[#0ef6cc]'));
-    const mobileBtn = document.querySelector(`.mobile-nav-btn[data-tab="${tabId}"]`);
-    if(mobileBtn) {
-        mobileBtn.classList.add('active', 'text-[#0ef6cc]');
-    }
-
-    // 5. Update header title
-    const titleEl = document.getElementById('desktop-active-tab-title');
-    if(titleEl) {
-        titleEl.innerText = tabId.replace('tab-', '').toUpperCase().replace('-', ' ');
-    }
-
-    // Save state
-    sessionStorage.setItem('chairmanActiveTab', tabId);
-};
-
-window.toggleMoreDrawer = function() {
-    const drawer = document.getElementById('mobile-more-drawer');
-    const drawerBody = document.getElementById('drawer-body');
-    if(!drawer || !drawerBody) return;
-    
-    if(drawer.classList.contains('opacity-0')) {
-        drawer.classList.remove('opacity-0', 'pointer-events-none');
-        drawer.classList.add('opacity-100');
-        drawerBody.classList.remove('translate-x-full');
-        drawerBody.classList.add('translate-x-0');
-        
-        // Highlight more button
-        const btnMore = document.getElementById('btn-more-drawer');
-        if(btnMore) btnMore.classList.add('text-[#0ef6cc]');
-    } else {
-        drawer.classList.remove('opacity-100');
-        drawer.classList.add('opacity-0', 'pointer-events-none');
-        drawerBody.classList.remove('translate-x-0');
-        drawerBody.classList.add('translate-x-full');
-        
-        const btnMore = document.getElementById('btn-more-drawer');
-        if(btnMore) btnMore.classList.remove('text-[#0ef6cc]');
-    }
-};
-
-window.transferStudent = async (studentId) => {
-    const targetSchool = prompt("Enter Destination School Code/ID to transfer this student:");
-    if (targetSchool && targetSchool.trim() !== "") {
-        if (confirm(`Are you sure you want to transfer this student to school '${targetSchool}'? This action cannot be undone.`)) {
-            try {
-                const targetSchoolId = targetSchool.trim();
-                await window.dbModule.updateDoc(window.dbModule.doc(db, "students", studentId), {
-                    schoolId: targetSchoolId,
-                    status: 'Pending',
-                    transferDate: new Date().toISOString()
-                });
-                alert("Student successfully transferred to " + targetSchoolId + "!");
-                window.loadAllData();
-            } catch(e) {
-                alert("Transfer failed: " + e.message);
-            }
-        }
-    }
-};
-
-window.addEventListener('DOMContentLoaded', () => {
-    const savedTab = sessionStorage.getItem('chairmanActiveTab');
-    if(savedTab) {
-        window.switchTab(savedTab);
-    }
-});
