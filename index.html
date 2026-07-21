@@ -10,9 +10,6 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Cropper.js for Photo Cropping -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -357,22 +354,11 @@
                     <div class="menu-item" data-target="tab-academics"><i class="fas fa-book-open"></i> Academic Veto</div>
                     <div class="menu-item" data-target="tab-notices"><i class="fas fa-bullhorn"></i> Notices & Ticker</div>
                     <div class="menu-item" data-target="tab-mailbox"><i class="fas fa-envelope"></i> Mail Box <span id="badge-mailbox" style="display:none; background:red; color:white; border-radius:50%; width:18px; height:18px; text-align:center; font-size:10px; line-height:18px; margin-left:10px; display:inline-block;"></span></div>
-                    
-                    <div style="padding: 10px 20px; border-left: 4px solid transparent; display: flex; flex-direction: column; cursor: pointer; transition: 0.3s; color: var(--text-color);" id="nav-comm-hub-wrapper">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                            <span><i class="fab fa-whatsapp" style="color: #25D366; font-size: 1.2rem;"></i> Comm Hub</span>
-                            <span id="badge-coreedu" style="display:none; background:red; color:white; border-radius:50%; width:18px; height:18px; text-align:center; font-size:10px; line-height:18px; display:inline-block;"></span>
-                        </div>
-                        <select id="sidebar-comm-select" style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 4px; padding: 5px; outline: none; font-size: 12px;">
-                            <option value="master">CoreEdu Teach</option>
-                        </select>
-                    </div>
+                    <div class="menu-item" data-target="tab-coreedu-comm"><i class="fab fa-whatsapp" style="color: #25D366;"></i> CoreEdu Comm Hub <span id="badge-coreedu" style="display:none; background:red; color:white; border-radius:50%; width:18px; height:18px; text-align:center; font-size:10px; line-height:18px; margin-left:10px; display:inline-block;"></span></div>
                     
                     <div id="module-qr-fee" class="menu-item" data-target="tab-qr-fee" style="display:none"><i class="fas fa-qrcode"></i> QR Fee Module</div>
                     <div id="module-admit-card" class="menu-item" data-target="tab-admit-card" style="display:none"><i class="fas fa-id-badge"></i> Admit Card Module</div>
                     <div id="module-whatsapp" class="menu-item" data-target="tab-whatsapp" style="display:none"><i class="fas fa-brands fa-whatsapp"></i> WhatsApp Module</div>
-                    
-                    <div class="menu-item" data-target="tab-ms-studio"><i class="fas fa-camera"></i> MS Studio</div>
                     
                     <div class="menu-item" data-target="tab-transport"><i class="fas fa-bus"></i> Transport Manager</div>
                     <div class="menu-item" data-target="tab-inventory"><i class="fas fa-boxes"></i> Inventory & Assets</div>
@@ -428,69 +414,6 @@
                         <div id="link-display-box" class="link-display-box" style="display:none;">
                             <input type="text" id="short-link-input" readonly>
                             <button onclick="copyToClipboard()"><i class="fas fa-copy"></i> Copy</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- TAB: MS STUDIO -->
-                <div id="tab-ms-studio" class="tab-content hidden-el space-y-8">
-                    <div class="card" style="border-left: 4px solid #8b5cf6;">
-                        <h3 style="margin-bottom: 20px;"><i class="fas fa-camera-retro text-purple-600"></i> MS Studio (Batch Photo Processor)</h3>
-                        <div style="display: flex; flex-direction: column; md:flex-direction: row; gap: 20px;">
-                            
-                            <!-- Left Side: Bulk Names Input -->
-                            <div style="flex: 1; max-width: 250px; display: flex; flex-direction: column; gap: 10px;">
-                                <h4>Bulk Names List</h4>
-                                <textarea id="studio-bulk-names" rows="15" class="input-premium" style="width: 100%; height: 100%; resize: none; font-family: monospace; font-size: 12px;" placeholder="Paste names here...&#10;1. John Doe&#10;2. Jane Doe" oninput="syncBulkNames()"></textarea>
-                            </div>
-                            
-                            <!-- Right Side: Controls and Grid -->
-                            <div style="flex: 3; display: flex; flex-direction: column;">
-                                <div style="display: flex; gap: 15px; align-items: flex-end; margin-bottom: 20px; flex-wrap: wrap;">
-                                    <div style="flex: 1; min-width: 200px;">
-                                        <label style="font-size: 12px; font-weight: bold; color: #666; margin-bottom: 5px; display: block;">Upload Photos</label>
-                                        <input type="file" id="studio-upload" multiple accept="image/*" class="input-premium" style="width: 100%;">
-                                    </div>
-                                    <div>
-                                        <label style="font-size: 12px; font-weight: bold; color: #666; margin-bottom: 5px; display: block;">BG Color</label>
-                                        <input type="color" id="studio-bg-color" value="#FF0000" style="width: 50px; height: 40px; padding: 2px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer;">
-                                    </div>
-                                    <div>
-                                        <label style="font-size: 12px; font-weight: bold; color: #666; margin-bottom: 5px; display: block;">Border Color</label>
-                                        <input type="color" id="studio-border-color" value="#000000" style="width: 50px; height: 40px; padding: 2px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer;">
-                                    </div>
-                                    <div>
-                                        <label style="font-size: 12px; font-weight: bold; color: #666; margin-bottom: 5px; display: block;" title="Total Copies Per Photo">Total Copies</label>
-                                        <input type="number" id="studio-copies" value="1" min="1" max="50" style="width: 60px; height: 40px; padding: 2px 5px; border: 1px solid #ccc; border-radius: 4px; text-align: center;" class="input-premium">
-                                    </div>
-                                    <div>
-                                        <label style="font-size: 12px; font-weight: bold; color: #666; margin-bottom: 5px; display: block;" title="How many of those copies should have the nameplate?">Name Copies</label>
-                                        <input type="number" id="studio-name-copies" value="1" min="0" max="50" style="width: 60px; height: 40px; padding: 2px 5px; border: 1px solid #ccc; border-radius: 4px; text-align: center;" class="input-premium">
-                                    </div>
-                                    <div>
-                                        <label style="font-size: 12px; font-weight: bold; color: #666; margin-bottom: 5px; display: block;" title="Width in inches for primary copies (with names)">Primary Size</label>
-                                        <input type="number" id="studio-primary-size" value="1.8" step="0.1" min="0.5" max="3" style="width: 60px; height: 40px; padding: 2px 5px; border: 1px solid #ccc; border-radius: 4px; text-align: center;" class="input-premium">
-                                    </div>
-                                    <div>
-                                        <label style="font-size: 12px; font-weight: bold; color: #666; margin-bottom: 5px; display: block;" title="Width in inches for duplicate copies (no names)">Dup Size</label>
-                                        <input type="number" id="studio-duplicate-size" value="1.5" step="0.1" min="0.5" max="3" style="width: 60px; height: 40px; padding: 2px 5px; border: 1px solid #ccc; border-radius: 4px; text-align: center;" class="input-premium">
-                                    </div>
-                                    <button onclick="saveStudioPreset()" class="submit-btn btn-blue" style="width: auto; margin: 0;"><i class="fas fa-save"></i> Save Preset</button>
-                                    
-                                    <button onclick="window.generateLivePreview()" class="submit-btn btn-blue" style="width: auto; margin: 0; background-color: #8b5cf6; margin-right: 10px;"><i class="fas fa-eye"></i> Live Preview</button>
-                                    
-                                    <div style="position: relative; display: inline-block;">
-                                        <button onclick="window.toggleStudioDownloadDropdown()" class="submit-btn btn-green" style="width: auto; margin: 0; padding: 0 15px;"><i class="fas fa-download"></i> Download Export <i class="fas fa-chevron-down" style="font-size: 10px; margin-left: 5px;"></i></button>
-                                        <div id="studio-download-dropdown" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 5px; background: white; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 100; min-width: 150px; flex-direction: column;">
-                                            <button onclick="generateA4PDF(); window.toggleStudioDownloadDropdown();" style="padding: 10px 15px; border: none; background: none; text-align: left; width: 100%; cursor: pointer; border-bottom: 1px solid #eee; color: #10b981; font-weight: bold;"><i class="fas fa-file-pdf"></i> Download PDF</button>
-                                            <button onclick="generateMSWord(); window.toggleStudioDownloadDropdown();" style="padding: 10px 15px; border: none; background: none; text-align: left; width: 100%; cursor: pointer; border-bottom: 1px solid #eee; color: #2563eb; font-weight: bold;"><i class="fas fa-file-word"></i> Download Word</button>
-                                            <button onclick="generatePowerPoint(); window.toggleStudioDownloadDropdown();" style="padding: 10px 15px; border: none; background: none; text-align: left; width: 100%; cursor: pointer; color: #ea4335; font-weight: bold;"><i class="fas fa-file-powerpoint"></i> Download PPT</button>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div id="studio-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 15px; margin-top: 10px;"></div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -824,21 +747,18 @@
                     </div>
                 </div>
 
-                <!-- TAB: UNIVERSAL COMM HUB -->
+                <!-- TAB: COREEDU COMM HUB -->
                 <div id="tab-coreedu-comm" class="tab-content">
-                    <div class="card" style="height: 70vh; display: flex; flex-direction: column; padding: 0; overflow: hidden; background: #efeae2;">
-                        <div style="background: #075e54; color: white; padding: 15px 20px; display: flex; align-items: center; gap: 15px;">
-                            <i class="fab fa-whatsapp" style="font-size: 2rem;"></i>
-                            <h3 id="comm-hub-header-title" style="margin: 0; font-size: 1.2rem; font-weight: 500;">CoreEdu Teach Direct Comm Hub</h3>
-                        </div>
-                        <div id="coreedu-chat-history" style="flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:10px; background: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');">
+                    <div class="card" style="height: 70vh; display: flex; flex-direction: column;">
+                        <h3><i class="fab fa-whatsapp" style="color: #25D366;"></i> CoreEdu Direct Comm Hub</h3>
+                        <div id="coreedu-chat-history" style="flex:1; overflow-y:auto; padding:15px; background:#e5ddd5; border-radius:8px; margin-bottom:15px; display:flex; flex-direction:column; gap:10px;">
                             <div style="text-align:center; color:#555; padding:20px;">Loading chat history...</div>
                         </div>
                         <div style="display:flex; gap:10px; align-items:center;">
                             <label for="coreedu-attachment" style="cursor:pointer; padding:10px; background:#f0f0f0; border-radius:50%; width:40px; height:40px; text-align:center;"><i class="fas fa-paperclip"></i></label>
                             <input type="file" id="coreedu-attachment" style="display:none;">
                             <input type="text" id="coreedu-message-input" class="input-premium" style="flex:1;" placeholder="Type your message to CoreEdu...">
-                            <button id="coreedu-send-btn" class="action-btn btn-blue" onclick="sendUniversalMessage()"><i class="fas fa-paper-plane"></i></button>
+                            <button id="coreedu-send-btn" class="action-btn btn-blue" onclick="sendCoreEduMessage()"><i class="fas fa-paper-plane"></i></button>
                         </div>
                         <style>
                             .chat-bubble { max-width: 80%; padding: 10px 15px; border-radius: 15px; position: relative; font-size: 14px; }
@@ -2005,8 +1925,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    <!-- PptxGenJS for PowerPoint Exports -->
-    <script src="https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
     
     <!-- Mail View Modal -->
     <div id="mail-view-modal" class="custom-modal-overlay">
@@ -2024,112 +1942,6 @@
                     <input type="file" id="mail-reply-attachment" class="input-premium" style="flex: 1;">
                     <button class="action-btn btn-blue" id="mail-reply-btn" onclick="replyToMailThread()"><i class="fas fa-reply"></i> Reply</button>
                 </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Cropper Modal -->
-    <div id="cropper-modal" class="custom-modal-overlay">
-        <div class="custom-modal-box" style="max-width: 800px; width: 90%; max-height: 90vh; display: flex; flex-direction: column;">
-            <div class="custom-modal-header">
-                <span><i class="fas fa-crop-alt"></i> Adjust Photo Crop (35:45)</span>
-                <button class="action-btn btn-red" onclick="closeCustomModal('cropper-modal')"><i class="fas fa-times"></i></button>
-            </div>
-            <div style="flex:1; min-height: 400px; max-height: 60vh; background: #000; display:flex; justify-content:center; align-items:center; overflow:hidden;">
-                <img id="cropper-image" src="" style="max-width: 100%; max-height: 100%; display:block;">
-            </div>
-            <div style="padding: 15px; border-top: 1px solid #e2e8f0; background: #fff; text-align: right; display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 12px; color: #666;"><i class="fas fa-info-circle"></i> Drag the box to perfectly center the face.</span>
-                <div>
-                    <button class="action-btn" style="background:#e2e8f0; color:#333;" onclick="closeCustomModal('cropper-modal')">Cancel</button>
-                    <button class="action-btn btn-blue" onclick="window.applyCropperCrop()"><i class="fas fa-check"></i> Apply Crop</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Mask Editor Modal -->
-    <div id="mask-editor-modal" class="custom-modal-overlay">
-        <div class="custom-modal-box" style="max-width: 1000px; width: 95%; max-height: 95vh; height: 80vh; display: flex; flex-direction: column; background: #e0e0e0; border-radius: 0; padding: 0;">
-            <!-- Header (Photoshop style) -->
-            <div style="background: #2b2b2b; color: #fff; padding: 10px; font-size: 14px; display: flex; justify-content: space-between; align-items: center;">
-                <span><i class="fas fa-magic"></i> Mask Adjustment (Uniform Restoration)</span>
-                <button onclick="closeCustomModal('mask-editor-modal')" style="background:none; border:none; color:#fff; cursor:pointer;"><i class="fas fa-times"></i></button>
-            </div>
-            
-            <!-- Tool Options Bar -->
-            <div style="background: #d4d0c8; padding: 5px 10px; display: flex; gap: 15px; border-bottom: 1px solid #808080; align-items: center; font-size: 12px; color: #000;">
-                <div style="display: flex; gap: 10px; align-items: center; border-right: 1px solid #808080; padding-right: 15px;">
-                    <label style="display:flex; align-items:center; gap:3px; cursor:pointer;"><input type="radio" name="mask-mode" value="add" checked> Add (Restore)</label>
-                    <label style="display:flex; align-items:center; gap:3px; cursor:pointer;"><input type="radio" name="mask-mode" value="subtract"> Subtract (Erase)</label>
-                </div>
-                
-                <div id="mask-brush-options" style="display: flex; gap: 5px; align-items: center;">
-                    <label>Brush Size:</label>
-                    <input type="range" id="mask-brush-size" min="1" max="100" value="20" style="width: 100px;">
-                    <span id="mask-brush-size-val" style="width: 30px;">20px</span>
-                </div>
-                
-                <div id="mask-wand-options" style="display: none; gap: 5px; align-items: center;">
-                    <label>Tolerance:</label>
-                    <input type="range" id="mask-wand-tolerance" min="0" max="100" value="32" style="width: 100px;">
-                    <span id="mask-wand-tolerance-val" style="width: 30px;">32</span>
-                </div>
-                
-                <div style="flex:1; text-align:right;">
-                    <button onclick="window.resetMaskEditor()" style="padding: 2px 8px; border: 1px solid #808080; background: #eee; cursor: pointer;"><i class="fas fa-undo"></i> Reset Mask</button>
-                </div>
-            </div>
-            
-            <!-- Main Editor Area -->
-            <div style="display: flex; flex: 1; overflow: hidden; background: #808080;">
-                <!-- Tools Panel -->
-                <div style="width: 40px; background: #d4d0c8; display: flex; flex-direction: column; gap: 5px; padding: 5px; border-right: 1px solid #fff;">
-                    <button id="tool-btn-brush" class="mask-tool-btn" title="Brush Tool (Mode 2)" onclick="window.selectMaskTool('brush')" style="width:30px; height:30px; border:1px solid #808080; background:#eee; cursor:pointer; display:flex; justify-content:center; align-items:center;"><i class="fas fa-paint-brush"></i></button>
-                    <button id="tool-btn-lasso" class="mask-tool-btn" title="Polygonal Lasso (Mode 3)" onclick="window.selectMaskTool('lasso')" style="width:30px; height:30px; border:1px solid #808080; background:#eee; cursor:pointer; display:flex; justify-content:center; align-items:center;"><i class="fas fa-draw-polygon"></i></button>
-                    <button id="tool-btn-wand" class="mask-tool-btn" title="Magic Wand (Mode 1)" onclick="window.selectMaskTool('wand')" style="width:30px; height:30px; border:1px solid #808080; background:#eee; cursor:pointer; display:flex; justify-content:center; align-items:center;"><i class="fas fa-magic"></i></button>
-                </div>
-                
-                <!-- Canvas Container -->
-                <div style="flex: 1; display: flex; justify-content: center; align-items: center; overflow: auto; position: relative;" id="mask-canvas-container">
-                    <div style="position: relative; box-shadow: 0 0 10px rgba(0,0,0,0.5);" id="mask-canvas-wrapper">
-                        <!-- Layer 1: True Original Image (Background) -->
-                        <canvas id="mask-layer-img" style="position: absolute; top:0; left:0; z-index: 1;"></canvas>
-                        <!-- Layer 2: Mask Canvas (Red Overlay) -->
-                        <canvas id="mask-layer-red" style="position: absolute; top:0; left:0; z-index: 2; opacity: 0.5; pointer-events: none;"></canvas>
-                        <!-- Layer 3: Interaction Canvas (for drawing brush/lasso lines) -->
-                        <canvas id="mask-layer-ui" style="position: absolute; top:0; left:0; z-index: 3; cursor: crosshair;"></canvas>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Footer -->
-            <div style="background: #d4d0c8; padding: 10px; border-top: 1px solid #808080; text-align: right; display:flex; justify-content: space-between; align-items: center;">
-                <span style="font-size:12px; color:#666;" id="mask-hint-text">Use the Brush tool to paint over uniform areas you want to restore.</span>
-                <div>
-                    <button onclick="closeCustomModal('mask-editor-modal')" style="padding: 5px 15px; border: 1px solid #808080; background: #eee; cursor: pointer;">Cancel</button>
-                    <button onclick="window.applyMaskEditor()" style="padding: 5px 15px; border: 1px solid #808080; background: #2b2b2b; color: #fff; cursor: pointer; margin-left: 10px;"><i class="fas fa-check"></i> Apply Mask</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Live Preview Modal -->
-    <div id="live-preview-modal" class="custom-modal-overlay">
-        <div class="custom-modal-box" style="max-width: 1200px; width: 95%; max-height: 95vh; height: 90vh; display: flex; flex-direction: column; background: #f3f4f6; border-radius: 8px; padding: 0; overflow: hidden;">
-            <div class="custom-modal-header" style="background: #1e293b; color: white; border-radius: 8px 8px 0 0;">
-                <span><i class="fas fa-eye"></i> Live A4 Print Preview</span>
-                <button class="action-btn btn-red" onclick="closeCustomModal('live-preview-modal')" style="background: transparent; color: white; border: none;"><i class="fas fa-times"></i></button>
-            </div>
-            
-            <div style="flex: 1; overflow-y: auto; overflow-x: auto; padding: 30px; display: flex; flex-direction: column; align-items: center; background: #9ca3af;">
-                <div id="live-preview-container" style="display: flex; flex-direction: column; gap: 20px;">
-                    <!-- A4 Pages will be injected here -->
-                </div>
-            </div>
-            
-            <div style="padding: 15px; background: white; border-top: 1px solid #e5e7eb; text-align: right;">
-                <button onclick="closeCustomModal('live-preview-modal')" class="action-btn btn-blue"><i class="fas fa-check"></i> Done Reviewing</button>
             </div>
         </div>
     </div>
