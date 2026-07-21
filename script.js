@@ -198,7 +198,7 @@ onAuthStateChanged(auth, async (user) => {
                 }
                 
                 document.documentElement.style.setProperty('--theme-color', currentThemeColor);
-                checkAdmissionStatus(); listenToTicker(); loadAllData();
+                checkAdmissionStatus(); if(window.listenToTicker) window.listenToTicker(); loadAllData();
 
                 const today = new Date().toISOString().split('T')[0];
                 document.getElementById("fee_date").value = today; document.getElementById("salary_date").value = today; document.getElementById("exp_date").value = today;
@@ -296,7 +296,10 @@ window.doLogout = () => {
     signOut(auth);
 };
 
-document.getElementById("deviceModeToggle").addEventListener("change", (e) => { e.target.checked ? document.body.classList.add("force-desktop") : document.body.classList.remove("force-desktop"); });
+const dmt = document.getElementById("deviceModeToggle");
+if(dmt) {
+    dmt.addEventListener("change", (e) => { e.target.checked ? document.body.classList.add("force-desktop") : document.body.classList.remove("force-desktop"); });
+}
 
 document.querySelectorAll('.menu-item').forEach(item => {
     item.addEventListener('click', (e) => {
