@@ -1188,6 +1188,7 @@ function renderStudentsTable(className, searchTerm = null, statusFilter = null) 
             <button class="action-btn btn-blue" onclick="showIDCard('${safeId}')"><i class="fas fa-id-card"></i> ID</button>
             <button class="action-btn" style="background:#3b82f6; color:white;" onclick="window.openDirectMessageModal('${safeId}', '${dt.name.replace(/'/g, "\\'")}')"><i class="fas fa-comment-dots"></i> Message</button>
             <button class="action-btn btn-purple" onclick="openStudentModal('${safeId}')"><i class="fas fa-edit"></i> Edit</button>
+            <button class="action-btn" style="background:#f39c12; color:white;" onclick="window.transferStudent('${safeId}')"><i class="fas fa-exchange-alt"></i> Transfer</button>
             ${lockBtn}`;
         
         html += `<tr class="${locked ? 'locked-row' : ''}">
@@ -1197,7 +1198,7 @@ function renderStudentsTable(className, searchTerm = null, statusFilter = null) 
             <td><span style="background:#eaf4ff; color:#2c7be5; padding:3px 8px; border-radius:12px; font-size:12px; font-weight:bold;">Class: ${dt.class || 'N/A'}</span></td>
             <td><span style="font-size:12px; display:block;"><b>P:</b> ${(dt.parentage || dt.fatherName) || 'N/A'}</span><span style="font-size:12px; display:block;"><b>M:</b> ${dt.motherName || 'N/A'}</span></td>
             <td><div style="font-size:11px; font-weight:bold; padding:2px 6px; border-radius:4px; display:inline-block; border:1px solid ${statusColor}; color:${statusColor};">${statusIcon} ${dt.status}</div><br><span style="font-size:11px; color:#7f8c8d;">Due: ?${dt.feeDue || 0}</span></td>
-            <td><div class="action-btn-group">${actionBtns} <button class="action-btn btn-red" onclick="deleteStudent('${safeId}')"><i class="fas fa-trash"></i></button></div></td>
+            <td><div class="flex flex-wrap gap-1">${actionBtns} <button class="action-btn btn-red" onclick="deleteStudent('${safeId}')"><i class="fas fa-trash"></i></button></div></td>
         </tr>`;
     });
     tbody.innerHTML = html || "<tr><td colspan='7' style='text-align:center; padding:30px; color:#999;'>No Students Found.</td></tr>";
@@ -5064,6 +5065,26 @@ window.toggleMoreDrawer = function() {
         
         const btnMore = document.getElementById('btn-more-drawer');
         if(btnMore) btnMore.classList.remove('text-[#0ef6cc]');
+    }
+};
+
+window.transferStudent = async (studentId) => {
+    const targetSchool = prompt("Enter Destination School Code/ID to transfer this student:");
+    if (targetSchool && targetSchool.trim() !== "") {
+        if (confirm(`Are you sure you want to transfer this student to school '${targetSchool}'? This action cannot be undone.`)) {
+            try {
+                const targetSchoolId = targetSchool.trim();
+                await window.dbModule.updateDoc(window.dbModule.doc(db, "students", studentId), {
+                    schoolId: targetSchoolId,
+                    status: 'Pending',
+                    transferDate: new Date().toISOString()
+                });
+                alert("Student successfully transferred to " + targetSchoolId + "!");
+                window.loadAllData();
+            } catch(e) {
+                alert("Transfer failed: " + e.message);
+            }
+        }
     }
 };
 

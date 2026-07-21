@@ -453,29 +453,35 @@
                 <!-- TAB: DASHBOARD -->
                 <div id="tab-dashboard" class="tab-content active space-y-4 lg:space-y-6 animate-fadeIn">
                     <!-- Quick Metrics Grid -->
-                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-5">
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-3 lg:gap-5">
                         <div class="bg-[#050e14] border border-[#0ef6cc]/10 p-4 lg:p-5 rounded-xl lg:rounded-2xl relative shadow-lg cursor-pointer hover:border-[#0ef6cc]/40 transition" onclick="filterByStatus('all')">
                             <span class="text-[9px] lg:text-[10px] text-[#0ef6cc] font-mono block uppercase tracking-widest">Enrolled Students</span>
                             <h3 class="text-xl lg:text-3xl font-bold font-mono text-slate-100 mt-1 lg:mt-2"><span id="count-students">0</span></h3>
-                            <p class="hidden lg:block text-[10px] text-slate-400 mt-1">Class Quota capacity: 500 Max</p>
+                        </div>
+
+                        <div class="bg-[#050e14] border border-[#0ef6cc]/10 p-4 lg:p-5 rounded-xl lg:rounded-2xl relative shadow-lg cursor-pointer hover:border-[#0ef6cc]/40 transition" onclick="switchTab('tab-students')">
+                            <span class="text-[9px] lg:text-[10px] text-blue-400 font-mono block uppercase tracking-widest">Today's Attendance</span>
+                            <h3 class="text-xl lg:text-3xl font-bold font-mono text-blue-400 mt-1 lg:mt-2"><span id="count-attendance">0%</span></h3>
+                        </div>
+
+                        <div class="bg-[#050e14] border border-[#0ef6cc]/10 p-4 lg:p-5 rounded-xl lg:rounded-2xl relative shadow-lg cursor-pointer hover:border-[#0ef6cc]/40 transition" onclick="filterByStatus('Pending')">
+                            <span class="text-[9px] lg:text-[10px] text-rose-400 font-mono block uppercase tracking-widest">Pending Approvals</span>
+                            <h3 class="text-xl lg:text-3xl font-bold font-mono text-rose-400 mt-1 lg:mt-2"><span id="count-pending">0</span></h3>
+                        </div>
+
+                        <div class="bg-[#050e14] border border-[#0ef6cc]/10 p-4 lg:p-5 rounded-xl lg:rounded-2xl relative shadow-lg cursor-pointer hover:border-[#0ef6cc]/40 transition" onclick="switchTab('tab-staff')">
+                            <span class="text-[9px] lg:text-[10px] text-emerald-400 font-mono block uppercase tracking-widest">Total Staff</span>
+                            <h3 class="text-xl lg:text-3xl font-bold font-mono text-emerald-400 mt-1 lg:mt-2"><span id="count-staff">0</span></h3>
+                        </div>
+
+                        <div class="bg-[#050e14] border border-[#0ef6cc]/10 p-4 lg:p-5 rounded-xl lg:rounded-2xl relative shadow-lg cursor-pointer hover:border-[#0ef6cc]/40 transition" onclick="switchTab('tab-notices')">
+                            <span class="text-[9px] lg:text-[10px] text-amber-400 font-mono block uppercase tracking-widest">Active Notices</span>
+                            <h3 class="text-xl lg:text-3xl font-bold font-mono text-amber-400 mt-1 lg:mt-2"><span id="count-notices">0</span></h3>
                         </div>
 
                         <div onclick="window.switchTab('tab-finance')" class="bg-[#050e14] border border-[#0ef6cc]/10 p-4 lg:p-5 rounded-xl lg:rounded-2xl relative shadow-lg cursor-pointer hover:border-[#0ef6cc]/40 transition group">
-                            <span class="text-[9px] lg:text-[10px] text-amber-400 font-mono block uppercase tracking-widest">Outstanding Dues</span>
-                            <h3 class="text-xl lg:text-3xl font-bold font-mono text-slate-100 mt-1 lg:mt-2">₹<span id="total-dues">0</span></h3>
-                            <p class="hidden lg:block text-[10px] text-slate-400 mt-1 flex items-center gap-1">Click to open fee ledgers <i class="fas fa-chevron-right text-[8px]"></i></p>
-                        </div>
-
-                        <div class="hidden lg:block bg-[#050e14] border border-[#0ef6cc]/10 p-5 rounded-2xl relative shadow-lg cursor-pointer hover:border-[#0ef6cc]/40 transition" onclick="filterByStatus('Pending')">
-                            <span class="text-[10px] text-rose-400 font-mono block uppercase tracking-widest">Pending Approvals</span>
-                            <h3 class="text-3xl font-bold font-mono text-slate-100 mt-2"><span id="count-pending">0</span></h3>
-                            <p class="text-[10px] text-slate-400 mt-1">Requires admin review</p>
-                        </div>
-
-                        <div class="hidden lg:block bg-[#050e14] border border-[#0ef6cc]/10 p-5 rounded-2xl relative shadow-lg cursor-pointer hover:border-[#0ef6cc]/40 transition" onclick="switchTab('tab-staff')">
-                            <span class="text-[10px] text-emerald-400 font-mono block uppercase tracking-widest">Total Staff</span>
-                            <h3 class="text-3xl font-bold font-mono text-slate-100 mt-2"><span id="count-staff">0</span></h3>
-                            <p class="text-[10px] text-slate-400 mt-1">Live telemetry: Synchronized</p>
+                            <span class="text-[9px] lg:text-[10px] text-green-400 font-mono block uppercase tracking-widest">Total Revenue</span>
+                            <h3 class="text-xl lg:text-3xl font-bold font-mono text-green-400 mt-1 lg:mt-2"><span id="count-revenue">₹ 0</span></h3>
                         </div>
                     </div>
 
@@ -508,22 +514,20 @@
                             </div>
                         </div>
                         <canvas id="dashboardChart" style="max-height: 350px; width: 100%; margin-top: 15px;"></canvas>
-                    </div>
-
-                    <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200" style="border-left: 4px solid #38b2ac;">
-                        <h3><i class="fas fa-link"></i> Admission Link Settings</h3>
-                        <div style="display: flex; justify-content: space-between; align-items: center; background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #eee;">
+                    </div>                    <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-4 lg:p-5 rounded-2xl shadow-lg mb-6 text-slate-200" style="border-left: 4px solid #38b2ac;">
+                        <h3 class="mb-4 text-[#0ef6cc] font-mono"><i class="fas fa-link"></i> Admission Link Settings</h3>
+                        <div style="display: flex; flex-direction: column; md:flex-direction: row; gap: 15px; justify-content: space-between; align-items: flex-start; md:align-items: center; background: #030d12; padding: 15px; border-radius: 8px; border: 1px solid rgba(14, 246, 204, 0.2);">
                             <div>
-                                <strong style="color:#2d3748; font-size:15px;">Accept New Admissions</strong><br>
-                                <span style="font-size:12px; color:#7f8c8d;">Turn off to show "Admissions Closed" on the form.</span>
+                                <strong style="color:#0ef6cc; font-size:15px;">Accept New Admissions</strong><br>
+                                <span style="font-size:12px; color:#94a3b8;">Turn off to show "Admissions Closed" on the form.</span>
                             </div>
                             <label class="switch"><input type="checkbox" id="admissionToggle"><span class="slider"></span></label>
                         </div>
-                        <button class="px-4 py-2 bg-[#0ef6cc]/20 hover:bg-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md w-full mt-4" onclick="generateRegistrationLink()" style="margin-top:15px; width:100%;"><i class="fas fa-magic"></i> Generate & Show Link</button>
+                        <button class="w-full mt-4 py-3 bg-teal-950/40 hover:bg-teal-900/60 border border-[#0ef6cc]/20 text-[#0ef6cc] rounded-xl font-mono text-xs transition-all" onclick="generateRegistrationLink()"><i class="fas fa-magic"></i> Generate & Show Link</button>
                         
-                        <div id="link-display-box" class="link-display-box" style="display:none;">
-                            <input type="text" id="short-link-input" readonly>
-                            <button onclick="copyToClipboard()"><i class="fas fa-copy"></i> Copy</button>
+                        <div id="link-display-box" class="link-display-box flex gap-2 mt-4" style="display:none;">
+                            <input type="text" id="short-link-input" readonly class="flex-1 bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none">
+                            <button onclick="copyToClipboard()" class="px-4 py-2 bg-teal-950/40 border border-[#0ef6cc]/20 text-[#0ef6cc] rounded-xl text-xs"><i class="fas fa-copy"></i> Copy</button>
                         </div>
                     </div>
                 </div>
@@ -594,9 +598,9 @@
                 <!-- TAB: STUDENTS & CERTS -->
                 <div id="tab-students" class="tab-content">                    
                     <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200">
-                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom: 15px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px; margin-bottom: 15px;">
                             <h3 style="margin:0;"><i class="fas fa-list"></i> Student Database & Certificates</h3>
-                            <div style="display: flex; gap: 10px; align-items: center;">
+                            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                                 <select id="bulk_class_select" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full" style="width: auto; padding: 8px 10px;">
                                     <option value="ALL">All Classes</option>
                                     <option value="Nursery">Nursery</option>
@@ -622,14 +626,14 @@
                                 <button class="action-btn btn-dark" style="padding:5px 10px; font-size:12px;" onclick="runDefaulterLockdown()"><i class="fas fa-lock"></i> Auto-Lock Defaulters</button>
                             </div>
                         </div>
-                        <div style="display:flex; justify-content: flex-end; align-items: center; gap:10px; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #e2e8f0;">
+                        <div style="display:flex; justify-content: flex-end; align-items: center; flex-wrap: wrap; gap:10px; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #e2e8f0;">
                             <span id="session-upgrade-status-text" style="font-size: 13px; font-weight: bold; color: #7f8c8d;">Status: N/A</span>
                             <button id="request-upgrade-btn" class="action-btn btn-purple" style="padding:8px 12px;" onclick="requestSessionUpgrade()"><i class="fas fa-paper-plane"></i> Request Session Upgrade</button>
                             <button id="execute-promotion-btn" class="action-btn btn-green" style="padding:8px 12px; display: none;" onclick="executePromotion()"><i class="fas fa-rocket"></i> Execute Promotion</button>
                         </div>
                         <p style="font-size:13px; color:#666; margin-bottom:15px;">Manage students, issue certificates, and enforce Defaulter Lockdown.</p>
                         
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
                             <div class="class-filter-container" id="class-filters" style="flex: 1; margin-bottom: 0;"></div>
                             <button class="px-4 py-2 bg-gradient-to-r from-[#0ef6cc]/20 to-teal-900/30 hover:from-[#0ef6cc]/30 border border-[#0ef6cc]/40 text-[#0ef6cc] rounded-xl text-xs font-mono font-bold transition shadow-md" onclick="openStudentModal()" style="margin-left: 10px; padding: 8px 15px;"><i class="fas fa-plus"></i> Add Student</button>
                         </div>
@@ -1298,9 +1302,9 @@
                 <!-- TAB: ADMIT CARDS -->
                 <div id="tab-admit-cards-module" class="tab-content hidden-el">                    
                     <div class="bg-[#050e14]/40 border border-[#0ef6cc]/10 p-5 rounded-2xl shadow-lg mb-6 text-slate-200">
-                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom: 15px;">
-                            <h3 style="margin:0;"><i class="fas fa-id-card-alt"></i> Student Admit Cards</h3>
-                            <div style="display: flex; gap: 10px; align-items: center;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px; margin-bottom: 15px;">
+                            <h3 style="margin:0;"><i class="fas fa-id-card-alt"></i> Admit Cards Manager</h3>
+                            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                                 <select id="admit_class_select" class="bg-[#030d12] border border-[#0ef6cc]/20 rounded-xl py-2 px-3 text-xs text-slate-200 font-mono outline-none focus:border-[#0ef6cc]/50 transition-all w-full" style="width: auto; padding: 8px 10px;" onchange="filterAdmitStudents(this.value)">
                                     <option value="ALL">All Classes</option>
                                     <option value="Nursery">Nursery</option>
