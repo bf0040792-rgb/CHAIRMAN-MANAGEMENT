@@ -157,15 +157,26 @@ onAuthStateChanged(auth, async (user) => {
                 }
                 // -----------------------------------------
 
-                document.getElementById('top-school-name').innerText = data.schoolName;
-                document.getElementById('req_old_pass').value = data.plainPassword || '******';
+                const topSchoolName = document.getElementById('top-school-name');
+                if (topSchoolName) topSchoolName.innerText = data.schoolName;
+                
+                const reqOldPass = document.getElementById('req_old_pass');
+                if (reqOldPass) reqOldPass.value = data.plainPassword || '******';
 
                 const initials = data.schoolName.split(' ').map(word => word.charAt(0).toUpperCase()).join('');
-                document.getElementById('top-school-name-mobile').innerText = initials;
+                const topSchoolNameMobile = document.getElementById('top-school-name-mobile');
+                if (topSchoolNameMobile) topSchoolNameMobile.innerText = initials;
+                
+                const desktopSchoolNameShell = document.getElementById('desktop-school-name-shell');
+                if (desktopSchoolNameShell) desktopSchoolNameShell.innerText = data.schoolName;
+                const desktopTopSchoolName = document.getElementById('desktop-top-school-name');
+                if (desktopTopSchoolName) desktopTopSchoolName.innerText = data.schoolName;
 
                 if(data.logoUrl) {
-                    document.getElementById('top-school-logo').src = data.logoUrl; document.getElementById('top-school-logo').style.display = 'block';
-                    document.getElementById('print_school_logo').src = data.logoUrl; document.getElementById('print_school_logo').style.display = 'block';
+                    const topSchoolLogo = document.getElementById('top-school-logo');
+                    if (topSchoolLogo) { topSchoolLogo.src = data.logoUrl; topSchoolLogo.style.display = 'block'; }
+                    const printSchoolLogo = document.getElementById('print_school_logo');
+                    if (printSchoolLogo) { printSchoolLogo.src = data.logoUrl; printSchoolLogo.style.display = 'block'; }
                 }
 
                 overlay.style.display = "none"; loginWrapper.style.display = "none"; 
@@ -240,6 +251,7 @@ onAuthStateChanged(auth, async (user) => {
                 }
             }
         } catch (e) { 
+            console.error("Login Error Catch Block:", e);
             document.getElementById('auth-overlay').style.display = 'none'; 
             showLoginScreen("Database error."); 
         }
