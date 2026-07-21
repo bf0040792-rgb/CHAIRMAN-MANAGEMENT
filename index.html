@@ -332,93 +332,228 @@
     </div>
 
     <!-- DASHBOARD SECTION -->
-    <div id="dashboard-wrapper">
-        <div class="top-navbar">
-            <div class="brand">
-                <img src="" id="top-school-logo" class="school-logo" style="display:none;">
-                <span id="top-school-name" class="desktop-name">School Name</span>
-                <span id="top-school-name-mobile" class="mobile-name" style="display:none;">SN</span>
-            </div>
-            <label class="device-toggle"><input type="checkbox" id="deviceModeToggle"> 💻 PC Mode</label>
-        </div>
-
-        <div class="dashboard-body">
-            <div class="sidebar">
-                <div class="menu-container">
-                    <div class="menu-item active" data-target="tab-dashboard"><i class="fas fa-home"></i> Dashboard</div>
-                    <div class="menu-item" data-target="tab-students"><i class="fas fa-user-graduate"></i> Students & Certs</div>
-                    <div class="menu-item" data-target="tab-admit-cards-module"><i class="fas fa-id-card-alt"></i> Admit Cards</div>
-                    <div class="menu-item" data-target="tab-staff"><i class="fas fa-user-tie"></i> Staff Manager</div>
-                    <div class="menu-item" data-target="tab-finance"><i class="fas fa-rupee-sign"></i> Finance & Fees</div>
-                    <div class="menu-item" data-target="tab-fee-approvals"><i class="fas fa-check-circle"></i> Fee Approvals</div>
-                    <div class="menu-item" data-target="tab-academics"><i class="fas fa-book-open"></i> Academic Veto</div>
-                    <div class="menu-item" data-target="tab-notices"><i class="fas fa-bullhorn"></i> Notices & Ticker</div>
-                    <div class="menu-item" data-target="tab-mailbox"><i class="fas fa-envelope"></i> Mail Box <span id="badge-mailbox" style="display:none; background:red; color:white; border-radius:50%; width:18px; height:18px; text-align:center; font-size:10px; line-height:18px; margin-left:10px; display:inline-block;"></span></div>
-                    <div class="menu-item" data-target="tab-coreedu-comm"><i class="fab fa-whatsapp" style="color: #25D366;"></i> CoreEdu Comm Hub <span id="badge-coreedu" style="display:none; background:red; color:white; border-radius:50%; width:18px; height:18px; text-align:center; font-size:10px; line-height:18px; margin-left:10px; display:inline-block;"></span></div>
-                    
-                    <div id="module-qr-fee" class="menu-item" data-target="tab-qr-fee" style="display:none"><i class="fas fa-qrcode"></i> QR Fee Module</div>
-                    <div id="module-admit-card" class="menu-item" data-target="tab-admit-card" style="display:none"><i class="fas fa-id-badge"></i> Admit Card Module</div>
-                    <div id="module-whatsapp" class="menu-item" data-target="tab-whatsapp" style="display:none"><i class="fas fa-brands fa-whatsapp"></i> WhatsApp Module</div>
-                    
-                    <div class="menu-item" data-target="tab-transport"><i class="fas fa-bus"></i> Transport Manager</div>
-                    <div class="menu-item" data-target="tab-inventory"><i class="fas fa-boxes"></i> Inventory & Assets</div>
-                    <div class="menu-item" data-target="tab-daily-attendance"><i class="fas fa-clipboard-user"></i> Daily Attendance</div>
-
-                    <div class="menu-item" data-target="tab-password"><i class="fas fa-key"></i> Change Password</div>
-                    <div class="menu-item" data-target="tab-settings"><i class="fas fa-cogs"></i> School Settings</div>
-                    <div class="logout-btn" id="logoutBtn" onclick="doLogout()"><i class="fas fa-power-off"></i> Secure Logout</div>
+    <div id="dashboard-wrapper" class="dashboard-container">
+        <!-- Sidebar Section -->
+        <aside class="sidebar dual-sidebar">
+            <div class="school-info-sidebar">
+                <div class="school-logo-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24"><path d="M12,2A10,10 0 1,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 1,0 20,12A8,8 0 0,0 12,4M13,8H11V16H13V8M13,18H11V20H13V18Z"/></svg>
                 </div>
+                <div class="school-name-sidebar" id="top-school-name">School Name</div>
             </div>
+            
+            <nav class="nav-list menu-container">
+                <div class="nav-item menu-item active" data-target="tab-dashboard"><a href="#" class="nav-link active"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg> Dashboard</a></div>
+                <div class="nav-item menu-item" data-target="tab-students"><a href="#" class="nav-link"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24"><path d="M16 17v2H2v-2s0-4 7-4 7 4 7 4M9 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6M17.5 12c1.4 0 2.5-1.1 2.5-2.5a2.5 2.5 0 1 0-5 0c0 1.4 1.1 2.5 2.5 2.5M21 17v1.1c0 .6-.2 1.1-.6 1.4L18 20.6c-.6.6-1.6 1.2-2.3 1.4H2.7l-.3-.1L1 17.5 2 17h19z"/></svg> Students DB</a></div>
+                <div class="nav-item menu-item" data-target="tab-admit-cards-module"><a href="#" class="nav-link"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24"><path d="M21.5 8H20V5h-1.5v3h-3V5H14v3h-3V5H9.5v3H8V5H6.5v3h-3v1.5h18.5V8M21.5 12h-3v1.5h1.5v3H20v-3h1.5v-1.5M21.5 16h-3v1.5h3V16M17.5 12h-1.5v4.5h1.5v-4.5M13.5 12h-1.5v4.5h1.5v-4.5M9.5 12H8v4.5h1.5v-4.5M5.5 12H4v4.5h1.5v-4.5z"/></svg> Admit Cards</a></div>
+                <div class="nav-item menu-item" data-target="tab-staff"><a href="#" class="nav-link"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24"><path d="M18 19H6v-1.1c0-2.4 2-4.4 4.4-4.4h3.2c2.4 0 4.4 2 4.4 4.4V19M12 11c-2 0-3.6-1.6-3.6-3.6S10 3.8 12 3.8 15.6 5.4 15.6 7.4 14 11 12 11M6.4 13.1c-1.4 0-2.6 1.2-2.6 2.6v2.1l-.8 1.1-.1.2H2.4l-.1-.1v-3.3c0-2.4 2-4.4 4.4-4.4h1.7l1.1 1.8H6.4M17.6 13.1c1.4 0 2.6 1.2 2.6 2.6v2.1l.8 1.1.1.2h.1l.1-.1v-3.3c0-2.4-2-4.4-4.4-4.4h-1.7l-1.1 1.8h1.7z"/></svg> Staff Manager</a></div>
+                <div class="nav-item menu-item" data-target="tab-finance"><a href="#" class="nav-link"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24"><path d="M12 2A10 10 0 0 1 22 12A10 10 0 0 1 12 22A10 10 0 0 1 2 12A10 10 0 0 1 12 2M12 4A8 8 0 0 0 4 12A8 8 0 0 0 12 20A8 8 0 0 0 20 12A8 8 0 0 0 12 4M13 10H11V8H13V10M13 16H11V12H13V16Z"/></svg> Finance & Fees</a></div>
+                <div class="nav-item menu-item" data-target="tab-fee-approvals"><a href="#" class="nav-link"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24"><path d="M21 16.5v-10h-20v10h20zM3 13.5v-7h16v7h-16zM6 10.5h10v1.5h-10v-1.5z"/></svg> Fee Approvals</a></div>
+                <div class="nav-item menu-item" data-target="tab-academics"><a href="#" class="nav-link"><svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24"><path d="M12 15.5c-1.9 0-3.5-1.6-3.5-3.5 0-1.9 1.6-3.5 3.5-3.5 1.9 0 3.5 1.6 3.5 3.5s-1.6 3.5-3.5 3.5M19.4 13c0-.3-.1-.7-.1-.9 0-.2-.1-.6-.2-.9l2.2-1.7-2.1-3.6-2.6 1.1c-.4-.3-.8-.5-1.2-.7l-.4-2.8h-4.2l-.4 2.8c-.4.2-.8.4-1.2.7L6.6 6l-2.1 3.6 2.2 1.7c-.1.3-.1.6-.1.9 0 .2.1.6.2.9L4.6 14.8l2.1 3.6 2.6-1.1c.4.3.8.5 1.2.7l.4 2.8h4.2l.4-2.8c.4-.2.8-.4 1.2-.7l2.6 1.1 2.1-3.6-2.2-1.7z"/></svg> Academic Veto</a></div>
+                <div class="nav-item menu-item" data-target="tab-notices"><a href="#" class="nav-link"><i class="fas fa-bullhorn nav-icon"></i> Notices & Ticker</a></div>
+                
+                <div class="nav-item menu-item" data-target="tab-mailbox"><a href="#" class="nav-link"><i class="fas fa-envelope nav-icon"></i> Mail Box <span id="badge-mailbox" style="display:none; background:red; color:white; border-radius:50%; width:18px; height:18px; text-align:center; font-size:10px; line-height:18px; margin-left:10px; display:inline-block;"></span></a></div>
+                
+                <div class="nav-item menu-item" data-target="tab-coreedu-comm"><a href="#" class="nav-link"><i class="fab fa-whatsapp nav-icon" style="color: #25D366;"></i> CoreEdu Comm Hub <span id="badge-coreedu" style="display:none; background:red; color:white; border-radius:50%; width:18px; height:18px; text-align:center; font-size:10px; line-height:18px; margin-left:10px; display:inline-block;"></span></a></div>
+                
+                <div class="nav-item menu-item" data-target="tab-transport"><a href="#" class="nav-link"><i class="fas fa-bus nav-icon"></i> Transport Manager</a></div>
+                <div class="nav-item menu-item" data-target="tab-inventory"><a href="#" class="nav-link"><i class="fas fa-boxes nav-icon"></i> Inventory & Assets</a></div>
+                <div class="nav-item menu-item" data-target="tab-daily-attendance"><a href="#" class="nav-link"><i class="fas fa-clipboard-user nav-icon"></i> Daily Attendance</a></div>
 
-            <div class="main-content">
-                <div class="header-title"><h1 id="tab-title">Dashboard</h1></div>
+                <div class="nav-item menu-item" data-target="tab-password"><a href="#" class="nav-link"><i class="fas fa-key nav-icon"></i> Change Password</a></div>
+                <div class="nav-item menu-item" data-target="tab-settings"><a href="#" class="nav-link"><i class="fas fa-cogs nav-icon"></i> School Settings</a></div>
+                
+                <div class="nav-item nav-item-separator"></div>
+                <div class="nav-item menu-item" id="logoutBtn" onclick="doLogout()"><a href="#" class="nav-link"><i class="fas fa-power-off nav-icon"></i> Secure Logout</a></div>
+            </nav>
+        </aside>
 
-                <!-- TAB: DASHBOARD -->
-                <div id="tab-dashboard" class="tab-content active">
-                    <div class="stats-grid">
-                        <div class="stat-card" style="cursor: pointer;" onclick="filterByStatus('all')"><h3>Total Students</h3><h2 id="count-students">0</h2></div>
-                        <div class="stat-card" style="border-bottom-color: #3182ce; cursor: pointer;" onclick="switchTab('tab-students')"><h3>Today's Attendance</h3><h2 id="count-attendance" style="color:#3182ce">0%</h2></div>
-                        <div class="stat-card" style="border-bottom-color: #e53e3e; cursor: pointer;" onclick="filterByStatus('Pending')"><h3>Pending Approvals</h3><h2 id="count-pending" style="color:#e53e3e">0</h2></div>
-                        <div class="stat-card" style="border-bottom-color: #38a169; cursor: pointer;" onclick="switchTab('tab-staff')"><h3>Total Staff</h3><h2 id="count-staff">0</h2></div>
-                        <div class="stat-card" style="border-bottom-color: #f39c12; cursor: pointer;" onclick="switchTab('tab-notices')"><h3>Active Notices</h3><h2 id="count-notices">0</h2></div>
-                        <div class="stat-card" style="border-bottom-color: #27ae60; cursor: pointer;" onclick="switchTab('tab-finance')"><h3>Total Revenue</h3><h2 id="count-revenue" style="color:#27ae60">₹ 0</h2></div>
-                    </div>
+        <!-- Main Content Section -->
+        <main class="main-content dual-main-content">
+            <header class="top-bar">
+                <div class="top-bar-left-blur">
+                  <span id="top-school-name-header">HILL TOP PUBLIC SCHOOL</span> | Command Center
+                </div>
+                <div class="top-bar-right">
+                  <button class="top-bar-icon-button">
+                    <svg width="20" height="20" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C13.1 2 14 2.9 14 4V4.3C16.3 4.8 18 6.9 18 9.5V14L19.3 15.3C19.7 15.7 19.5 16.5 18.9 16.5H5.1C4.5 16.5 4.3 15.7 4.7 15.3L6 14V9.5C6 6.9 7.7 4.8 10 4.3V4C10 2.9 10.9 2 12 2M12 19.5C13.4 19.5 14.5 18.4 14.5 17H9.5C9.5 18.4 10.6 19.5 12 19.5Z"/></svg>
+                  </button>
+                  <button class="top-bar-icon-button">
+                    <svg width="20" height="20" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2M12 20c-4.4 0-8-3.6-8-8s3.6-8 8-8 8 3.6 8 8-3.6 8-8 8M10.8 16.8L15.6 12l-4.8-4.8L9.4 8.6 12.8 12l-3.4 3.4 1.4 1.4z"/></svg>
+                  </button>
+                </div>
+            </header>
 
-                    <div class="card" style="border-left: 4px solid #8b5cf6;">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <h3 style="margin:0;"><i class="fas fa-chart-pie"></i> Visual Analytics</h3>
-                            <div style="display:flex; gap:10px;">
-                                <input type="date" id="chart-specific-date" class="input-premium" style="padding: 5px 10px; font-size: 12px; width: auto;" onchange="window.initDashboardChart()">
-                                <select id="chart-date-filter" class="input-premium" style="padding: 5px 10px; font-size: 12px; width: auto;" onchange="window.initDashboardChart()">
-                                    <option value="All Time">All Time</option>
-                                    <option value="This Month">This Month</option>
-                                    <option value="Last Month">Last Month</option>
-                                    <option value="This Year">This Year</option>
-                                </select>
+            <div class="header-title" style="display:none;"><h1 id="tab-title">Dashboard</h1></div>
+
+            <!-- TAB: DASHBOARD -->
+            <div id="tab-dashboard" class="tab-content active">
+                <section class="card-grid">
+                    <!-- Card 1: Enrolled Students -->
+                    <article class="dashboard-card" onclick="filterByStatus('all')" style="cursor: pointer;">
+                        <div class="card-header-main">
+                            <h3 class="card-title">Enrolled Students</h3>
+                            <span class="card-dots">...</span>
+                        </div>
+                        <div class="metric-container">
+                            <div class="metric-large" id="count-students">0</div>
+                            <div class="card-subtext">Students<br>Enrolled Students</div>
+                        </div>
+                        <div class="visual-placeholder visual-combo-chart"></div>
+                        <div class="legend-container">
+                            <div class="legend-item"><div class="legend-dot dot-blue"></div> Studantelists</div>
+                            <div class="legend-item"><div class="legend-dot dot-tan"></div> Students</div>
+                        </div>
+                    </article>
+
+                    <!-- Card 2: Manual Fee Collection / Dues -->
+                    <article class="dashboard-card card-dues-collection" onclick="switchTab('tab-finance')" style="cursor: pointer;">
+                        <div class="card-header-main">
+                            <h3 class="card-title">Manual Fee Collection / Dues</h3>
+                            <span class="card-dots">...</span>
+                        </div>
+                        <div class="metric-container">
+                            <div class="metric-large card-metric-total" id="count-revenue">₹0</div>
+                        </div>
+                        <div class="visual-placeholder visual-area-chart"></div>
+                    </article>
+
+                    <!-- Card 3: Ledger Summary -->
+                    <article class="dashboard-card">
+                        <div class="card-header-main">
+                            <h3 class="card-title">Ledger Summary</h3>
+                            <span class="card-dots">...</span>
+                        </div>
+                        <div class="data-list-container">
+                            <div class="data-list-item">Total Total<span class="data-list-value" id="ledger-total">₹15,40,000</span></div>
+                            <div class="data-list-item">Faa<span class="data-list-value">₹15,40,000</span></div>
+                            <div class="data-list-item">Fee Due<span class="data-list-value">₹15,40,000</span></div>
+                            <div class="data-list-item">Mana Collection<span class="data-list-value">₹15,40,000</span></div>
+                            <div class="data-list-item">Fee Ledger<span class="data-list-value">₹15,40,000</span></div>
+                            <div class="data-list-item">Fee Blogs<span class="data-list-value">₹15,40,000</span></div>
+                            <div class="data-list-item">Online Transactions<span class="data-list-value">₹0</span></div>
+                            <div class="data-list-item">Total Esindads<span class="data-list-value">₹15,40,000</span></div>
+                        </div>
+                    </article>
+
+                    <!-- Card 4: Staff Attendance -->
+                    <article class="dashboard-card card-sow-badge" onclick="switchTab('tab-staff')" style="cursor: pointer;">
+                        <div class="card-header-main">
+                            <h3 class="card-title">Staff Attendance</h3>
+                            <span class="card-dots">...</span>
+                        </div>
+                        <div class="metric-container">
+                            <div class="metric-large" id="count-staff">0</div>
+                        </div>
+                        <div class="visual-placeholder visual-combo-chart"></div>
+                        <div class="legend-container">
+                            <div class="legend-item"><div class="legend-dot dot-teal"></div> AttendenceAvailability</div>
+                        </div>
+                    </article>
+
+                    <!-- Card 5: Staff and Availabile -->
+                    <article class="dashboard-card">
+                        <div class="card-header-main">
+                            <h3 class="card-title">Staff and Availabile</h3>
+                            <span class="card-dots">...</span>
+                        </div>
+                        <div class="metric-container">
+                            <div class="metric-large card-metric-total">800</div>
+                        </div>
+                        <div class="visual-placeholder visual-area-chart"></div>
+                        <div class="legend-container">
+                            <div class="legend-item"><div class="legend-dot dot-teal"></div> AttendenceAvailability</div>
+                        </div>
+                    </article>
+
+                    <!-- Card 6: Zero-Commissive UPI Settings -->
+                    <article class="dashboard-card">
+                        <div class="card-header-main">
+                            <h3 class="card-title">Zero-Commissive UPI Settings</h3>
+                            <span class="card-dots">...</span>
+                        </div>
+                        <div class="visual-placeholder visual-data-table">
+                            <div class="table-container">
+                                <div class="table-row table-header">
+                                    <span class="table-cell-id">ID: Date</span>
+                                    <span class="table-cell-date">Transact:</span>
+                                    <span class="table-cell-amount">Appcos:</span>
+                                </div>
+                                <div class="table-row"><span class="table-cell-id">#C_ID_01</span><span class="table-cell-date">31 Oct 2023</span><span class="table-cell-amount">₹4,000</span></div>
+                                <div class="table-row"><span class="table-cell-id">#C_ID_02</span><span class="table-cell-date">31 Oct 2023</span><span class="table-cell-amount">₹3,000</span></div>
+                                <div class="table-row"><span class="table-cell-id">#C_ID_03</span><span class="table-cell-date">21 Oct 2023</span><span class="table-cell-amount">₹15,000</span></div>
+                                <div class="table-row"><span class="table-cell-id">#C_ID_04</span><span class="table-cell-date">21 Oct 2023</span><span class="table-cell-amount">₹8,000</span></div>
+                                <div class="table-row"><span class="table-cell-id">#C_ID_05</span><span class="table-cell-date">10 Oct 2023</span><span class="table-cell-amount">₹20,000</span></div>
+                                <div class="table-row"><span class="table-cell-id">#C_ID_06</span><span class="table-cell-date">10 Oct 2023</span><span class="table-cell-amount">₹12,000</span></div>
                             </div>
                         </div>
-                        <canvas id="dashboardChart" style="max-height: 350px; width: 100%; margin-top: 15px;"></canvas>
-                    </div>
+                    </article>
 
-                    <div class="card" style="border-left: 4px solid #38b2ac;">
-                        <h3><i class="fas fa-link"></i> Admission Link Settings</h3>
-                        <div style="display: flex; justify-content: space-between; align-items: center; background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #eee;">
-                            <div>
-                                <strong style="color:#2d3748; font-size:15px;">Accept New Admissions</strong><br>
-                                <span style="font-size:12px; color:#7f8c8d;">Turn off to show "Admissions Closed" on the form.</span>
+                    <!-- Card 7: Library Assets -->
+                    <article class="dashboard-card">
+                        <div class="card-header-main">
+                            <h3 class="card-title">Library Assets</h3>
+                            <span class="card-dots">...</span>
+                        </div>
+                        <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-end;">
+                            <div class="asset-item">
+                                <div class="asset-item-left">
+                                    <div class="asset-icon"><i class="fas fa-book"></i></div>
+                                    <div class="asset-details"><h4>Library Assets</h4><p>600k books</p></div>
+                                </div>
+                                <div class="asset-value">17 bloems</div>
                             </div>
-                            <label class="switch"><input type="checkbox" id="admissionToggle"><span class="slider"></span></label>
+                            <div class="asset-item">
+                                <div class="asset-item-left">
+                                    <div class="asset-icon"><i class="fas fa-book-open"></i></div>
+                                    <div class="asset-details"><h4>Library Assets</h4><p>19k sheets</p></div>
+                                </div>
+                                <div class="asset-value" style="color: #dfba7f;">5 bloosers</div>
+                            </div>
+                            <div class="asset-item" style="margin-bottom:0;">
+                                <div class="asset-item-left">
+                                    <div class="asset-icon teal-bg"><i class="fas fa-file-alt"></i></div>
+                                    <div class="asset-details"><h4>Circular is</h4><p>Library Ideal Circulars</p></div>
+                                </div>
+                                <div class="asset-value">0</div>
+                            </div>
                         </div>
-                        <button class="submit-btn" onclick="generateRegistrationLink()" style="margin-top:15px; width:100%;"><i class="fas fa-magic"></i> Generate & Show Link</button>
-                        
-                        <div id="link-display-box" class="link-display-box" style="display:none;">
-                            <input type="text" id="short-link-input" readonly>
-                            <button onclick="copyToClipboard()"><i class="fas fa-copy"></i> Copy</button>
-                        </div>
-                    </div>
-                </div>
+                    </article>
 
-                <!-- TAB: STUDENTS & CERTS -->
+                    <!-- Card 8: Transport Fleet Status -->
+                    <article class="dashboard-card">
+                        <div class="card-header-main">
+                            <h3 class="card-title">Transport Fleet Status</h3>
+                            <span class="card-dots">...</span>
+                        </div>
+                        <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-end;">
+                            <div class="asset-item">
+                                <div class="asset-item-left">
+                                    <div class="asset-icon teal-bg"><i class="fas fa-bus"></i></div>
+                                    <div class="asset-details"><h4>Transport Pleat</h4></div>
+                                </div>
+                            </div>
+                            <div class="asset-item">
+                                <div class="asset-item-left">
+                                    <div class="asset-icon"><i class="fas fa-truck"></i></div>
+                                    <div class="asset-details"><h4>Transport Fleet</h4></div>
+                                </div>
+                            </div>
+                            <div class="asset-item" style="margin-bottom:0;">
+                                <div class="asset-item-left">
+                                    <div class="asset-icon"><i class="fas fa-bus-alt"></i></div>
+                                    <div class="asset-details"><h4>Transport Pleat Status</h4></div>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- TAB: STUDENTS & CERTS -->
                 <div id="tab-students" class="tab-content">                    
                     <div class="card">
                         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom: 15px;">
@@ -1607,7 +1742,7 @@
                 <button class="submit-btn" id="modal-save-btn" onclick="saveStudentModal()" style="flex:1;"><i class="fas fa-save"></i> Save</button>
                 <button class="submit-btn" style="background:#e53e3e; flex:1;" onclick="document.getElementById('student-modal').style.display='none'">Cancel</button>
             </div>
-        </div>
+        </main>
     </div>
 
     <!-- ID CARD MODAL -->
