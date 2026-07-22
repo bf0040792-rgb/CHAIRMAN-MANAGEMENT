@@ -22,13 +22,13 @@ const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp");
 const secondaryAuth = getAuth(secondaryApp);
 
 const appCheck = initializeAppCheck(app, {
-  provider: new ReCaptchaV3Provider('6LeAT9csAAAAANn9sBk-BPOFASXX9liQLCwwO5_4'),
-  isTokenAutoRefreshEnabled: true
+    provider: new ReCaptchaV3Provider('6LeAT9csAAAAANn9sBk-BPOFASXX9liQLCwwO5_4'),
+    isTokenAutoRefreshEnabled: true
 });
 
 let currentSchoolId = ""; let currentSchoolName = ""; let currentSignatureUrl = ""; let currentThemeColor = "#1e3c72"; let currentSecondaryColor = "#ffffff"; let currentTemplateStyle = "wave"; let currentIdTemplateUrl = "";
 let currentSchoolNameColor = "#ffffff"; let currentStudentNameColor = "#d32f2f"; let currentDetailsColor = "#333333"; let currentPhotoBgColor = "#ffffff";
-window.fetchedStudents = []; window.fetchedStaff =[]; let currentEditStaffId = null;
+window.fetchedStudents = []; window.fetchedStaff = []; let currentEditStaffId = null;
 
 const overlay = document.getElementById('auth-overlay');
 const loginWrapper = document.getElementById('login-wrapper');
@@ -45,8 +45,8 @@ function showLoginScreen(errorText = "") {
     document.getElementById("student-dashboard-wrapper").style.display = "none";
     licenseLockScreen.style.display = "none";
     loginWrapper.style.display = "flex";
-    
-    if(errorText) {
+
+    if (errorText) {
         const errBox = document.getElementById('loginErrorMsg');
         errBox.innerText = errorText; errBox.style.display = 'block';
         setTimeout(() => errBox.style.display = 'none', 5000);
@@ -64,12 +64,12 @@ async function verifySchoolLicense(schoolId) {
             if (window.currentLicenseStatus === "Locked") return false;
 
             // If no license date is set, assume it is valid (Lifetime)
-            if (!data.licenseExpiry) return true; 
-            
+            if (!data.licenseExpiry) return true;
+
             const expiryDate = new Date(data.licenseExpiry);
             const today = new Date();
             today.setHours(0, 0, 0, 0); // Reset time for accurate date comparison
-            
+
             if (expiryDate < today) return false;
             return true;
         }
@@ -98,7 +98,7 @@ if (urlParams.get('isGhost') === 'true') {
 window.unlockChairmanDashboard = () => {
     document.getElementById("pin-wrapper").style.display = "none";
     dashboardWrapper.style.display = "flex";
-    
+
     const savedTab = sessionStorage.getItem('chairmanActiveTab');
     if (savedTab) {
         const targetMenu = document.querySelector(`.menu-item[data-target="${savedTab}"]`);
@@ -108,7 +108,7 @@ window.unlockChairmanDashboard = () => {
 
 window.saveChairmanPin = async () => {
     const pin = document.getElementById("c_newPin").value;
-    if(pin.length < 4) return alert("Please enter 4 digits");
+    if (pin.length < 4) return alert("Please enter 4 digits");
     await updateDoc(doc(db, "users", auth.currentUser.uid), { pin: pin });
     window.currentChairmanPin = pin;
     window.unlockChairmanDashboard();
@@ -116,11 +116,11 @@ window.saveChairmanPin = async () => {
 
 window.verifyChairmanPin = () => {
     const pin = document.getElementById("c_loginPin").value;
-    if(pin === window.currentChairmanPin) {
+    if (pin === window.currentChairmanPin) {
         window.unlockChairmanDashboard();
     } else {
         document.getElementById("c_pinErrorMsg").style.display = "block";
-        setTimeout(()=>document.getElementById("c_pinErrorMsg").style.display = "none", 2000);
+        setTimeout(() => document.getElementById("c_pinErrorMsg").style.display = "none", 2000);
     }
 };
 
@@ -135,18 +135,18 @@ onAuthStateChanged(auth, async (user) => {
             const data = userDoc.data();
 
             if (data.role === "chairman") {
-                if(data.status === "blocked") {
+                if (data.status === "blocked") {
                     await signOut(auth); showLoginScreen("Account Blocked. Reason: " + (data.blockReason || "Contact Super Admin")); return;
                 }
-                
+
                 currentSchoolId = data.schoolId; currentSchoolName = data.schoolName;
 
                 // --- TRIGGER SAAS LICENSE VERIFICATION ---
                 overlay.innerHTML = '<i class="fas fa-fingerprint fa-pulse" style="font-size:3rem; margin-bottom:15px;"></i><div>Verifying License Subscription...</div>';
                 overlay.style.display = 'flex';
-                
+
                 const isLicenseValid = await verifySchoolLicense(currentSchoolId);
-                
+
                 if (!isLicenseValid) {
                     overlay.style.display = 'none';
                     dashboardWrapper.style.display = "none";
@@ -163,13 +163,13 @@ onAuthStateChanged(auth, async (user) => {
                 const initials = data.schoolName.split(' ').map(word => word.charAt(0).toUpperCase()).join('');
                 document.getElementById('top-school-name-mobile').innerText = initials;
 
-                if(data.logoUrl) {
+                if (data.logoUrl) {
                     document.getElementById('top-school-logo').src = data.logoUrl; document.getElementById('top-school-logo').style.display = 'block';
                     document.getElementById('print_school_logo').src = data.logoUrl; document.getElementById('print_school_logo').style.display = 'block';
                 }
 
-                overlay.style.display = "none"; loginWrapper.style.display = "none"; 
-                
+                overlay.style.display = "none"; loginWrapper.style.display = "none";
+
                 // PIN LOGIC (Auto bypass for Super Admin)
                 if (sessionStorage.getItem("is_impersonating") === "true") {
                     window.unlockChairmanDashboard();
@@ -185,7 +185,7 @@ onAuthStateChanged(auth, async (user) => {
                         document.getElementById("enter-pin-box").style.display = "none";
                     }
                 }
-                
+
                 document.documentElement.style.setProperty('--theme-color', currentThemeColor);
                 checkAdmissionStatus(); listenToTicker(); loadAllData();
 
@@ -194,7 +194,7 @@ onAuthStateChanged(auth, async (user) => {
 
                 populateClassDropdowns();
 
-                if(!sessionStorage.getItem("tracked_login_" + user.uid) && sessionStorage.getItem("is_impersonating") !== "true") {
+                if (!sessionStorage.getItem("tracked_login_" + user.uid) && sessionStorage.getItem("is_impersonating") !== "true") {
                     try {
                         const ipRes = await fetch('https://api.ipify.org?format=json'); const ipData = await ipRes.json();
                         await setDoc(doc(collection(db, "login_logs")), {
@@ -202,11 +202,11 @@ onAuthStateChanged(auth, async (user) => {
                             ip: ipData.ip || "Unknown", device: navigator.userAgent, timestamp: serverTimestamp()
                         });
                         sessionStorage.setItem("tracked_login_" + user.uid, "true");
-                    } catch(e) {}
+                    } catch (e) { }
                 }
 
             } else if (data.role === "staff") {
-                if(data.status === "blocked") {
+                if (data.status === "blocked") {
                     await signOut(auth); showLoginScreen("Account Blocked."); return;
                 }
                 currentSchoolId = data.schoolId; currentSchoolName = data.schoolName;
@@ -228,7 +228,7 @@ onAuthStateChanged(auth, async (user) => {
                         document.querySelectorAll('#staff-dashboard-wrapper .tab-content').forEach(t => t.classList.remove('active'));
                         item.classList.add('active');
                         const target = document.getElementById(item.dataset.target);
-                        if(target) target.classList.add('active');
+                        if (target) target.classList.add('active');
                         document.getElementById('staff-tab-title').innerText = item.innerText;
                     });
                 });
@@ -239,42 +239,42 @@ onAuthStateChanged(auth, async (user) => {
                     showLoginScreen("Access Denied: Invalid role.");
                 }
             }
-        } catch (e) { 
-            document.getElementById('auth-overlay').style.display = 'none'; 
-            showLoginScreen("Database error."); 
+        } catch (e) {
+            document.getElementById('auth-overlay').style.display = 'none';
+            showLoginScreen("Database error.");
         }
-    } else { 
+    } else {
         if (sessionStorage.getItem("is_impersonating") === "true" && sessionStorage.getItem("imp_e")) {
             document.getElementById('auth-overlay').innerHTML = '<i class="fas fa-fingerprint fa-pulse" style="font-size:3rem; margin-bottom:15px;"></i><div>Authenticating Super Admin...</div>';
             document.getElementById('auth-overlay').style.display = 'flex';
             document.getElementById('login-wrapper').style.display = 'none';
-            
+
             signInWithEmailAndPassword(auth, decodeURIComponent(sessionStorage.getItem("imp_e")), decodeURIComponent(sessionStorage.getItem("imp_p")))
-            .then(() => {
-                sessionStorage.removeItem("imp_e");
-                sessionStorage.removeItem("imp_p");
-                window.history.replaceState({}, document.title, window.location.pathname);
-            }).catch(e => {
-                sessionStorage.removeItem("is_impersonating");
-                document.getElementById('auth-overlay').style.display = 'none';
-                showLoginScreen("Impersonation Failed: " + e.message);
-            });
+                .then(() => {
+                    sessionStorage.removeItem("imp_e");
+                    sessionStorage.removeItem("imp_p");
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }).catch(e => {
+                    sessionStorage.removeItem("is_impersonating");
+                    document.getElementById('auth-overlay').style.display = 'none';
+                    showLoginScreen("Impersonation Failed: " + e.message);
+                });
         } else {
             document.getElementById('auth-overlay').style.display = 'none';
-            showLoginScreen(); 
+            showLoginScreen();
         }
     }
 });
 
 document.getElementById("doLoginBtn").addEventListener("click", async () => {
     const email = document.getElementById("loginId").value.trim(); const pass = document.getElementById("loginPassword").value.trim(); const btn = document.getElementById("doLoginBtn");
-    if(!email || !pass) return showLoginScreen("Enter Username and Password");
+    if (!email || !pass) return showLoginScreen("Enter Username and Password");
     btn.innerText = "Verifying...";
-    try { 
+    try {
         await setPersistence(auth, browserSessionPersistence);
-        await signInWithEmailAndPassword(auth, email, pass); 
-    } catch(e) { 
-        btn.innerText = "Login"; showLoginScreen("Invalid Credentials!"); 
+        await signInWithEmailAndPassword(auth, email, pass);
+    } catch (e) {
+        btn.innerText = "Login"; showLoginScreen("Invalid Credentials!");
     }
 });
 
@@ -288,15 +288,15 @@ document.getElementById("deviceModeToggle").addEventListener("change", (e) => { 
 
 document.querySelectorAll('.menu-item').forEach(item => {
     item.addEventListener('click', (e) => {
-        if(item.classList.contains('logout-btn')) return;
+        if (item.classList.contains('logout-btn')) return;
         document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
         document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-        item.classList.add('active'); 
-        
+        item.classList.add('active');
+
         const targetId = item.dataset.target;
         const targetEl = document.getElementById(targetId);
-        if(targetEl) targetEl.classList.add('active'); 
-        
+        if (targetEl) targetEl.classList.add('active');
+
         document.getElementById('tab-title').innerText = item.innerText;
         sessionStorage.setItem('chairmanActiveTab', targetId);
     });
@@ -309,11 +309,11 @@ window.generateRegistrationLink = () => {
 
 window.copyToClipboard = () => {
     const link = document.getElementById("short-link-input").value;
-    if(link) { navigator.clipboard.writeText(link).then(() => alert("Link Copied!")); }
+    if (link) { navigator.clipboard.writeText(link).then(() => alert("Link Copied!")); }
 };
 
 function populateClassDropdowns() {
-    const classes =["Nursery", "LKG", "UKG", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th"];
+    const classes = ["Nursery", "LKG", "UKG", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th"];
     let feeClsOpts = '<option value="">-- Select --</option>';
     classes.forEach(c => feeClsOpts += `<option value="${c}">${c}</option>`);
     document.getElementById("fee_class").innerHTML = feeClsOpts;
@@ -321,35 +321,35 @@ function populateClassDropdowns() {
 
 async function checkAdmissionStatus() {
     const docSnap = await getDoc(doc(db, "schools", currentSchoolId));
-    if(docSnap.exists()) {
+    if (docSnap.exists()) {
         const data = docSnap.data();
-        if(data.idTemplateUrl) { currentIdTemplateUrl = data.idTemplateUrl; }
-        if(data.idTemplateStyle) { 
+        if (data.idTemplateUrl) { currentIdTemplateUrl = data.idTemplateUrl; }
+        if (data.idTemplateStyle) {
             currentTemplateStyle = data.idTemplateStyle;
-            if(document.getElementById('ts_' + data.idTemplateStyle)) {
+            if (document.getElementById('ts_' + data.idTemplateStyle)) {
                 document.getElementById('ts_' + data.idTemplateStyle).checked = true;
-                if(typeof window.selectTemplateUI === 'function') window.selectTemplateUI(data.idTemplateStyle);
+                if (typeof window.selectTemplateUI === 'function') window.selectTemplateUI(data.idTemplateStyle);
             }
         }
-        if(data.idTemplateColor && document.getElementById("id_template_color")) {
+        if (data.idTemplateColor && document.getElementById("id_template_color")) {
             document.getElementById("id_template_color").value = data.idTemplateColor;
         }
-        if(data.secondaryColor && document.getElementById("school_secondary_color")) {
+        if (data.secondaryColor && document.getElementById("school_secondary_color")) {
             document.getElementById("school_secondary_color").value = data.secondaryColor;
             currentSecondaryColor = data.secondaryColor;
         }
         document.getElementById("admissionToggle").checked = data.admissionOpen !== false;
-        
-        if(data.emergencyMobile) { document.getElementById("school_emergency").value = data.emergencyMobile; document.getElementById("print_emergency").innerText = "Emergency: " + data.emergencyMobile; }
-        if(data.signatureUrl) { 
-            currentSignatureUrl = data.signatureUrl; 
-            document.getElementById("preview-signature").src = data.signatureUrl; 
-            if(!data.sigSettings || data.sigSettings.idCard !== false) document.getElementById("print_sig").src = data.signatureUrl; 
-            document.getElementById("cert_sig").src = data.signatureUrl; 
+
+        if (data.emergencyMobile) { document.getElementById("school_emergency").value = data.emergencyMobile; document.getElementById("print_emergency").innerText = "Emergency: " + data.emergencyMobile; }
+        if (data.signatureUrl) {
+            currentSignatureUrl = data.signatureUrl;
+            document.getElementById("preview-signature").src = data.signatureUrl;
+            if (!data.sigSettings || data.sigSettings.idCard !== false) document.getElementById("print_sig").src = data.signatureUrl;
+            document.getElementById("cert_sig").src = data.signatureUrl;
         }
-        if(data.sigSettings) {
+        if (data.sigSettings) {
             window.currentSigSettings = data.sigSettings;
-            if(document.getElementById("sig_on_id")) {
+            if (document.getElementById("sig_on_id")) {
                 if (document.getElementById("sig_on_marksheet")) document.getElementById("sig_on_marksheet").checked = data.sigSettings.marksheet !== false;
                 document.getElementById("sig_on_id").checked = data.sigSettings.idCard !== false;
                 document.getElementById("sig_on_bonafide").checked = data.sigSettings.bonafide !== false;
@@ -358,25 +358,25 @@ async function checkAdmissionStatus() {
         } else {
             window.currentSigSettings = { marksheet: true, idCard: true, bonafide: true, admit: true };
         }
-        
-        if(data.examSubjects && Array.isArray(data.examSubjects)) {
+
+        if (data.examSubjects && Array.isArray(data.examSubjects)) {
             window.examSubjects = data.examSubjects;
         } else {
             window.examSubjects = [...(window.factoryDefaultSubjects || [])];
         }
 
-        if(data.themeColor) { currentThemeColor = data.themeColor; document.getElementById("school_theme_color").value = currentThemeColor; document.documentElement.style.setProperty('--theme-color', currentThemeColor); }
-        if(data.schoolNameColor) { currentSchoolNameColor = data.schoolNameColor; if(document.getElementById("idSchoolNameColor")) document.getElementById("idSchoolNameColor").value = currentSchoolNameColor; }
-        if(data.studentNameColor) { currentStudentNameColor = data.studentNameColor; if(document.getElementById("idStudentNameColor")) document.getElementById("idStudentNameColor").value = currentStudentNameColor; }
-        if(data.detailsColor) { currentDetailsColor = data.detailsColor; if(document.getElementById("idDetailsColor")) document.getElementById("idDetailsColor").value = currentDetailsColor; }
-        if(data.photoBgColor) { currentPhotoBgColor = data.photoBgColor; if(document.getElementById("idPhotoBgColor")) document.getElementById("idPhotoBgColor").value = currentPhotoBgColor; }
-        if(data.emergencyTicker) { document.getElementById("ticker_input").value = data.emergencyTicker; }
-        
+        if (data.themeColor) { currentThemeColor = data.themeColor; document.getElementById("school_theme_color").value = currentThemeColor; document.documentElement.style.setProperty('--theme-color', currentThemeColor); }
+        if (data.schoolNameColor) { currentSchoolNameColor = data.schoolNameColor; if (document.getElementById("idSchoolNameColor")) document.getElementById("idSchoolNameColor").value = currentSchoolNameColor; }
+        if (data.studentNameColor) { currentStudentNameColor = data.studentNameColor; if (document.getElementById("idStudentNameColor")) document.getElementById("idStudentNameColor").value = currentStudentNameColor; }
+        if (data.detailsColor) { currentDetailsColor = data.detailsColor; if (document.getElementById("idDetailsColor")) document.getElementById("idDetailsColor").value = currentDetailsColor; }
+        if (data.photoBgColor) { currentPhotoBgColor = data.photoBgColor; if (document.getElementById("idPhotoBgColor")) document.getElementById("idPhotoBgColor").value = currentPhotoBgColor; }
+        if (data.emergencyTicker) { document.getElementById("ticker_input").value = data.emergencyTicker; }
+
         // Authority Enforcement: Hide restricted modules
-        if(data.blockedModules && Array.isArray(data.blockedModules)) {
+        if (data.blockedModules && Array.isArray(data.blockedModules)) {
             data.blockedModules.forEach(mod => {
                 const menuItem = document.querySelector(`.menu-item[data-target="tab-${mod}"]`);
-                if(menuItem) menuItem.style.display = 'none';
+                if (menuItem) menuItem.style.display = 'none';
             });
         }
     }
@@ -384,28 +384,28 @@ async function checkAdmissionStatus() {
 
 window.listenToTicker = () => {
     onSnapshot(doc(db, "schools", currentSchoolId), (docSnap) => {
-        if(docSnap.exists()) {
+        if (docSnap.exists()) {
             const data = docSnap.data();
-            if(data.tickerActive && data.emergencyTicker) {
+            if (data.tickerActive && data.emergencyTicker) {
                 document.getElementById("school-ticker-container").style.display = "block";
                 document.getElementById("school-ticker-text").innerText = data.emergencyTicker;
-            } else { 
-                document.getElementById("school-ticker-container").style.display = "none"; 
+            } else {
+                document.getElementById("school-ticker-container").style.display = "none";
             }
-            
+
             // Payment Settings Init
-            if(data.paymentQrUrl) {
+            if (data.paymentQrUrl) {
                 currentPaymentQrUrl = data.paymentQrUrl;
                 const preview = document.getElementById("payment_qr_preview");
                 if (preview) { preview.src = currentPaymentQrUrl; preview.style.display = "block"; }
             }
-            if(data.upiId) {
+            if (data.upiId) {
                 const upiEl = document.getElementById("upi_id_input");
-                if(upiEl && upiEl.value === "") upiEl.value = data.upiId;
+                if (upiEl && upiEl.value === "") upiEl.value = data.upiId;
             }
-            if(data.whatsappGroup) {
+            if (data.whatsappGroup) {
                 const waEl = document.getElementById("wa_group_link");
-                if(waEl && waEl.value === "") waEl.value = data.whatsappGroup;
+                if (waEl && waEl.value === "") waEl.value = data.whatsappGroup;
             }
 
             // Feature Modules Toggles
@@ -419,7 +419,7 @@ window.listenToTicker = () => {
             const statusText = document.getElementById("session-upgrade-status-text");
             const reqBtn = document.getElementById("request-upgrade-btn");
             const execBtn = document.getElementById("execute-promotion-btn");
-            
+
             if (statusText && reqBtn && execBtn) {
                 if (upgradeStatus === "pending") {
                     statusText.innerText = "Status: Pending Approval (Master Core)";
@@ -443,7 +443,7 @@ window.listenToTicker = () => {
 };
 
 window.requestSessionUpgrade = async () => {
-    if(confirm("Are you sure you want to request a Session Upgrade? This will send a request to the Super Admin (Master Core).")) {
+    if (confirm("Are you sure you want to request a Session Upgrade? This will send a request to the Super Admin (Master Core).")) {
         try {
             await updateDoc(doc(db, "schools", currentSchoolId), { sessionUpgradeStatus: "pending" });
             alert("Request sent successfully! Please wait for Super Admin approval.");
@@ -455,8 +455,8 @@ window.requestSessionUpgrade = async () => {
 };
 
 window.executePromotion = async () => {
-    if(!confirm("CRITICAL WARNING: This will promote ALL approved students to the next class and RESET their Roll Numbers. This action cannot be undone. Do you want to proceed?")) return;
-    
+    if (!confirm("CRITICAL WARNING: This will promote ALL approved students to the next class and RESET their Roll Numbers. This action cannot be undone. Do you want to proceed?")) return;
+
     try {
         const batch = writeBatch(db);
         let promotedCount = 0;
@@ -464,7 +464,7 @@ window.executePromotion = async () => {
         window.fetchedStudents.forEach(st => {
             if (st.status === "Approved") {
                 let nextClass = st.class;
-                
+
                 // Logic to increment class
                 const classMap = {
                     "Nursery": "LKG", "LKG": "UKG", "UKG": "1st",
@@ -478,7 +478,7 @@ window.executePromotion = async () => {
                 }
 
                 const studentRef = doc(db, "students", st.id);
-                batch.update(studentRef, { 
+                batch.update(studentRef, {
                     class: nextClass,
                     rollNo: "" // Reset roll number
                 });
@@ -503,7 +503,7 @@ window.executePromotion = async () => {
 
 window.saveEmergencyTicker = async () => {
     const text = document.getElementById("ticker_input").value.trim();
-    if(!text) return alert("Enter ticker text.");
+    if (!text) return alert("Enter ticker text.");
     await updateDoc(doc(db, "schools", currentSchoolId), { emergencyTicker: text, tickerActive: true });
     alert("Emergency Ticker Published!");
 };
@@ -516,7 +516,7 @@ window.clearEmergencyTicker = async () => {
 
 document.getElementById("admissionToggle").addEventListener("change", async (e) => {
     try { await updateDoc(doc(db, "schools", currentSchoolId), { admissionOpen: e.target.checked }); alert(e.target.checked ? "Admissions OPEN." : "Admissions CLOSED."); }
-    catch(err) { e.target.checked = !e.target.checked; }
+    catch (err) { e.target.checked = !e.target.checked; }
 });
 
 const convertToBase64 = (file) => new Promise((resolve, reject) => { const reader = new FileReader(); reader.readAsDataURL(file); reader.onload = () => resolve(reader.result); reader.onerror = (e) => reject(e); });
@@ -530,27 +530,177 @@ const uploadToCloudinary = async (fileInputId, btnId, defaultText) => {
     } catch (e) { btn.innerHTML = defaultText; return null; }
 };
 
-function loadAllData() { loadStudents(); loadStaff(); loadNotices(); loadInbox(); loadSentMail(); loadTransactions(); loadPendingResults(); window.initDashboardChart(); window.loadTransportRoutes(); window.loadInventory(); loadAllSchools(); loadCoreEduChat(); }
+function loadAllData() { loadStudents(); loadStaff(); loadNotices(); loadInbox(); loadSentMail(); loadTransactions(); loadPendingResults(); window.initDashboardChart(); window.loadTransportRoutes(); window.loadInventory(); loadAllSchools(); loadStudentTransfers(); loadCoreEduChat(); }
+
+// ================= STUDENT TRANSFER =================
+function populateTransferStudentOptions() {
+    const select = document.getElementById("transfer_student_select");
+    if (!select) return;
+    const approvedStudents = (window.fetchedStudents || []).filter(st => (st.status || "Approved") === "Approved" && !st.transferredOut);
+    let html = "<option value=''>-- Select Student --</option>";
+    approvedStudents
+        .sort((a, b) => (a.class || "").localeCompare(b.class || "") || (Number(a.rollNo) || 9999) - (Number(b.rollNo) || 9999))
+        .forEach(st => {
+            html += `<option value="${st.id}">${st.name || "Student"} - Class ${st.class || "N/A"} (${st.rollNo || "No Roll"})</option>`;
+        });
+    select.innerHTML = html;
+}
+
+window.previewTransferStudent = () => {
+    const studentId = document.getElementById("transfer_student_select")?.value;
+    const student = (window.fetchedStudents || []).find(st => st.id === studentId);
+    const target = document.getElementById("transfer-preview-student");
+    if (target) target.innerText = student ? `${student.name || "Student"} | Class ${student.class || "N/A"} | Roll ${student.rollNo || "N/A"}` : "Not selected";
+};
+
+window.previewTransferSchoolName = () => {
+    const schoolId = document.getElementById("transfer_to_school_select")?.value;
+    const school = (window.allSchoolsCache || []).find(sc => sc.id === schoolId);
+    const target = document.getElementById("transfer-preview-school");
+    if (target) target.innerText = school ? (school.schoolName || school.name || school.id) : "Not selected";
+};
+
+async function uploadTransferDocument(fileInputId, buttonId, defaultText) {
+    const input = document.getElementById(fileInputId);
+    if (!input || input.files.length === 0) return null;
+    const url = await uploadToCloudinary(fileInputId, buttonId, defaultText);
+    return url || null;
+}
+
+window.submitStudentTransfer = async () => {
+    const btn = document.getElementById("transfer-submit-btn");
+    const defaultText = "<i class='fas fa-share-from-square'></i> Submit Transfer";
+    const studentId = document.getElementById("transfer_student_select").value;
+    const toSchoolId = document.getElementById("transfer_to_school_select").value;
+    const transferDate = document.getElementById("transfer_date").value || new Date().toLocaleDateString("en-CA");
+    const reason = document.getElementById("transfer_reason").value;
+    const remarks = document.getElementById("transfer_remarks").value.trim();
+    const student = (window.fetchedStudents || []).find(st => st.id === studentId);
+    const toSchool = (window.allSchoolsCache || []).find(sc => sc.id === toSchoolId);
+
+    if (!studentId || !student) return alert("Please select a student.");
+    if (!toSchoolId || !toSchool) return alert("Please select transfer school.");
+    if (!confirm(`Transfer ${student.name || "student"} to ${toSchool.schoolName || toSchool.name || toSchool.id}?`)) return;
+
+    btn.disabled = true;
+    btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Uploading Documents...";
+
+    try {
+        const documents = {
+            transferCertificate: await uploadTransferDocument("transfer_doc_tc", "transfer-submit-btn", defaultText),
+            marksheet: await uploadTransferDocument("transfer_doc_marksheet", "transfer-submit-btn", defaultText),
+            parentConsent: await uploadTransferDocument("transfer_doc_consent", "transfer-submit-btn", defaultText),
+            other: await uploadTransferDocument("transfer_doc_other", "transfer-submit-btn", defaultText)
+        };
+
+        btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Saving Transfer...";
+        const transferPayload = {
+            studentId,
+            studentName: student.name || "",
+            studentClass: student.class || "",
+            rollNo: student.rollNo || "",
+            regNo: student.regNo || "",
+            fromSchoolId: currentSchoolId,
+            fromSchoolName: currentSchoolName,
+            toSchoolId,
+            toSchoolName: toSchool.schoolName || toSchool.name || toSchool.id,
+            transferDate,
+            reason,
+            remarks,
+            documents,
+            status: "Transferred",
+            createdAt: serverTimestamp(),
+            createdBy: auth.currentUser?.uid || "chairman"
+        };
+
+        const batch = writeBatch(db);
+        const transferRef = doc(collection(db, "student_transfers"));
+        batch.set(transferRef, transferPayload);
+        batch.update(doc(db, "students", studentId), {
+            schoolId: toSchoolId,
+            previousSchoolId: currentSchoolId,
+            previousSchoolName: currentSchoolName,
+            transferStatus: "Transferred",
+            transferredAt: serverTimestamp(),
+            transferRecordId: transferRef.id
+        });
+        await batch.commit();
+
+        alert("Student transfer completed successfully.");
+        document.getElementById("transfer_student_select").value = "";
+        document.getElementById("transfer_to_school_select").value = "";
+        document.getElementById("transfer_date").value = "";
+        document.getElementById("transfer_remarks").value = "";
+        ["transfer_doc_tc", "transfer_doc_marksheet", "transfer_doc_consent", "transfer_doc_other"].forEach(id => document.getElementById(id).value = "");
+        window.previewTransferStudent();
+        window.previewTransferSchoolName();
+        loadStudents();
+        loadStudentTransfers();
+    } catch (e) {
+        console.error("Transfer failed:", e);
+        alert("Transfer failed: " + e.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = defaultText;
+    }
+};
+
+window.loadStudentTransfers = async () => {
+    const tbody = document.getElementById("transfer-history-body");
+    if (!tbody || !currentSchoolId) return;
+    tbody.innerHTML = "<tr><td colspan='7' style='text-align:center;'>Loading transfers...</td></tr>";
+    try {
+        const snap = await getDocs(query(collection(db, "student_transfers"), where("fromSchoolId", "==", currentSchoolId)));
+        const transfers = [];
+        snap.forEach(d => transfers.push({ id: d.id, ...d.data() }));
+        transfers.sort((a, b) => {
+            const aTime = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+            const bTime = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+            return bTime - aTime;
+        });
+
+        let html = "";
+        transfers.forEach(tr => {
+            const docs = tr.documents || {};
+            const docLinks = Object.entries(docs)
+                .filter(([, url]) => !!url)
+                .map(([key, url]) => `<a class="transfer-doc-link" href="${url}" target="_blank"><i class="fas fa-paperclip"></i> ${key}</a>`)
+                .join("");
+            html += `<tr>
+                <td>${tr.transferDate || "N/A"}</td>
+                <td><strong>${tr.studentName || "N/A"}</strong><br><small>Class ${tr.studentClass || "N/A"} | Roll ${tr.rollNo || "N/A"}</small></td>
+                <td>${tr.fromSchoolName || "N/A"}</td>
+                <td>${tr.toSchoolName || "N/A"}</td>
+                <td>${tr.reason || "N/A"}<br><small>${tr.remarks || ""}</small></td>
+                <td>${docLinks || "No documents"}</td>
+                <td><span style="color:#5eead4; font-weight:bold;"><i class="fas fa-circle-check"></i> ${tr.status || "Transferred"}</span></td>
+            </tr>`;
+        });
+        tbody.innerHTML = html || "<tr><td colspan='7' style='text-align:center;'>No transfer records found.</td></tr>";
+    } catch (e) {
+        tbody.innerHTML = "<tr><td colspan='7' style='text-align:center; color:#fca5a5;'>Unable to load transfer records.</td></tr>";
+    }
+};
 
 window.initDashboardChart = () => {
     const ctx = document.getElementById('dashboardChart');
     if (!ctx) return;
-    
+
     // Check if chart exists and destroy
     if (window.myDashboardChart) {
         window.myDashboardChart.destroy();
     }
-    
+
     // Calculate total income (Fee) and expenses (Salary, Expense)
     let totalIncome = 0;
     let totalExpenses = 0;
-    
+
     const filter = document.getElementById('chart-date-filter') ? document.getElementById('chart-date-filter').value : 'All Time';
     const specificDate = document.getElementById('chart-specific-date') ? document.getElementById('chart-specific-date').value : '';
     const now = new Date();
-    
+
     let filteredTransactions = window.fetchedTransactions || [];
-    
+
     if (specificDate) {
         filteredTransactions = filteredTransactions.filter(t => t.date === specificDate);
     } else if (filter === 'This Month') {
@@ -571,7 +721,7 @@ window.initDashboardChart = () => {
             return d.getFullYear() === now.getFullYear();
         });
     }
-    
+
     filteredTransactions.forEach(t => {
         const amt = parseFloat(t.amount) || 0;
         if (t.type === 'Fee') {
@@ -584,7 +734,7 @@ window.initDashboardChart = () => {
     if (document.getElementById("count-revenue")) {
         document.getElementById("count-revenue").innerText = "₹ " + (totalIncome - totalExpenses);
     }
-    
+
     const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 400);
     gradient.addColorStop(0, 'rgba(0, 240, 255, 0.5)'); // Neon Cyan
     gradient.addColorStop(1, 'rgba(139, 92, 246, 0.1)'); // Neon Purple
@@ -621,20 +771,20 @@ window.selectTemplateUI = (style) => {
     currentTemplateStyle = style;
     document.querySelectorAll('[id^="card_"]').forEach(el => el.style.borderColor = "transparent");
     const selectedCard = document.getElementById("card_" + style);
-    if(selectedCard) selectedCard.style.borderColor = "#10b981";
+    if (selectedCard) selectedCard.style.borderColor = "#10b981";
 };
 
 window.saveThemeSettings = async () => {
     const color = document.getElementById("school_theme_color")?.value || currentThemeColor;
     const secColor = document.getElementById("school_secondary_color")?.value || currentSecondaryColor;
     const style = currentTemplateStyle || "wave";
-    try { 
-        await updateDoc(doc(db, "schools", currentSchoolId), { themeColor: color, idTemplateColor: color, secondaryColor: secColor, idTemplateStyle: style }); 
-        currentThemeColor = color; 
+    try {
+        await updateDoc(doc(db, "schools", currentSchoolId), { themeColor: color, idTemplateColor: color, secondaryColor: secColor, idTemplateStyle: style });
+        currentThemeColor = color;
         currentSecondaryColor = secColor;
-        document.documentElement.style.setProperty('--theme-color', currentThemeColor); 
-        alert("ID Card Design & Theme Color Saved Successfully!"); 
-    } catch(e) {
+        document.documentElement.style.setProperty('--theme-color', currentThemeColor);
+        alert("ID Card Design & Theme Color Saved Successfully!");
+    } catch (e) {
         alert("Failed to save theme: " + e.message);
     }
 };
@@ -651,21 +801,21 @@ window.saveIDColorSettings = async () => {
         currentDetailsColor = dColor;
         currentPhotoBgColor = pbColor;
         alert("ID Card Text & Photo Colors Saved Successfully!");
-    } catch(e) {
+    } catch (e) {
         alert("Failed to save colors: " + e.message);
     }
 };
 window.saveEmergency = async () => {
-    const num = document.getElementById("school_emergency").value.trim(); if(!num) return alert("Enter Emergency Number");
-    try { await updateDoc(doc(db, "schools", currentSchoolId), { emergencyMobile: num }); document.getElementById("print_emergency").innerText = "Emergency: " + num; alert("Emergency Number Saved!"); } catch(e) {}
+    const num = document.getElementById("school_emergency").value.trim(); if (!num) return alert("Enter Emergency Number");
+    try { await updateDoc(doc(db, "schools", currentSchoolId), { emergencyMobile: num }); document.getElementById("print_emergency").innerText = "Emergency: " + num; alert("Emergency Number Saved!"); } catch (e) { }
 };
 window.saveSignature = async () => {
-    let sigUrl = currentSignatureUrl; 
+    let sigUrl = currentSignatureUrl;
     if (document.getElementById("sig_photo").files.length > 0) {
         sigUrl = await uploadToCloudinary("sig_photo", "sig_btn", "<i class='fas fa-pen-nib'></i> Save Signature & Preferences");
-        if(!sigUrl) return alert("Please select an image or wait for upload.");
+        if (!sigUrl) return alert("Please select an image or wait for upload.");
     }
-    
+
     const sigSettings = {
         marksheet: document.getElementById("sig_on_marksheet") ? document.getElementById("sig_on_marksheet").checked : true,
         idCard: document.getElementById("sig_on_id").checked,
@@ -673,17 +823,17 @@ window.saveSignature = async () => {
         admit: document.getElementById("sig_on_admit").checked
     };
 
-    try { 
-        await updateDoc(doc(db, "schools", currentSchoolId), { signatureUrl: sigUrl, sigSettings: sigSettings }); 
-        currentSignatureUrl = sigUrl; 
+    try {
+        await updateDoc(doc(db, "schools", currentSchoolId), { signatureUrl: sigUrl, sigSettings: sigSettings });
+        currentSignatureUrl = sigUrl;
         window.currentSigSettings = sigSettings;
-        if(sigUrl) {
-            document.getElementById("preview-signature").src = sigUrl; 
-            document.getElementById("print_sig").src = sigUrl; 
-            document.getElementById("cert_sig").src = sigUrl; 
+        if (sigUrl) {
+            document.getElementById("preview-signature").src = sigUrl;
+            document.getElementById("print_sig").src = sigUrl;
+            document.getElementById("cert_sig").src = sigUrl;
         }
-        alert("Signature & Preferences Saved!"); 
-    } catch(e) { console.error(e); }
+        alert("Signature & Preferences Saved!");
+    } catch (e) { console.error(e); }
 };
 
 let currentPaymentQrUrl = "";
@@ -693,10 +843,10 @@ window.savePaymentSettings = async () => {
         qrUrl = await uploadToCloudinary("payment_qr_upload", "save_qr_btn", "<i class='fas fa-save'></i> Save Payment Settings");
         if (!qrUrl) return alert("Upload failed.");
     }
-    
+
     const upiId = document.getElementById("upi_id_input").value.trim();
     if (!upiId) return alert("Please enter a valid UPI ID.");
-    
+
     try {
         await updateDoc(doc(db, "schools", currentSchoolId), { paymentQrUrl: qrUrl, upiId: upiId });
         currentPaymentQrUrl = qrUrl;
@@ -708,34 +858,34 @@ window.savePaymentSettings = async () => {
 };
 
 window.sendPasswordRequest = async () => {
-    const newPass = document.getElementById("req_new_pass").value.trim(); if(!newPass) return alert("Please enter a new password.");
-    try { await updateDoc(doc(db, "users", auth.currentUser.uid), { suggestedPassword: newPass }); alert("Password change request sent to Super Admin!"); document.getElementById("req_new_pass").value = ""; } catch(e) {}
+    const newPass = document.getElementById("req_new_pass").value.trim(); if (!newPass) return alert("Please enter a new password.");
+    try { await updateDoc(doc(db, "users", auth.currentUser.uid), { suggestedPassword: newPass }); alert("Password change request sent to Super Admin!"); document.getElementById("req_new_pass").value = ""; } catch (e) { }
 };
 
 // ================= MAIL BOX =================
 window.toggleSpecificStaff = () => { const val = document.getElementById("mail_target").value; document.getElementById("specific_staff_div").style.display = val === "specific_staff" ? "block" : "none"; };
 window.sendChairmanMessage = async () => {
     const target = document.getElementById("mail_target").value; const title = document.getElementById("mail_title").value.trim(); const body = document.getElementById("mail_body").value.trim();
-    if(!title || !body) return alert("Fill title and body");
+    if (!title || !body) return alert("Fill title and body");
     let receiverId = target; let receiverType = target;
     if (target === "specific_staff") { receiverId = document.getElementById("mail_specific_staff").value; receiverType = "staff_member"; if (!receiverId) return alert("Please select a staff member."); }
-    try { await setDoc(doc(collection(db, "direct_messages")), { senderId: auth.currentUser.uid, senderName: currentSchoolName + " (Chairman)", senderRole: "chairman", schoolId: currentSchoolId, receiverType: receiverType, receiverId: receiverId, title: title, body: body, isRead: false, createdAt: serverTimestamp() }); alert("Message Sent!"); document.getElementById("mail_title").value=""; document.getElementById("mail_body").value=""; loadSentMail(); } catch(e) {}
+    try { await setDoc(doc(collection(db, "direct_messages")), { senderId: auth.currentUser.uid, senderName: currentSchoolName + " (Chairman)", senderRole: "chairman", schoolId: currentSchoolId, receiverType: receiverType, receiverId: receiverId, title: title, body: body, isRead: false, createdAt: serverTimestamp() }); alert("Message Sent!"); document.getElementById("mail_title").value = ""; document.getElementById("mail_body").value = ""; loadSentMail(); } catch (e) { }
 };
 async function loadInbox() {
     try {
         const snap = await getDocs(query(collection(db, "direct_messages"), where("schoolId", "==", currentSchoolId), where("receiverType", "==", "chairman")));
-        let html = ""; let msgs =[]; snap.forEach(d => msgs.push({ id: d.id, ...d.data() }));
-        msgs.sort((a,b) => { if(!a.createdAt) return 1; if(!b.createdAt) return -1; return b.createdAt.toMillis() - a.createdAt.toMillis(); });
+        let html = ""; let msgs = []; snap.forEach(d => msgs.push({ id: d.id, ...d.data() }));
+        msgs.sort((a, b) => { if (!a.createdAt) return 1; if (!b.createdAt) return -1; return b.createdAt.toMillis() - a.createdAt.toMillis(); });
         let unreadCount = 0;
-        msgs.forEach(msg => { 
+        msgs.forEach(msg => {
             let isUnread = !msg.isRead;
-            if(msg.replies && msg.replies.length > 0) {
+            if (msg.replies && msg.replies.length > 0) {
                 let lastReply = msg.replies[msg.replies.length - 1];
-                if(lastReply.senderRole !== "chairman" && !lastReply.isRead) isUnread = true;
+                if (lastReply.senderRole !== "chairman" && !lastReply.isRead) isUnread = true;
             }
-            if(isUnread) unreadCount++;
-            
-            let ts = msg.createdAt ? new Date(msg.createdAt.toMillis()).toLocaleString() : "Unknown"; 
+            if (isUnread) unreadCount++;
+
+            let ts = msg.createdAt ? new Date(msg.createdAt.toMillis()).toLocaleString() : "Unknown";
             let sender = msg.senderRole || 'Admin';
             let initial = sender.charAt(0).toUpperCase();
             html += `<div class="gmail-item" onclick="openMailThread('${msg.id}')" style="${isUnread ? 'font-weight:bold; background:#f0f7ff;' : ''}">
@@ -748,7 +898,7 @@ async function loadInbox() {
                             <div class="gmail-subject">${msg.title || 'No Subject'}</div>
                             <div class="gmail-snippet">${msg.body}</div>
                         </div>
-                    </div>`; 
+                    </div>`;
         });
         if (unreadCount > 0) {
             document.getElementById("badge-mailbox").innerText = unreadCount;
@@ -757,21 +907,21 @@ async function loadInbox() {
             document.getElementById("badge-mailbox").style.display = "none";
         }
         document.getElementById("inbox-list").innerHTML = html || "<p style='padding:20px; text-align:center;'>No messages in Inbox.</p>";
-    } catch(e) { console.error(e); }
+    } catch (e) { console.error(e); }
 }
 async function loadSentMail() {
     try {
         const snap = await getDocs(query(collection(db, "direct_messages"), where("senderId", "==", auth.currentUser.uid)));
-        let html = ""; let msgs =[]; snap.forEach(d => msgs.push({ id: d.id, ...d.data() }));
-        msgs.sort((a,b) => { if(!a.createdAt) return 1; if(!b.createdAt) return -1; return b.createdAt.toMillis() - a.createdAt.toMillis(); });
-        msgs.forEach(msg => { 
+        let html = ""; let msgs = []; snap.forEach(d => msgs.push({ id: d.id, ...d.data() }));
+        msgs.sort((a, b) => { if (!a.createdAt) return 1; if (!b.createdAt) return -1; return b.createdAt.toMillis() - a.createdAt.toMillis(); });
+        msgs.forEach(msg => {
             let isUnreadReply = false;
-            if(msg.replies && msg.replies.length > 0) {
+            if (msg.replies && msg.replies.length > 0) {
                 let lastReply = msg.replies[msg.replies.length - 1];
-                if(lastReply.senderRole !== "chairman" && !lastReply.isRead) isUnreadReply = true;
+                if (lastReply.senderRole !== "chairman" && !lastReply.isRead) isUnreadReply = true;
             }
-            let ts = msg.createdAt ? new Date(msg.createdAt.toMillis()).toLocaleString() : "Unknown"; 
-            let toWho = msg.receiverType === 'staff_member' ? 'Specific Staff' : (msg.receiverType === 'school' ? 'Specific School' : msg.receiverType); 
+            let ts = msg.createdAt ? new Date(msg.createdAt.toMillis()).toLocaleString() : "Unknown";
+            let toWho = msg.receiverType === 'staff_member' ? 'Specific Staff' : (msg.receiverType === 'school' ? 'Specific School' : msg.receiverType);
             let initial = toWho.charAt(0).toUpperCase();
             html += `<div class="gmail-item" onclick="openMailThread('${msg.id}')" style="${isUnreadReply ? 'font-weight:bold; background:#f0f7ff;' : ''}">
                         <div class="gmail-avatar" style="background:#8e44ad;">${initial}</div>
@@ -783,10 +933,10 @@ async function loadSentMail() {
                             <div class="gmail-subject">${msg.title || 'No Subject'}</div>
                             <div class="gmail-snippet">${msg.body}</div>
                         </div>
-                    </div>`; 
+                    </div>`;
         });
         document.getElementById("sent-list").innerHTML = html || "<p style='padding:20px; text-align:center;'>No sent messages.</p>";
-    } catch(e) { console.error(e); }
+    } catch (e) { console.error(e); }
 }
 
 // ================= FINANCE & PAYROLL & EXPENSES =================
@@ -795,38 +945,38 @@ window.saveFeeStructure = async () => {
     const tui = document.getElementById("master_tuition").value;
     const bus = document.getElementById("master_bus").value;
     const oth = document.getElementById("master_other").value;
-    if(!tui) return alert("Tuition fee is required.");
+    if (!tui) return alert("Tuition fee is required.");
     try {
-        await setDoc(doc(db, `schools/${currentSchoolId}/feeStructures`, cls), { tuition: Number(tui), bus: bus?Number(bus):0, other: oth?Number(oth):0, updatedAt: serverTimestamp() });
+        await setDoc(doc(db, `schools/${currentSchoolId}/feeStructures`, cls), { tuition: Number(tui), bus: bus ? Number(bus) : 0, other: oth ? Number(oth) : 0, updatedAt: serverTimestamp() });
         alert(`Fee structure for Class ${cls} updated successfully!`);
-    } catch(e) { alert("Error saving fee structure."); }
+    } catch (e) { alert("Error saving fee structure."); }
 };
 
 window.populateFeeStudents = () => {
-    const cls = document.getElementById("fee_class").value; const select = document.getElementById("fee_student"); select.innerHTML = '<option value="">-- Select Student --</option>'; if(!cls) return;
+    const cls = document.getElementById("fee_class").value; const select = document.getElementById("fee_student"); select.innerHTML = '<option value="">-- Select Student --</option>'; if (!cls) return;
     const filtered = window.fetchedStudents.filter(s => s.class && s.class.toUpperCase() === cls.toUpperCase() && s.status === 'Approved');
-    filtered.forEach(s => { select.innerHTML += `<option value="${s.id}">${s.name} ${s.roll ? '(Roll: '+s.roll+')' : ''}</option>`; }); document.getElementById("fee_mobile").value = "";
+    filtered.forEach(s => { select.innerHTML += `<option value="${s.id}">${s.name} ${s.roll ? '(Roll: ' + s.roll + ')' : ''}</option>`; }); document.getElementById("fee_mobile").value = "";
 };
-window.autoFillFeeDetails = () => { const sid = document.getElementById("fee_student").value; const s = window.fetchedStudents.find(x => x.id === sid); if(s) document.getElementById("fee_mobile").value = s.mobile || 'N/A'; };
+window.autoFillFeeDetails = () => { const sid = document.getElementById("fee_student").value; const s = window.fetchedStudents.find(x => x.id === sid); if (s) document.getElementById("fee_mobile").value = s.mobile || 'N/A'; };
 
 window.saveStudentFee = async () => {
     const cls = document.getElementById("fee_class").value; const sId = document.getElementById("fee_student").value; const mob = document.getElementById("fee_mobile").value; const amt = document.getElementById("fee_amount").value; const mode = document.getElementById("fee_mode").value; const date = document.getElementById("fee_date").value;
-    if(!sId || !amt || !date) return alert("Fill all required details.");
+    if (!sId || !amt || !date) return alert("Fill all required details.");
     const selectEl = document.getElementById("fee_student"); const sName = selectEl.options[selectEl.selectedIndex].text.split('(')[0].trim();
-    try { await setDoc(doc(collection(db, "transactions")), { schoolId: currentSchoolId, type: "Fee", personId: sId, personName: sName, class: cls, mobile: mob, amount: Number(amt), mode: mode, date: date, createdAt: serverTimestamp() }); alert("Fee Record Added!"); document.getElementById("fee_amount").value = ""; loadTransactions(); } catch(e) {}
+    try { await setDoc(doc(collection(db, "transactions")), { schoolId: currentSchoolId, type: "Fee", personId: sId, personName: sName, class: cls, mobile: mob, amount: Number(amt), mode: mode, date: date, createdAt: serverTimestamp() }); alert("Fee Record Added!"); document.getElementById("fee_amount").value = ""; loadTransactions(); } catch (e) { }
 };
 
 window.saveStaffSalary = async () => {
     const stId = document.getElementById("salary_staff").value; const amt = document.getElementById("salary_amount").value; const mode = document.getElementById("salary_mode").value; const date = document.getElementById("salary_date").value;
-    if(!stId || !amt || !date) return alert("Fill all details.");
+    if (!stId || !amt || !date) return alert("Fill all details.");
     const selectEl = document.getElementById("salary_staff"); const stName = selectEl.options[selectEl.selectedIndex].text.split('(')[0].trim();
-    try { await setDoc(doc(collection(db, "transactions")), { schoolId: currentSchoolId, type: "Salary", personId: stId, personName: stName, amount: Number(amt), mode: mode, date: date, createdAt: serverTimestamp() }); alert("Salary Disbursed & Approved!"); document.getElementById("salary_amount").value = ""; loadTransactions(); } catch(e) {}
+    try { await setDoc(doc(collection(db, "transactions")), { schoolId: currentSchoolId, type: "Salary", personId: stId, personName: stName, amount: Number(amt), mode: mode, date: date, createdAt: serverTimestamp() }); alert("Salary Disbursed & Approved!"); document.getElementById("salary_amount").value = ""; loadTransactions(); } catch (e) { }
 };
 
 window.saveExpense = async () => {
     const title = document.getElementById("exp_title").value.trim(); const amt = document.getElementById("exp_amount").value; const date = document.getElementById("exp_date").value;
-    if(!title || !amt || !date) return alert("Fill all expense details.");
-    try { await setDoc(doc(collection(db, "transactions")), { schoolId: currentSchoolId, type: "Expense", personName: title, amount: Number(amt), mode: "Cash/Bank", date: date, createdAt: serverTimestamp() }); alert("Expense Logged!"); document.getElementById("exp_title").value = ""; document.getElementById("exp_amount").value = ""; loadTransactions(); } catch(e) {}
+    if (!title || !amt || !date) return alert("Fill all expense details.");
+    try { await setDoc(doc(collection(db, "transactions")), { schoolId: currentSchoolId, type: "Expense", personName: title, amount: Number(amt), mode: "Cash/Bank", date: date, createdAt: serverTimestamp() }); alert("Expense Logged!"); document.getElementById("exp_title").value = ""; document.getElementById("exp_amount").value = ""; loadTransactions(); } catch (e) { }
 };
 
 window.fetchedTransactions = [];
@@ -837,44 +987,44 @@ async function loadTransactions() {
         const snap = await getDocs(query(collection(db, "transactions"), where("schoolId", "==", currentSchoolId)));
         window.fetchedTransactions = [];
         snap.forEach(d => window.fetchedTransactions.push({ id: d.id, ...d.data() }));
-        window.fetchedTransactions.sort((a,b) => new Date(b.date) - new Date(a.date));
-        
+        window.fetchedTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+
         let totalFees = 0, totalSalaries = 0, totalExpenses = 0;
         window.fetchedTransactions.forEach(t => {
-            if(t.type === "Fee") totalFees += Number(t.amount);
-            if(t.type === "Salary") totalSalaries += Number(t.amount);
-            if(t.type === "Expense") totalExpenses += Number(t.amount);
+            if (t.type === "Fee") totalFees += Number(t.amount);
+            if (t.type === "Salary") totalSalaries += Number(t.amount);
+            if (t.type === "Expense") totalExpenses += Number(t.amount);
         });
-        
+
         document.getElementById("summary-fees").innerText = "₹ " + totalFees;
         document.getElementById("summary-salaries").innerText = "₹ " + totalSalaries;
         document.getElementById("summary-balance").innerText = "₹ " + (totalFees - (totalSalaries + totalExpenses));
-        
-        if(window.initDashboardChart) window.initDashboardChart();
+
+        if (window.initDashboardChart) window.initDashboardChart();
         window.renderTransactionsTable();
         document.getElementById("count-revenue").innerText = "Rs. " + (totalFees - totalSalaries - totalExpenses);
-        
+
         const staffNames = new Set(window.fetchedTransactions.filter(t => t.type === "Salary" && t.personName).map(t => t.personName));
         const staffDropdown = document.getElementById("ledger-search-staff");
         staffDropdown.innerHTML = '<option value="">All Staff</option>';
         staffNames.forEach(name => {
             staffDropdown.innerHTML += `<option value="${name}">${name}</option>`;
         });
-        
+
         window.renderTransactionsTable();
-    } catch(e) {}
+    } catch (e) { }
 }
 
 window.switchLedgerTab = (tab, btnElement) => {
     window.currentLedgerTab = tab;
     document.querySelectorAll('#ledger-tabs .filter-btn').forEach(btn => btn.classList.remove('active'));
-    if(btnElement) btnElement.classList.add('active');
-    
+    if (btnElement) btnElement.classList.add('active');
+
     // Toggle Search Inputs
     const classFilter = document.getElementById("ledger-search-class");
     const staffFilter = document.getElementById("ledger-search-staff");
-    
-    if(tab === 'Fee') {
+
+    if (tab === 'Fee') {
         classFilter.style.display = "block";
         staffFilter.style.display = "none";
         staffFilter.value = "";
@@ -886,10 +1036,10 @@ window.switchLedgerTab = (tab, btnElement) => {
         classFilter.style.display = "none"; classFilter.value = "";
         staffFilter.style.display = "none"; staffFilter.value = "";
     }
-    
+
     document.getElementById("ledger-search-name").value = "";
     document.getElementById("ledger-search-name").placeholder = tab === 'Fee' ? "Search by Student Name..." : (tab === 'Salary' ? "Search by Staff Name/ID..." : "Search by Name/Title...");
-    
+
     window.renderTransactionsTable();
 };
 
@@ -898,25 +1048,25 @@ window.renderTransactionsTable = () => {
     const nameSearch = document.getElementById("ledger-search-name").value.toLowerCase();
     const classSearch = document.getElementById("ledger-search-class").value;
     const staffSearch = document.getElementById("ledger-search-staff").value;
-    
+
     let filtered = window.fetchedTransactions;
-    
-    if(window.currentLedgerTab !== 'All') {
+
+    if (window.currentLedgerTab !== 'All') {
         filtered = filtered.filter(t => t.type === window.currentLedgerTab);
     }
-    
-    if(classSearch) {
+
+    if (classSearch) {
         filtered = filtered.filter(t => t.class === classSearch);
     }
-    
-    if(staffSearch) {
+
+    if (staffSearch) {
         filtered = filtered.filter(t => t.personName === staffSearch);
     }
-    
-    if(nameSearch) {
+
+    if (nameSearch) {
         filtered = filtered.filter(t => t.personName?.toLowerCase().includes(nameSearch));
     }
-    
+
     let html = "";
     filtered.forEach(t => {
         const typeColor = t.type === "Fee" ? "#27ae60" : (t.type === "Expense" ? "#e53e3e" : "#e67e22");
@@ -925,14 +1075,14 @@ window.renderTransactionsTable = () => {
         html += `<tr><td>${t.date}</td><td><strong style="color:${typeColor}">${t.type}</strong></td><td>${t.personName || 'N/A'}</td><td>${details}</td><td style="font-weight:bold;">Rs. ${t.amount}</td><td>${t.mode} ${actionBtn}</td>
         <td><button class="action-btn btn-red" onclick="window.requestTransactionDeletion('${t.id}')"><i class="fas fa-trash"></i></button></td></tr>`;
     });
-    
+
     tbody.innerHTML = html || "<tr><td colspan='7' style='text-align:center;'>No Financial Records Found.</td></tr>";
 }
 
 window.requestTransactionDeletion = async (id) => {
     const t = window.fetchedTransactions.find(x => x.id === id);
     if (!t) return;
-    
+
     if (confirm("Request Super Admin to delete this transaction?")) {
         try {
             await setDoc(doc(db, "pending_deletions", id), {
@@ -954,20 +1104,20 @@ window.requestTransactionDeletion = async (id) => {
 window.downloadLedgerPDF = () => {
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF('l', 'mm', 'a4');
-    
+
     pdf.setFontSize(18);
     pdf.text("Combined Financial Ledger", 14, 22);
-    
+
     const nameSearch = document.getElementById("ledger-search-name").value.toLowerCase();
     const classSearch = document.getElementById("ledger-search-class").value;
     const staffSearch = document.getElementById("ledger-search-staff").value;
-    
+
     let filtered = window.fetchedTransactions;
-    if(window.currentLedgerTab !== 'All') { filtered = filtered.filter(t => t.type === window.currentLedgerTab); }
-    if(classSearch) { filtered = filtered.filter(t => t.class === classSearch); }
-    if(staffSearch) { filtered = filtered.filter(t => t.personName === staffSearch); }
-    if(nameSearch) { filtered = filtered.filter(t => t.personName?.toLowerCase().includes(nameSearch)); }
-    
+    if (window.currentLedgerTab !== 'All') { filtered = filtered.filter(t => t.type === window.currentLedgerTab); }
+    if (classSearch) { filtered = filtered.filter(t => t.class === classSearch); }
+    if (staffSearch) { filtered = filtered.filter(t => t.personName === staffSearch); }
+    if (nameSearch) { filtered = filtered.filter(t => t.personName?.toLowerCase().includes(nameSearch)); }
+
     let y = 40;
     pdf.setFontSize(10);
     pdf.setFont(undefined, 'bold');
@@ -977,10 +1127,10 @@ window.downloadLedgerPDF = () => {
     pdf.text("Details", 120, y);
     pdf.text("Amount", 180, y);
     pdf.text("Mode", 220, y);
-    
+
     pdf.setFont(undefined, 'normal');
     y += 10;
-    
+
     filtered.forEach((t, i) => {
         if (y > 190) {
             pdf.addPage();
@@ -995,14 +1145,14 @@ window.downloadLedgerPDF = () => {
         pdf.text(t.mode || '', 220, y);
         y += 10;
     });
-    
+
     pdf.save("Ledger_Report.pdf");
 };
 
 window.generatePayslip = async (id) => {
     const t = window.fetchedTransactions.find(x => x.id === id);
     if (!t) return;
-    
+
     const slipDiv = document.createElement('div');
     slipDiv.style.position = 'absolute';
     slipDiv.style.top = '-9999px';
@@ -1012,7 +1162,7 @@ window.generatePayslip = async (id) => {
     slipDiv.style.background = '#fff';
     slipDiv.style.color = '#000';
     slipDiv.style.fontFamily = 'Arial, sans-serif';
-    
+
     const schoolName = currentSchoolName || 'School Name';
     slipDiv.innerHTML = `
         <div style="text-align:center; border-bottom:2px solid #ccc; padding-bottom:20px; margin-bottom:20px;">
@@ -1054,7 +1204,7 @@ window.generatePayslip = async (id) => {
             </div>
         </div>
     `;
-    
+
     document.body.appendChild(slipDiv);
     try {
         const canvas = await html2canvas(slipDiv, { scale: 2 });
@@ -1078,11 +1228,11 @@ window.generatePayslip = async (id) => {
 async function loadStudents() {
     try {
         const snap = await getDocs(query(collection(db, "students"), where("schoolId", "==", currentSchoolId)));
-        window.fetchedStudents =[]; let pendingCount = 0; let totalPresent = 0;
-        snap.forEach(d => { let dt = d.data(); dt.id = d.id; if(dt.status === "Pending") pendingCount++; window.fetchedStudents.push(dt); });
+        window.fetchedStudents = []; let pendingCount = 0; let totalPresent = 0;
+        snap.forEach(d => { let dt = d.data(); dt.id = d.id; if (dt.status === "Pending") pendingCount++; window.fetchedStudents.push(dt); });
         document.getElementById("count-students").innerText = snap.size; document.getElementById("count-pending").innerText = pendingCount;
-        
-        if(snap.size > 0) {
+
+        if (snap.size > 0) {
             try {
                 const todayStr = new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD
                 const attSnap = await getDocs(query(collection(db, "attendance"), where("schoolId", "==", currentSchoolId), where("date", "==", todayStr)));
@@ -1090,40 +1240,40 @@ async function loadStudents() {
                 let totalPresent = 0;
                 attSnap.forEach(d => {
                     const recs = d.data().records || {};
-                    for(let sid in recs) {
+                    for (let sid in recs) {
                         totalStudentsRecorded++;
-                        if(recs[sid] === "Present") totalPresent++;
+                        if (recs[sid] === "Present") totalPresent++;
                     }
                 });
                 let att = 0;
-                if(totalStudentsRecorded > 0) {
+                if (totalStudentsRecorded > 0) {
                     att = Math.floor((totalPresent / totalStudentsRecorded) * 100);
                 } else {
                     att = "N/A ";
                 }
                 document.getElementById("count-attendance").innerText = att + (att !== "N/A " ? "%" : "");
-            } catch(e) {
+            } catch (e) {
                 document.getElementById("count-attendance").innerText = "Err";
             }
         }
-        
-        renderClassFilters(); renderStudentsTable("All");
-    } catch(e) {}
+
+        renderClassFilters(); renderStudentsTable("All"); populateTransferStudentOptions();
+    } catch (e) { }
 }
 
 function renderClassFilters() {
-    const classes =["Nursery", "LKG", "UKG", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th"];
+    const classes = ["Nursery", "LKG", "UKG", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th"];
     let html = `<button class="filter-btn active" onclick="filterStudents('All', this)">All</button>`;
     classes.forEach(c => html += `<button class="filter-btn" onclick="filterStudents('${c}', this)">${c}</button>`);
     document.getElementById("class-filters").innerHTML = html;
 }
 
-window.filterStudents = (className, btnElement) => { 
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active')); 
-    if(btnElement) btnElement.classList.add('active'); 
+window.filterStudents = (className, btnElement) => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    if (btnElement) btnElement.classList.add('active');
     sessionStorage.setItem('activeStudentTab', className);
-    renderStudentsTable(className); 
-    renderAdmitCardStudentsTable(className); 
+    renderStudentsTable(className);
+    renderAdmitCardStudentsTable(className);
 };
 
 window.searchStudent = () => {
@@ -1144,14 +1294,14 @@ window.filterByStatus = (status) => {
 function renderStudentsTable(className, searchTerm = null, statusFilter = null) {
     const tbody = document.getElementById("student-table"); let html = "";
     let filtered = className === "All" ? window.fetchedStudents : window.fetchedStudents.filter(s => s.class && s.class.toUpperCase() === className.toUpperCase());
-    
-    if(statusFilter && statusFilter !== 'all') {
+
+    if (statusFilter && statusFilter !== 'all') {
         filtered = filtered.filter(s => s.status && s.status.toLowerCase() === statusFilter.toLowerCase());
     }
 
-    if(searchTerm) {
+    if (searchTerm) {
         const lowerTerm = searchTerm.toLowerCase();
-        filtered = filtered.filter(s => 
+        filtered = filtered.filter(s =>
             (s.name && s.name.toLowerCase().includes(lowerTerm)) ||
             (s.rollNo && String(s.rollNo).includes(lowerTerm)) ||
             (s.regNo && String(s.regNo).includes(lowerTerm)) ||
@@ -1159,22 +1309,22 @@ function renderStudentsTable(className, searchTerm = null, statusFilter = null) 
         );
     }
 
-    filtered.sort((a,b) => (Number(a.rollNo) || 999999) - (Number(b.rollNo) || 999999));
+    filtered.sort((a, b) => (Number(a.rollNo) || 999999) - (Number(b.rollNo) || 999999));
 
     filtered.forEach(dt => {
         const safeId = dt.id.replace(/'/g, "\\'"); const locked = dt.lockedOut;
         const statusColor = dt.status === 'Approved' ? '#27ae60' : (dt.status === 'Pending' ? '#e67e22' : '#e53e3e'); const statusIcon = dt.status === 'Approved' ? '<i class="fas fa-check"></i>' : '<i class="fas fa-clock"></i>';
-        
+
         const lockBtn = locked ? `<button class="action-btn btn-green" onclick="toggleStudentLock('${safeId}', false)" title="Unlock Account"><i class="fas fa-unlock"></i></button>` : `<button class="action-btn btn-dark" onclick="toggleStudentLock('${safeId}', true)" title="Lock Account"><i class="fas fa-lock"></i></button>`;
 
-        const actionBtns = dt.status === "Pending" 
+        const actionBtns = dt.status === "Pending"
             ? `<button class="action-btn btn-green" onclick="updateStudentStatus('${safeId}')"><i class="fas fa-check"></i> Approve</button>`
             : `
             <button class="action-btn btn-blue" onclick="showIDCard('${safeId}')"><i class="fas fa-id-card"></i> ID</button>
             <button class="action-btn" style="background:#3b82f6; color:white;" onclick="window.openDirectMessageModal('${safeId}', '${dt.name.replace(/'/g, "\\'")}')"><i class="fas fa-comment-dots"></i> Message</button>
             <button class="action-btn btn-purple" onclick="openStudentModal('${safeId}')"><i class="fas fa-edit"></i> Edit</button>
             ${lockBtn}`;
-        
+
         html += `<tr class="${locked ? 'locked-row' : ''}">
             <td><img src="${dt.photoUrl || 'https://via.placeholder.com/100'}" class="img-circle"></td>
             <td><strong style="display:block; font-size:13px;">${dt.name || 'N/A'} ${locked ? '<i class="fas fa-lock" style="color:#e53e3e"></i>' : ''}</strong><small style="color:#7f8c8d;">${dt.mobile || 'No Mobile'}</small></td>
@@ -1200,19 +1350,19 @@ window.searchAdmitStudent = () => {
 };
 
 function renderAdmitCardStudentsTable(className = "ALL", searchTerm = null, statusFilter = null) {
-    const tbody = document.getElementById("admit-student-table"); 
-    if(!tbody) return;
+    const tbody = document.getElementById("admit-student-table");
+    if (!tbody) return;
     let html = "";
-    
+
     let filtered = className.toUpperCase() === "ALL" ? window.fetchedStudents : window.fetchedStudents.filter(s => s.class && s.class.toUpperCase() === className.toUpperCase());
-    
-    if(statusFilter && statusFilter !== 'all') {
+
+    if (statusFilter && statusFilter !== 'all') {
         filtered = filtered.filter(s => s.status && s.status.toLowerCase() === statusFilter.toLowerCase());
     }
 
-    if(searchTerm) {
+    if (searchTerm) {
         const lowerTerm = searchTerm.toLowerCase();
-        filtered = filtered.filter(s => 
+        filtered = filtered.filter(s =>
             (s.name && s.name.toLowerCase().includes(lowerTerm)) ||
             (s.rollNo && String(s.rollNo).includes(lowerTerm)) ||
             (s.regNo && String(s.regNo).includes(lowerTerm)) ||
@@ -1220,12 +1370,12 @@ function renderAdmitCardStudentsTable(className = "ALL", searchTerm = null, stat
         );
     }
 
-    filtered.sort((a,b) => (Number(a.rollNo) || 999999) - (Number(b.rollNo) || 999999));
+    filtered.sort((a, b) => (Number(a.rollNo) || 999999) - (Number(b.rollNo) || 999999));
 
     filtered.forEach(dt => {
-        const safeId = dt.id.replace(/'/g, "\\'"); 
+        const safeId = dt.id.replace(/'/g, "\\'");
         const locked = dt.lockedOut;
-        
+
         // NO Generate ID Card Button
         const actionBtns = `
             <button class="action-btn btn-purple" onclick="downloadMyAdmitCard('${safeId}')"><i class="fas fa-file-alt"></i> Admit Card</button>
@@ -1233,7 +1383,7 @@ function renderAdmitCardStudentsTable(className = "ALL", searchTerm = null, stat
         `;
 
         const toggleHtml = `<label class="switch" style="transform: scale(0.8);"><input type="checkbox" onchange="toggleAdmitCardVisibility('${safeId}', this.checked)" ${dt.admitCardPublished ? 'checked' : ''}><span class="slider"></span></label>`;
-        
+
         html += `<tr class="${locked ? 'locked-row' : ''}">
             <td><img src="${dt.photoUrl || 'https://via.placeholder.com/100'}" class="img-circle"></td>
             <td><strong style="display:block; font-size:13px;">${dt.name || 'N/A'} ${locked ? '<i class="fas fa-lock" style="color:#e53e3e"></i>' : ''}</strong><span style="font-size:12px; display:block;"><b>P:</b> ${(dt.parentage || dt.fatherName) || 'N/A'}</span></td>
@@ -1264,16 +1414,16 @@ window.populateStudentsForMarks = () => {
     const studentSelect = document.getElementById("marks_student");
     studentSelect.innerHTML = '<option value="">-- Select Student --</option>';
     if (!classVal) return;
-    
+
     const students = window.fetchedStudents.filter(s => s.class === classVal);
     students.forEach(s => {
         studentSelect.innerHTML += `<option value="${s.id}">${s.name} (${s.rollNo || 'N/A'})</option>`;
     });
-    
+
     const subjects = window.examSubjects || ['English', 'Mathematics', 'Science', 'Social Studies', 'Hindi/Local'];
     const tbody = document.getElementById("marks_entry_table");
     tbody.innerHTML = '';
-    
+
     subjects.forEach((sub, idx) => {
         tbody.innerHTML += `<tr>
             <td style="padding:10px; border:1px solid #ccc;">${sub}</td>
@@ -1288,23 +1438,23 @@ window.saveStudentMarks = async () => {
     const studentId = document.getElementById("marks_student").value;
     if (!studentId) return alert("Please select a student.");
     const examTerm = document.getElementById("marks_exam_term") ? document.getElementById("marks_exam_term").value : "Annual Examination 2026";
-    
+
     const subjects = window.examSubjects || ['English', 'Mathematics', 'Science', 'Social Studies', 'Hindi/Local'];
     const marksData = {};
-    
+
     let totalObt = 0;
     let totalMax = 0;
-    
+
     subjects.forEach((sub, idx) => {
         const max = parseFloat(document.getElementById(`marks_max_${idx}`).value) || 100;
         const min = parseFloat(document.getElementById(`marks_min_${idx}`).value) || 33;
         const obt = parseFloat(document.getElementById(`marks_obt_${idx}`).value) || 0;
         totalMax += max;
         totalObt += obt;
-        let grade = obt >= (0.9*max) ? 'A+' : (obt >= (0.8*max) ? 'A' : (obt >= (0.7*max) ? 'B' : (obt >= min ? 'C' : 'F')));
+        let grade = obt >= (0.9 * max) ? 'A+' : (obt >= (0.8 * max) ? 'A' : (obt >= (0.7 * max) ? 'B' : (obt >= min ? 'C' : 'F')));
         marksData[sub] = { max, min, obt, grade };
     });
-    
+
     try {
         await setDoc(doc(db, "student_marks", studentId), {
             marks: marksData,
@@ -1345,14 +1495,14 @@ window.generateMarksheet = async (st, marksDoc) => {
     slipDiv.style.background = '#fff';
     slipDiv.style.color = '#000';
     slipDiv.style.fontFamily = 'Arial, sans-serif';
-    
+
     const schoolName = currentSchoolName || 'School Name';
     const examTerm = marksDoc.examTerm || 'Annual Examination 2026';
-    
+
     let rowsHtml = '';
     let totalMarks = marksDoc.totalObt || 0;
     let maxTotal = marksDoc.totalMax || 0;
-    
+
     Object.keys(marksDoc.marks || {}).forEach(sub => {
         const m = marksDoc.marks[sub];
         rowsHtml += `<tr>
@@ -1363,10 +1513,10 @@ window.generateMarksheet = async (st, marksDoc) => {
             <td style="padding:10px; border:1px solid #ccc; text-align:center;">${m.grade}</td>
         </tr>`;
     });
-    
+
     const percentage = maxTotal > 0 ? ((totalMarks / maxTotal) * 100).toFixed(2) : 0;
     const finalResult = percentage >= 33 ? '<span style="color:#27ae60;">PASS</span>' : '<span style="color:#e53e3e;">FAIL</span>';
-    
+
     slipDiv.innerHTML = `
         <div style="text-align:center; margin-bottom:20px; padding-bottom:10px; border-bottom:3px double #1e3c72;">
             <h1 style="margin:0; font-size:28px; color:#1e3c72; text-transform:uppercase;">${schoolName}</h1>
@@ -1413,11 +1563,11 @@ window.generateMarksheet = async (st, marksDoc) => {
             <div><strong>Final Result:</strong> ${finalResult}</div>
         </div>
     `;
-    
+
     const renderSig = currentSignatureUrl && (!window.currentSigSettings || window.currentSigSettings.marksheet !== false);
     let finalSigSrc = "";
     if (renderSig) finalSigSrc = await getTransparentSignature(currentSignatureUrl);
-    
+
     slipDiv.innerHTML += `
         <div style="display:flex; justify-content:space-between; margin-top:60px;">
             <div style="text-align:center; width:200px;">
@@ -1456,11 +1606,11 @@ window.generateBulkMarksheets = async (students) => {
                 console.warn(`No marks found for ${st.name}`);
                 continue; // Skip if no real data
             }
-            
+
             const imgData = await window.generateMarksheet(st, docSnap.data());
-            
+
             if (pdfAdded) pdf.addPage();
-            
+
             const imgProps = pdf.getImageProperties(imgData);
             const pdfWidth = pdf.internal.pageSize.getWidth();
             const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
@@ -1486,11 +1636,11 @@ window.generateBulkMarksheets = async (students) => {
     }
 };
 
-window.updateStudentStatus = async (id) => { if(confirm("Approve admission?")) { await updateDoc(doc(db, "students", id), { status: "Approved" }); loadStudents(); } };
-window.deleteStudent = async (id) => { if(confirm("Delete this student permanently?")) { await deleteDoc(doc(db, "students", id)); loadStudents(); } };
+window.updateStudentStatus = async (id) => { if (confirm("Approve admission?")) { await updateDoc(doc(db, "students", id), { status: "Approved" }); loadStudents(); } };
+window.deleteStudent = async (id) => { if (confirm("Delete this student permanently?")) { await deleteDoc(doc(db, "students", id)); loadStudents(); } };
 
 window.toggleStudentLock = async (id, state) => {
-    if(confirm(state ? "Lock this student's account?" : "Unlock this student's account?")) {
+    if (confirm(state ? "Lock this student's account?" : "Unlock this student's account?")) {
         await updateDoc(doc(db, "students", id), { lockedOut: state }); loadStudents();
     }
 };
@@ -1512,7 +1662,7 @@ window.openStudentModal = (id = null) => {
         document.getElementById("modal-student-mobile").value = st.mobile || "";
         document.getElementById("modal-student-emergency").value = st.emergencyNo || "";
         document.getElementById("modal-student-photo-url").value = st.photoUrl || "";
-        if(st.photoUrl) {
+        if (st.photoUrl) {
             document.getElementById("modal-student-photo-preview").src = st.photoUrl;
             document.getElementById("modal-student-photo-preview").style.display = "block";
         } else {
@@ -1536,15 +1686,15 @@ window.openStudentModal = (id = null) => {
 };
 
 const uploadStudentPhotoWithBgRemoval = async (fileInputId, btnId, defaultText) => {
-    const file = document.getElementById(fileInputId).files[0]; 
+    const file = document.getElementById(fileInputId).files[0];
     if (!file) return null;
-    
-    const btn = document.getElementById(btnId); 
+
+    const btn = document.getElementById(btnId);
     btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Processing Photo...";
-    
+
     try {
         let base64Image = await convertToBase64(file);
-        
+
         // 1. Pre-process: Remove Background
         try {
             const bgRes = await fetch("https://school-backend-zlgy.onrender.com/api/remove-bg", {
@@ -1559,30 +1709,30 @@ const uploadStudentPhotoWithBgRemoval = async (fileInputId, btnId, defaultText) 
         } catch (e) {
             console.warn("Remove BG API Failed, falling back to original photo.", e);
         }
-        
+
         // 2. Upload transparent image to Cloudinary
         btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Uploading...";
-        const res = await fetch("https://api.cloudinary.com/v1_1/disgtvs6f/image/upload", { 
-            method: "POST", 
-            headers: { "Content-Type": "application/json" }, 
-            body: JSON.stringify({ file: base64Image, upload_preset: "ml_default" }) 
+        const res = await fetch("https://api.cloudinary.com/v1_1/disgtvs6f/image/upload", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ file: base64Image, upload_preset: "ml_default" })
         });
-        const data = await res.json(); 
-        btn.innerHTML = defaultText; 
+        const data = await res.json();
+        btn.innerHTML = defaultText;
         return data.secure_url || null;
-    } catch (e) { 
-        btn.innerHTML = defaultText; 
-        return null; 
+    } catch (e) {
+        btn.innerHTML = defaultText;
+        return null;
     }
 };
 
 window.saveStudentModal = async () => {
     const id = document.getElementById("modal-student-id").value;
-    
+
     let photoUrl = document.getElementById("modal-student-photo-url").value;
     if (document.getElementById("modal-student-photo-file").files.length > 0) {
         let uploadedUrl = await uploadStudentPhotoWithBgRemoval("modal-student-photo-file", "modal-save-btn", "<i class='fas fa-save'></i> Save");
-        if(uploadedUrl) photoUrl = uploadedUrl;
+        if (uploadedUrl) photoUrl = uploadedUrl;
     }
 
     const data = {
@@ -1599,7 +1749,7 @@ window.saveStudentModal = async () => {
         schoolId: currentSchoolId
     };
 
-    if(!data.name || !data.class) return alert("Name and Class are required.");
+    if (!data.name || !data.class) return alert("Name and Class are required.");
 
     // SaaS Throttling Check
     if (!id && window.currentLicenseStatus === "Throttled") {
@@ -1609,15 +1759,15 @@ window.saveStudentModal = async () => {
     // Global Blacklist Pre-Check
     try {
         const checkValues = [];
-        if(data.mobile) checkValues.push(data.mobile);
-        if(document.getElementById("modal-student-email") && document.getElementById("modal-student-email").value) checkValues.push(document.getElementById("modal-student-email").value);
-        if(checkValues.length > 0) {
+        if (data.mobile) checkValues.push(data.mobile);
+        if (document.getElementById("modal-student-email") && document.getElementById("modal-student-email").value) checkValues.push(document.getElementById("modal-student-email").value);
+        if (checkValues.length > 0) {
             const blacklistSnap = await getDocs(query(collection(db, "global_blacklist"), where("value", "in", checkValues)));
             if (!blacklistSnap.empty) {
                 return alert("Flagged in Global Blacklist. Action rejected.");
             }
         }
-    } catch(err) {
+    } catch (err) {
         console.warn("Blacklist check skipped or error:", err.message);
     }
 
@@ -1642,10 +1792,10 @@ window.runDefaulterLockdown = () => { alert("Defaulter Lockdown Tool active! Cli
 
 // ====== CLEAN ID CARD & CERTIFICATES ======
 window.showIDCard = async (id) => {
-    const st = window.fetchedStudents.find(s => s.id === id); if(!st) return;
+    const st = window.fetchedStudents.find(s => s.id === id); if (!st) return;
 
     // Setup UI for loading
-    document.getElementById("printable-id").style.display = "none"; 
+    document.getElementById("printable-id").style.display = "none";
     document.getElementById("generating-text").style.display = "block";
     document.getElementById("final-id-image").style.display = "none";
     document.getElementById("id-actions").style.display = "none";
@@ -1684,7 +1834,7 @@ window.showIDCard = async (id) => {
         });
 
         const data = await response.json();
-        if(data.success) {
+        if (data.success) {
             document.getElementById("final-id-image").src = data.idCardUrl;
             document.getElementById("generating-text").style.display = "none";
             document.getElementById("final-id-image").style.display = "block";
@@ -1701,7 +1851,7 @@ window.showIDCard = async (id) => {
 
 window.downloadGeneratedID = () => {
     const img = document.getElementById('final-id-image');
-    if(!img.src) return alert("No ID card available.");
+    if (!img.src) return alert("No ID card available.");
     const link = document.createElement('a');
     link.href = img.src;
     link.download = `Student_IDCard.png`;
@@ -1712,25 +1862,25 @@ window.downloadGeneratedID = () => {
 
 window.printGeneratedID = () => {
     const img = document.getElementById('final-id-image');
-    if(!img.src) return alert("No ID card available.");
+    if (!img.src) return alert("No ID card available.");
     const printWindow = window.open('', '_blank');
     printWindow.document.write('<html><head><title>Print ID Card</title></head><body><img src="' + img.src + '" onload="window.print();window.close()"></body></html>');
     printWindow.document.close();
 };
 
 window.generateCertificate = async (id, type) => {
-    const st = window.fetchedStudents.find(s => s.id === id); if(!st) return;
+    const st = window.fetchedStudents.find(s => s.id === id); if (!st) return;
     document.getElementById("cert-school-name").innerText = currentSchoolName; document.getElementById("cert-school-name").style.color = currentThemeColor;
     document.getElementById("cert-title").innerText = type.toUpperCase() + " CERTIFICATE"; document.getElementById("cert-date").innerText = new Date().toLocaleDateString();
-    
+
     let bodyText = "";
-    if(type === 'tc') bodyText = `This is to certify that Mr./Ms. <strong>${st.name}</strong>, son/daughter of <strong>${(st.parentage || st.fatherName)}</strong>, was a bona fide student of class <strong>${st.class}</strong> in this institution. He/She has paid all dues and is hereby granted this Transfer Certificate to pursue further education.`;
-    if(type === 'character') bodyText = `This is to certify that <strong>${st.name}</strong>, son/daughter of <strong>${(st.parentage || st.fatherName)}</strong>, student of class <strong>${st.class}</strong>, bears a good moral character to the best of our knowledge. We wish him/her success in all future endeavors.`;
-    if(type === 'bonafide') bodyText = `This is to certify that <strong>${st.name}</strong>, son/daughter of <strong>${(st.parentage || st.fatherName)}</strong>, is a bona fide student of this institution, currently studying in class <strong>${st.class}</strong> during the current academic session.`;
+    if (type === 'tc') bodyText = `This is to certify that Mr./Ms. <strong>${st.name}</strong>, son/daughter of <strong>${(st.parentage || st.fatherName)}</strong>, was a bona fide student of class <strong>${st.class}</strong> in this institution. He/She has paid all dues and is hereby granted this Transfer Certificate to pursue further education.`;
+    if (type === 'character') bodyText = `This is to certify that <strong>${st.name}</strong>, son/daughter of <strong>${(st.parentage || st.fatherName)}</strong>, student of class <strong>${st.class}</strong>, bears a good moral character to the best of our knowledge. We wish him/her success in all future endeavors.`;
+    if (type === 'bonafide') bodyText = `This is to certify that <strong>${st.name}</strong>, son/daughter of <strong>${(st.parentage || st.fatherName)}</strong>, is a bona fide student of this institution, currently studying in class <strong>${st.class}</strong> during the current academic session.`;
     document.getElementById("cert-body").innerHTML = bodyText;
 
     document.getElementById("cert-printable").style.display = "flex"; document.getElementById("final-cert-image").style.display = "none"; document.getElementById("cert-actions").style.display = "none"; document.getElementById("cert-generating-text").style.display = "block"; document.getElementById("cert-modal").style.display = "flex";
-    
+
     setTimeout(() => {
         html2canvas(document.getElementById("cert-printable"), { useCORS: true, scale: 2 }).then(canvas => {
             document.getElementById("final-cert-image").src = canvas.toDataURL("image/png");
@@ -1741,15 +1891,15 @@ window.generateCertificate = async (id, type) => {
 };
 
 window.shareImage = async (imgId, filename) => {
-    const imgSrc = document.getElementById(imgId).src; if(!imgSrc) return;
-    try { if (navigator.share) { const blob = await (await fetch(imgSrc)).blob(); const file = new File([blob], filename, { type: 'image/png' }); await navigator.share({ title: 'Document', files:[file] }); } else { alert("Long press the image to save it."); } } catch (err) {}
+    const imgSrc = document.getElementById(imgId).src; if (!imgSrc) return;
+    try { if (navigator.share) { const blob = await (await fetch(imgSrc)).blob(); const file = new File([blob], filename, { type: 'image/png' }); await navigator.share({ title: 'Document', files: [file] }); } else { alert("Long press the image to save it."); } } catch (err) { }
 };
 
 // ================= STAFF & PRIVILEGES =================
 window.saveStaff = async () => {
     const name = document.getElementById("s_name").value.trim(); const email = document.getElementById("s_email").value.trim(); const pass = document.getElementById("s_pass").value.trim(); const role = document.getElementById("s_role").value;
-    if(!name || !email || !pass) return alert("Fill all fields.");
-    
+    if (!name || !email || !pass) return alert("Fill all fields.");
+
     // SaaS Throttling Check
     if (window.currentLicenseStatus === "Throttled") {
         return alert("Your account is throttled due to non-payment. Database writes for new records are disabled. Please contact billing.");
@@ -1761,30 +1911,30 @@ window.saveStaff = async () => {
         if (!blacklistSnap.empty) {
             return alert("Flagged in Global Blacklist. Action rejected.");
         }
-    } catch(err) {
+    } catch (err) {
         console.warn("Blacklist check skipped or error:", err.message);
     }
 
-    let photoUrl = await uploadToCloudinary("s_photo", "s_btn", "<i class='fas fa-save'></i> Add Staff Member"); if(!photoUrl) photoUrl = "https://via.placeholder.com/100";
+    let photoUrl = await uploadToCloudinary("s_photo", "s_btn", "<i class='fas fa-save'></i> Add Staff Member"); if (!photoUrl) photoUrl = "https://via.placeholder.com/100";
     try {
         const cred = await createUserWithEmailAndPassword(secondaryAuth, email, pass);
         await setDoc(doc(db, "users", cred.user.uid), { name, email, role: "staff", staffRole: role, plainPassword: pass, photoUrl: photoUrl, schoolId: currentSchoolId, status: "active", privileges: { attendance: true, marks: true, finance: false, notices: false, admissions: false, certs: false, exams: false, settings: false, view_finance: false, delete: false } });
-        alert("Staff created successfully!"); document.getElementById("s_name").value=""; document.getElementById("s_email").value=""; document.getElementById("s_pass").value=""; loadStaff();
-    } catch(e) { alert("Error: " + e.message); } finally { await signOut(secondaryAuth).catch(e=>{}); }
+        alert("Staff created successfully!"); document.getElementById("s_name").value = ""; document.getElementById("s_email").value = ""; document.getElementById("s_pass").value = ""; loadStaff();
+    } catch (e) { alert("Error: " + e.message); } finally { await signOut(secondaryAuth).catch(e => { }); }
 };
 
 async function loadStaff() {
     try {
         const snap = await getDocs(query(collection(db, "users"), where("schoolId", "==", currentSchoolId), where("role", "==", "staff")));
-        window.fetchedStaff =[]; let html = ""; document.getElementById("count-staff").innerText = snap.size; let staffOpts = "<option value=''>-- Select Staff --</option>";
+        window.fetchedStaff = []; let html = ""; document.getElementById("count-staff").innerText = snap.size; let staffOpts = "<option value=''>-- Select Staff --</option>";
         snap.forEach(d => {
             const dt = d.data(); dt.id = d.id; window.fetchedStaff.push(dt);
             staffOpts += `<option value="${d.id}">${dt.name} (${dt.staffRole})</option>`;
             const statusColor = dt.status === "blocked" ? "red" : "green";
             const blockBtn = dt.status === "blocked" ? `<button class="action-btn btn-green" onclick="updateStaffStatus('${d.id}', 'active')">Unblock</button>` : `<button class="action-btn btn-yellow" onclick="updateStaffStatus('${d.id}', 'blocked')">Block</button>`;
-            
-            let privs = dt.privileges || {}; let privStr =[];
-            if(privs.attendance) privStr.push("Att."); if(privs.marks) privStr.push("Marks"); if(privs.finance) privStr.push("Fin."); if(privs.notices) privStr.push("Notices");
+
+            let privs = dt.privileges || {}; let privStr = [];
+            if (privs.attendance) privStr.push("Att."); if (privs.marks) privStr.push("Marks"); if (privs.finance) privStr.push("Fin."); if (privs.notices) privStr.push("Notices");
 
             html += `<tr>
                 <td><img src="${dt.photoUrl || 'https://via.placeholder.com/100'}" class="img-circle"></td>
@@ -1800,16 +1950,16 @@ async function loadStaff() {
         });
         document.getElementById("staff-table").innerHTML = html || "<tr><td colspan='6'>No Staff Found.</td></tr>";
         document.getElementById("mail_specific_staff").innerHTML = staffOpts; document.getElementById("salary_staff").innerHTML = staffOpts;
-    } catch(e) {}
+    } catch (e) { }
 }
 
 window.editStaff = (id) => {
-    const st = window.fetchedStaff.find(s => s.id === id); if(!st) return; currentEditStaffId = id;
+    const st = window.fetchedStaff.find(s => s.id === id); if (!st) return; currentEditStaffId = id;
     document.getElementById("edit_s_email").value = st.email; document.getElementById("edit_s_pass").value = st.plainPassword || ""; document.getElementById("edit_s_role").value = st.staffRole || "Teacher";
     let p = st.privileges || {};
-    document.getElementById("priv_attendance").checked = p.attendance === true; 
-    document.getElementById("priv_marks").checked = p.marks === true; 
-    document.getElementById("priv_finance").checked = p.finance === true; 
+    document.getElementById("priv_attendance").checked = p.attendance === true;
+    document.getElementById("priv_marks").checked = p.marks === true;
+    document.getElementById("priv_finance").checked = p.finance === true;
     document.getElementById("priv_notices").checked = p.notices === true;
     document.getElementById("priv_admissions").checked = p.admissions === true;
     document.getElementById("priv_certs").checked = p.certs === true;
@@ -1822,10 +1972,10 @@ window.editStaff = (id) => {
 
 window.saveStaffEdits = async () => {
     const p = document.getElementById("edit_s_pass").value; const r = document.getElementById("edit_s_role").value;
-    const privs = { 
-        attendance: document.getElementById("priv_attendance").checked, 
-        marks: document.getElementById("priv_marks").checked, 
-        finance: document.getElementById("priv_finance").checked, 
+    const privs = {
+        attendance: document.getElementById("priv_attendance").checked,
+        marks: document.getElementById("priv_marks").checked,
+        finance: document.getElementById("priv_finance").checked,
         notices: document.getElementById("priv_notices").checked,
         admissions: document.getElementById("priv_admissions").checked,
         certs: document.getElementById("priv_certs").checked,
@@ -1837,13 +1987,13 @@ window.saveStaffEdits = async () => {
     try {
         await updateDoc(doc(db, "users", currentEditStaffId), { plainPassword: p, staffRole: r, privileges: privs });
         alert("Staff Privileges & Auth updated successfully!"); document.getElementById("edit-staff-modal").style.display = "none"; loadStaff();
-    } catch(e) { alert("Error saving."); }
+    } catch (e) { alert("Error saving."); }
 };
 
 window.updateStaffStatus = async (uid, newStatus) => {
     if (newStatus === 'blocked') { const reason = prompt("Enter reason for blocking this staff member:"); if (reason === null) return; await updateDoc(doc(db, "users", uid), { status: newStatus, blockReason: reason || "Violation of policies" }); } else { if (confirm("Unblock this staff member?")) { await updateDoc(doc(db, "users", uid), { status: newStatus, blockReason: "" }); } else return; } loadStaff();
 };
-window.deleteStaff = async (uid) => { if(confirm("Permanently delete this staff member?")) { await deleteDoc(doc(db, "users", uid)); loadStaff(); } };
+window.deleteStaff = async (uid) => { if (confirm("Permanently delete this staff member?")) { await deleteDoc(doc(db, "users", uid)); loadStaff(); } };
 
 // ================= ACADEMIC VETO =================
 async function loadPendingResults() {
@@ -1855,29 +2005,29 @@ async function loadPendingResults() {
             html += `<tr><td>${dt.date || 'Recent'}</td><td><strong>${dt.studentName}</strong><br><small>Class: ${dt.class}</small></td><td><strong>${dt.examName}</strong><br><small>${dt.subject}</small></td><td><span style="color:#e67e22; font-weight:bold;">${dt.marksObtained} / ${dt.maxMarks}</span></td><td><button class="action-btn btn-green" onclick="approveResult('${d.id}')"><i class="fas fa-check"></i> Approve Result</button></td></tr>`;
         });
         document.getElementById("veto-table").innerHTML = html || "<tr><td colspan='5' style='text-align:center;'>No pending results to vet.</td></tr>";
-    } catch(e) { console.log("Academic veto skip", e); }
+    } catch (e) { console.log("Academic veto skip", e); }
 }
-window.approveResult = async (docId) => { try { await updateDoc(doc(db, "exam_marks", docId), { status: "Approved" }); alert("Result Approved! Students can now see it."); loadPendingResults(); } catch(e) {} };
+window.approveResult = async (docId) => { try { await updateDoc(doc(db, "exam_marks", docId), { status: "Approved" }); alert("Result Approved! Students can now see it."); loadPendingResults(); } catch (e) { } };
 
 // ================= NOTICES =================
 window.saveNotice = async () => {
     const target = document.getElementById("n_target").value;
     const title = document.getElementById("n_title").value.trim(); const body = document.getElementById("n_body").value.trim();
-    if(!title || !body) return alert("Fill title and body");
+    if (!title || !body) return alert("Fill title and body");
     try {
         await setDoc(doc(collection(db, "notices")), { target, title, body, date: new Date().toLocaleDateString(), visible: true, schoolId: currentSchoolId, createdAt: serverTimestamp() });
-        document.getElementById("n_title").value=""; document.getElementById("n_body").value=""; loadNotices();
-    } catch(e) { alert("Error saving notice."); }
+        document.getElementById("n_title").value = ""; document.getElementById("n_body").value = ""; loadNotices();
+    } catch (e) { alert("Error saving notice."); }
 };
 
 window.saveWhatsappLink = async () => {
     const link = document.getElementById("wa_group_link").value.trim();
     if (!link) return alert("Please enter the WhatsApp Group Link.");
-    
+
     try {
         await updateDoc(doc(db, "schools", currentSchoolId), { whatsappGroup: link });
         alert("WhatsApp Group Link saved successfully!");
-    } catch(e) {
+    } catch (e) {
         alert("Error saving link.");
     }
 };
@@ -1885,10 +2035,10 @@ window.saveWhatsappLink = async () => {
 window.broadcastToWhatsapp = async () => {
     const link = document.getElementById("wa_group_link").value.trim();
     const msg = document.getElementById("wa_message").value.trim();
-    
+
     if (!link) return alert("Please save the Official WhatsApp Group Link first.");
     if (!msg) return alert("Please enter a message to broadcast.");
-    
+
     try {
         await navigator.clipboard.writeText(msg);
         alert("Message copied to clipboard! Opening WhatsApp Group...\nPlease paste the message into the chat.");
@@ -1904,7 +2054,7 @@ async function loadNotices() {
         const snap = await getDocs(query(collection(db, "notices"), where("schoolId", "==", currentSchoolId)));
         let html = "", activeCount = 0;
         snap.forEach(d => {
-            const dt = d.data(); if(dt.visible) activeCount++;
+            const dt = d.data(); if (dt.visible) activeCount++;
             const eyeIcon = dt.visible ? "fa-eye" : "fa-eye-slash", eyeColor = dt.visible ? "btn-blue" : "btn-yellow";
             html += `<tr><td>${dt.date}</td><td><strong>${dt.target || 'All'}</strong></td><td>${dt.title}</td><td>${dt.body}</td>
             <td><button class="action-btn ${eyeColor}" onclick="toggleNotice('${d.id}', ${!dt.visible})"><i class="fas ${eyeIcon}"></i></button></td>
@@ -1912,15 +2062,15 @@ async function loadNotices() {
         });
         document.getElementById("notice-table").innerHTML = html || "<tr><td colspan='6'>No Notices Found.</td></tr>";
         document.getElementById("count-notices").innerText = activeCount;
-    } catch(e) {}
+    } catch (e) { }
 }
 
 window.toggleNotice = async (id, state) => { await updateDoc(doc(db, "notices", id), { visible: state }); loadNotices(); };
 
 window.deleteDocFromDb = async (colName, id, callback) => {
-    if(confirm("Are you sure you want to permanently delete this record?")) { 
-        await deleteDoc(doc(db, colName, id)); 
-        callback(); 
+    if (confirm("Are you sure you want to permanently delete this record?")) {
+        await deleteDoc(doc(db, colName, id));
+        callback();
     }
 };
 
@@ -1937,16 +2087,16 @@ function parseUserAgent(ua) {
 window.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('impersonate') === 'true') {
-        sessionStorage.setItem("is_impersonating", "true"); 
+        sessionStorage.setItem("is_impersonating", "true");
         const impEmail = urlParams.get('email');
         const impPass = urlParams.get('pass');
-        
+
         if (impEmail && impPass) {
             setTimeout(() => {
                 document.getElementById("loginId").value = decodeURIComponent(impEmail);
                 document.getElementById("loginPassword").value = decodeURIComponent(impPass);
                 document.getElementById("doLoginBtn").click();
-                
+
                 window.history.replaceState({}, document.title, window.location.pathname);
             }, 800);
         }
@@ -1960,9 +2110,9 @@ window.pendingAdmitCardStudents = [];
 window.openBulkActionModal = (type) => {
     window.currentBulkActionType = type;
     let title = "Batch Action";
-    if(type === 'id') title = "<i class='fas fa-id-badge'></i> Bulk Generate ID Cards";
-    if(type === 'admit') title = "<i class='fas fa-file-alt'></i> Bulk Generate Admit Cards";
-    if(type === 'bonafide') title = "<i class='fas fa-graduation-cap'></i> Bulk Generate Bonafide Certificates";
+    if (type === 'id') title = "<i class='fas fa-id-badge'></i> Bulk Generate ID Cards";
+    if (type === 'admit') title = "<i class='fas fa-file-alt'></i> Bulk Generate Admit Cards";
+    if (type === 'bonafide') title = "<i class='fas fa-graduation-cap'></i> Bulk Generate Bonafide Certificates";
     document.getElementById("bulk-modal-title").innerHTML = title;
     document.getElementById("bulk-action-class").value = "All";
     document.getElementById("bulk-select-all").checked = false;
@@ -1973,11 +2123,11 @@ window.openBulkActionModal = (type) => {
 window.renderBulkActionStudents = () => {
     const cls = document.getElementById("bulk-action-class").value;
     let filtered = window.fetchedStudents.filter(s => s.status === 'Approved');
-    if(cls !== "All") filtered = filtered.filter(s => s.class === cls);
-    filtered.sort((a,b) => (Number(a.rollNo) || 999999) - (Number(b.rollNo) || 999999));
+    if (cls !== "All") filtered = filtered.filter(s => s.class === cls);
+    filtered.sort((a, b) => (Number(a.rollNo) || 999999) - (Number(b.rollNo) || 999999));
 
     const tbody = document.getElementById("bulk-action-list");
-    if(filtered.length === 0) {
+    if (filtered.length === 0) {
         tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; padding:15px;'>No approved students found.</td></tr>";
         return;
     }
@@ -1999,27 +2149,27 @@ window.toggleAllBulkStudents = (el) => {
 
 window.triggerBulkAction = () => {
     const checked = document.querySelectorAll(".bulk-student-cb:checked");
-    if(checked.length === 0) return alert("Please select at least one student.");
+    if (checked.length === 0) return alert("Please select at least one student.");
 
     const selectedIds = Array.from(checked).map(cb => cb.value);
     const selectedStudents = window.fetchedStudents.filter(st => selectedIds.includes(st.id));
 
     closeCustomModal('bulk-action-modal');
 
-    if(window.currentBulkActionType === 'id') {
+    if (window.currentBulkActionType === 'id') {
         window.generateBatchIDCards(selectedStudents);
-    } else if(window.currentBulkActionType === 'marksheet') {
+    } else if (window.currentBulkActionType === 'marksheet') {
         window.generateBulkMarksheets(selectedStudents);
-    } else if(window.currentBulkActionType === 'admit') {
+    } else if (window.currentBulkActionType === 'admit') {
         const hasDefaulters = selectedStudents.some(st => st.dueBalance && st.dueBalance > 0);
-        if(hasDefaulters) {
+        if (hasDefaulters) {
             window.pendingAdmitCardStudents = selectedStudents;
             document.getElementById("defaulter-admit-modal").style.display = "flex";
         } else {
             window.pendingAdmitCardStudents = selectedStudents;
             window.proceedAdmitCards('disable');
         }
-    } else if(window.currentBulkActionType === 'bonafide') {
+    } else if (window.currentBulkActionType === 'bonafide') {
         window.triggerBulkBonafide(selectedStudents);
     }
 };
@@ -2036,14 +2186,14 @@ window.triggerBulkBonafide = async (students) => {
     const pdf = new jsPDF('l', 'mm', 'a4');
     let pageCount = 0;
 
-    for(let st of students) {
+    for (let st of students) {
         document.getElementById("cert-school-name").innerText = currentSchoolName;
         document.getElementById("cert-school-name").style.color = currentThemeColor;
         document.getElementById("cert-title").innerText = "BONAFIDE CERTIFICATE";
         document.getElementById("cert-date").innerText = new Date().toLocaleDateString();
         document.getElementById("cert-body").innerHTML = `This is to certify that <strong>${st.name}</strong>, son/daughter of <strong>${(st.parentage || st.fatherName) || 'N/A'}</strong>, is a bona fide student of this institution, currently studying in class <strong>${st.class}</strong> during the current academic session.`;
 
-        if(currentSignatureUrl && (!window.currentSigSettings || window.currentSigSettings.bonafide !== false)) {
+        if (currentSignatureUrl && (!window.currentSigSettings || window.currentSigSettings.bonafide !== false)) {
             const finalSigSrc = await getTransparentSignature(currentSignatureUrl);
             document.getElementById("cert_sig").src = finalSigSrc;
             document.getElementById("cert_sig").style.mixBlendMode = "normal"; // override inline CSS
@@ -2060,7 +2210,7 @@ window.triggerBulkBonafide = async (students) => {
         const imgData = canvas.toDataURL("image/jpeg", 0.9);
         document.getElementById("cert-printable").style.display = "none";
 
-        if(pageCount > 0) pdf.addPage();
+        if (pageCount > 0) pdf.addPage();
         pdf.addImage(imgData, 'JPEG', 10, 10, 277, 190);
         pageCount++;
     }
@@ -2079,18 +2229,18 @@ window.triggerBulkBonafide = async (students) => {
 };
 
 window.downloadCertPDF = () => {
-    if(window.currentGeneratedPDF) {
+    if (window.currentGeneratedPDF) {
         window.currentGeneratedPDF.save(window.currentGeneratedFileName || "Document.pdf");
     }
 };
 
 window.downloadAllIdsAsPDF = () => {
     const images = document.getElementById("bulk-id-grid").querySelectorAll("img");
-    if(images.length === 0) return alert("No ID cards generated yet.");
+    if (images.length === 0) return alert("No ID cards generated yet.");
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF('p', 'mm', 'a4');
     images.forEach((img, index) => {
-        if(index > 0) pdf.addPage();
+        if (index > 0) pdf.addPage();
         pdf.addImage(img.src, 'PNG', 10, 10, 54, 86);
     });
     pdf.save("Batch_ID_Cards.pdf");
@@ -2117,7 +2267,7 @@ async function getTransparentAdmitPhoto(imageUrl) {
 window.proceedAdmitCards = async (mode) => {
     document.getElementById("defaulter-admit-modal").style.display = "none";
     let students = window.pendingAdmitCardStudents;
-    
+
     if (mode === 'disable') {
         students = students.filter(st => !(st.dueBalance && st.dueBalance > 0));
         if (students.length === 0) return alert("No paid students available to generate admit cards.");
@@ -2130,14 +2280,14 @@ window.proceedAdmitCards = async (mode) => {
 
     let schoolName = currentSchoolName || document.getElementById('school-name')?.innerText || "SCHOOL NAME";
     let logoUrl = document.getElementById('school-logo')?.src || "";
-    
+
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF('p', 'mm', 'a4');
     const template = document.getElementById("admit-card-template");
-    
+
     document.getElementById("admit-school").innerText = schoolName.toUpperCase();
-    if(logoUrl) document.getElementById("admit-logo").src = logoUrl;
-    
+    if (logoUrl) document.getElementById("admit-logo").src = logoUrl;
+
     if (currentSignatureUrl && window.currentSigSettings && window.currentSigSettings.admit !== false) {
         const finalSigSrc = await getTransparentSignature(currentSignatureUrl);
         document.getElementById("admit-sig").src = finalSigSrc;
@@ -2152,15 +2302,15 @@ window.proceedAdmitCards = async (mode) => {
     const schoolSnap = await getDoc(doc(db, "schools", currentSchoolId));
     const schoolData = schoolSnap.exists() ? schoolSnap.data() : {};
     for (let cls of uniqueClasses) {
-        if(cls) {
+        if (cls) {
             const fieldKey = "examSchedule_" + cls;
-            if(schoolData[fieldKey] && Array.isArray(schoolData[fieldKey])) {
+            if (schoolData[fieldKey] && Array.isArray(schoolData[fieldKey])) {
                 classSchedules[cls] = schoolData[fieldKey];
             } else {
                 try {
                     const snap = await getDoc(doc(db, "schools", currentSchoolId, "examSchedules", cls));
                     classSchedules[cls] = snap.exists() ? (snap.data().schedule || []) : [];
-                } catch(e) { classSchedules[cls] = []; }
+                } catch (e) { classSchedules[cls] = []; }
             }
         }
     }
@@ -2174,20 +2324,20 @@ window.proceedAdmitCards = async (mode) => {
             document.getElementById("admit-fname").innerText = (st.parentage || st.fatherName) || "N/A";
             document.getElementById("admit-mname").innerText = st.motherName || "N/A";
             document.getElementById("admit-dob").innerText = st.dob || "N/A";
-            
+
             const fallbackImg = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
-            
+
             // Process photo via Hugging Face AI before rendering the card
             const admitPhotoEl = document.getElementById("admit-photo");
-            
+
             // Apply the dynamic school settings background color
             admitPhotoEl.style.backgroundColor = currentPhotoBgColor || "#ffffff";
-            
+
             let finalPhotoSrc = fallbackImg;
             if (st.photoUrl) {
                 finalPhotoSrc = await getTransparentAdmitPhoto(st.photoUrl);
             }
-            
+
             await new Promise((resolve) => {
                 admitPhotoEl.onload = resolve;
                 admitPhotoEl.onerror = resolve;
@@ -2203,7 +2353,7 @@ window.proceedAdmitCards = async (mode) => {
 
             const schedRows = document.getElementById("admit-card-tbody").querySelectorAll("tr");
             const sched = classSchedules[st.class] || [];
-            for(let j=0; j<6; j++) {
+            for (let j = 0; j < 6; j++) {
                 const tds = schedRows[j].querySelectorAll("td");
                 let dStr = sched[j]?.date || "";
                 if (dStr && dStr.includes("-")) {
@@ -2215,11 +2365,11 @@ window.proceedAdmitCards = async (mode) => {
                 tds[2].innerText = sched[j]?.timing || "";
             }
 
-            await new Promise(r => setTimeout(r, 200)); 
+            await new Promise(r => setTimeout(r, 200));
 
             const canvas = await html2canvas(template, { useCORS: true, scale: 2 });
             const imgData = canvas.toDataURL("image/jpeg");
-            
+
             if (i > 0) pdf.addPage();
             pdf.addImage(imgData, 'JPEG', 10, 10, 190, 260);
 
@@ -2234,7 +2384,7 @@ window.proceedAdmitCards = async (mode) => {
         document.getElementById("bulk-generating-text").style.display = "none";
         pdf.save("Batch_Admit_Cards.pdf");
 
-    } catch(e) {
+    } catch (e) {
         document.getElementById("bulk-generating-text").style.display = "none";
         alert("Failed to generate Admit Cards. Error: " + e.message);
     }
@@ -2283,45 +2433,45 @@ window.generateBatchIDCards = async (students) => {
         });
 
         const data = await response.json();
-        if(data.success && data.images) {
+        if (data.success && data.images) {
             const { jsPDF } = window.jspdf;
-            
+
             const paperSizeEl = document.getElementById("bulk-paper-size");
             let pFormat = 'a4';
             if (paperSizeEl && paperSizeEl.value) { pFormat = paperSizeEl.value; }
-            
+
             const pdf = new jsPDF('p', 'mm', pFormat);
-            
+
             const pageWidth = pdf.internal.pageSize.getWidth();
             const pageHeight = pdf.internal.pageSize.getHeight();
-            
+
             // Standard ID Card dimensions in mm
             const cardW = 54;
             const cardH = 86;
             const marginX = 10;
             const marginY = 10;
             const gap = 5;
-            
-            const cols = Math.floor((pageWidth - 2*marginX + gap) / (cardW + gap));
-            const rows = Math.floor((pageHeight - 2*marginY + gap) / (cardH + gap));
+
+            const cols = Math.floor((pageWidth - 2 * marginX + gap) / (cardW + gap));
+            const rows = Math.floor((pageHeight - 2 * marginY + gap) / (cardH + gap));
             const cardsPerPage = cols * rows;
-            
+
             let currentCardInPage = 0;
-            
+
             data.images.forEach((imgBase64, index) => {
                 if (index > 0 && currentCardInPage >= cardsPerPage) {
                     pdf.addPage();
                     currentCardInPage = 0;
                 }
-                
+
                 const colIdx = currentCardInPage % cols;
                 const rowIdx = Math.floor(currentCardInPage / cols);
-                
+
                 const xPos = marginX + colIdx * (cardW + gap);
                 const yPos = marginY + rowIdx * (cardH + gap);
-                
+
                 pdf.addImage(imgBase64, 'PNG', xPos, yPos, cardW, cardH);
-                
+
                 currentCardInPage++;
 
                 const imgElement = document.createElement("img");
@@ -2330,17 +2480,17 @@ window.generateBatchIDCards = async (students) => {
                 imgElement.style.borderRadius = "8px";
                 document.getElementById("bulk-id-grid").appendChild(imgElement);
             });
-            
+
             pdf.save("Batch_ID_Cards.pdf");
         } else {
             alert("API Error: " + data.error);
         }
     } catch (e) {
         alert("Failed to generate ID Cards. Error: " + e.message);
-     } finally {
-      document.getElementById("bulk-generating-text").style.display = "none";
- }
- };
+    } finally {
+        document.getElementById("bulk-generating-text").style.display = "none";
+    }
+};
 // ==========================================
 // ZERO-COMMISSION FEE APPROVAL MODULE
 // ==========================================
@@ -2350,10 +2500,10 @@ window.loadFeeVerifications = async () => {
         const snap = await getDocs(query(collection(db, "fee_verifications"), where("schoolId", "==", currentSchoolId)));
         let html = "";
         const now = new Date();
-        
+
         let verifications = [];
         snap.forEach(d => verifications.push({ id: d.id, ...d.data() }));
-        
+
         // Sort by newest first
         verifications.sort((a, b) => b.createdAt.toDate() - a.createdAt.toDate());
 
@@ -2361,12 +2511,12 @@ window.loadFeeVerifications = async () => {
             // Auto-hide successful verifications older than 24 hours
             if (data.status === "Successful") {
                 const ageHours = (now - data.createdAt.toDate()) / (1000 * 60 * 60);
-                if (ageHours > 24) return; 
+                if (ageHours > 24) return;
             }
 
             const isPending = data.status === "Pending";
             const statusClass = isPending ? "color: #d97706;" : "color: #059669;";
-            const btnHtml = isPending ? 
+            const btnHtml = isPending ?
                 `<button class="action-btn" style="background:#059669; padding: 5px 10px; font-size:12px;" onclick="approveFeeVerification('${data.id}', '${data.studentId}', '${data.studentName}', ${data.amount})"><i class="fas fa-check"></i> Approve & Record</button>` :
                 `<span style="color:#059669; font-weight:bold;"><i class="fas fa-check-circle"></i> Approved</span>`;
 
@@ -2381,21 +2531,21 @@ window.loadFeeVerifications = async () => {
         });
 
         document.getElementById("fee-verifications-body").innerHTML = html || '<tr><td colspan="6" style="text-align:center;">No pending fee verifications.</td></tr>';
-    } catch(e) {
+    } catch (e) {
         console.error("Fee verification load error:", e);
     }
 };
 
 window.approveFeeVerification = async (verificationId, studentId, studentName, amount) => {
-    if(!confirm(`Approve Rs.${amount} fee payment for ${studentName}? This will update the student's balance and ledger.`)) return;
-    
+    if (!confirm(`Approve Rs.${amount} fee payment for ${studentName}? This will update the student's balance and ledger.`)) return;
+
     try {
         const batch = writeBatch(db);
-        
+
         // 1. Mark verification successful
         const vRef = doc(db, "fee_verifications", verificationId);
         batch.update(vRef, { status: "Successful", updatedAt: serverTimestamp() });
-        
+
         // 2. Add to transaction ledger
         const tRef = doc(collection(db, "transactions"));
         batch.set(tRef, {
@@ -2408,16 +2558,16 @@ window.approveFeeVerification = async (verificationId, studentId, studentName, a
             date: new Date().toISOString().split('T')[0],
             createdAt: serverTimestamp()
         });
-        
+
         // 3. Decrease due balance in student doc
         const sRef = doc(db, "students", studentId);
         batch.update(sRef, { dueBalance: increment(-amount) });
-        
+
         await batch.commit();
         alert("Payment Approved! Ledger updated and student balance reduced.");
         loadFeeVerifications();
         loadTransactions();
-    } catch(e) {
+    } catch (e) {
         alert("Error approving payment: " + e.message);
     }
 };
@@ -2433,10 +2583,10 @@ window.loadExamSchedule = async () => {
     const targetClass = (cls === "All") ? "Nursery" : cls;
     try {
         const schoolSnap = await getDoc(doc(db, "schools", currentSchoolId));
-        if(schoolSnap.exists()) {
+        if (schoolSnap.exists()) {
             const schoolData = schoolSnap.data();
             const fieldKey = "examSchedule_" + targetClass;
-            if(schoolData[fieldKey] && Array.isArray(schoolData[fieldKey])) {
+            if (schoolData[fieldKey] && Array.isArray(schoolData[fieldKey])) {
                 populateSchedulerTable(schoolData[fieldKey]);
                 window.lastExamScheduleCache = schoolData[fieldKey];
                 return;
@@ -2452,14 +2602,14 @@ window.loadExamSchedule = async () => {
         } else {
             populateSchedulerTable([]);
         }
-    } catch(e) { console.error(e); }
+    } catch (e) { console.error(e); }
 };
 
 window.populateSchedulerTable = (data) => {
     const dates = document.querySelectorAll(".sched-date");
     const subjs = document.querySelectorAll(".sched-subj");
     const times = document.querySelectorAll(".sched-time");
-    for(let i=0; i<6; i++) {
+    for (let i = 0; i < 6; i++) {
         dates[i].value = data[i]?.date || "";
         subjs[i].value = data[i]?.subject || "";
         times[i].value = data[i]?.timing || "";
@@ -2470,34 +2620,34 @@ window.updateSchedulerDatalists = () => {
     const subjects = new Set(window.examSubjects || []);
     const timings = new Set();
     document.querySelectorAll(".sched-subj").forEach(el => {
-        if(el.value.trim()) subjects.add(el.value.trim().toUpperCase());
+        if (el.value.trim()) subjects.add(el.value.trim().toUpperCase());
     });
     document.querySelectorAll(".sched-time").forEach(el => {
-        if(el.value.trim()) timings.add(el.value.trim());
+        if (el.value.trim()) timings.add(el.value.trim());
     });
-    
+
     const subjList = document.getElementById("subjectsList");
-    if(subjList) {
+    if (subjList) {
         subjList.innerHTML = "";
         subjects.forEach(val => subjList.innerHTML += `<option value="${val}"></option>`);
     }
-    
+
     const timeList = document.getElementById("timingsList");
-    if(timeList) {
+    if (timeList) {
         timeList.innerHTML = "";
         timings.forEach(val => timeList.innerHTML += `<option value="${val}"></option>`);
     }
 };
 window.saveExamSchedule = async () => {
     const cls = document.getElementById("scheduler-class-select").value;
-    if(!currentSchoolId) return alert("School ID not found. Please re-login.");
+    if (!currentSchoolId) return alert("School ID not found. Please re-login.");
 
     const dates = document.querySelectorAll(".sched-date");
     const subjs = document.querySelectorAll(".sched-subj");
     const times = document.querySelectorAll(".sched-time");
 
     const schedule = [];
-    for(let i=0; i<6; i++) {
+    for (let i = 0; i < 6; i++) {
         schedule.push({
             date: dates[i].value.trim(),
             subject: subjs[i].value.trim(),
@@ -2506,8 +2656,8 @@ window.saveExamSchedule = async () => {
     }
 
     try {
-        if(cls === "All") {
-            const allClasses = ["Nursery","LKG","UKG","1st","2nd","3rd","4th","5th","6th","7th","8th","9th","10th","11th","12th"];
+        if (cls === "All") {
+            const allClasses = ["Nursery", "LKG", "UKG", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th"];
             const scheduleMap = {};
             allClasses.forEach(c => { scheduleMap["examSchedule_" + c] = schedule; });
             await updateDoc(doc(db, "schools", currentSchoolId), scheduleMap);
@@ -2518,7 +2668,7 @@ window.saveExamSchedule = async () => {
             alert("Schedule saved for Class " + cls);
         }
         window.lastExamScheduleCache = schedule;
-    } catch(e) {
+    } catch (e) {
         console.error("Schedule save error:", e);
         alert("Error: " + e.message);
     }
@@ -2535,7 +2685,7 @@ window.openGlobalBonafideModal = () => {
 
 window.triggerGlobalBonafide = () => {
     const studentId = document.getElementById("global-bonafide-student").value;
-    if(!studentId) return alert("Please select a student first.");
+    if (!studentId) return alert("Please select a student first.");
     closeCustomModal("global-bonafide-modal");
     window.generateCertificate(studentId, 'bonafide');
 };
@@ -2550,7 +2700,7 @@ window.openDirectMessageModal = (id, name) => {
 
 window.sendDirectMessage = async () => {
     const msg = document.getElementById("dm-message-body").value.trim();
-    if(!msg) return alert("Please type a message.");
+    if (!msg) return alert("Please type a message.");
     try {
         await addDoc(collection(db, "direct_messages"), {
             schoolId: currentSchoolId,
@@ -2562,7 +2712,7 @@ window.sendDirectMessage = async () => {
         });
         alert("Message sent successfully!");
         closeCustomModal("direct-message-modal");
-    } catch(e) {
+    } catch (e) {
         alert("Failed to send message: " + e.message);
     }
 };
@@ -2574,7 +2724,7 @@ window.examSubjects = [];
 window.toggleSubjectSettings = () => {
     const panel = document.getElementById("subject-settings-panel");
     panel.style.display = panel.style.display === "none" ? "block" : "none";
-    if(panel.style.display === "block") window.renderMasterSubjects();
+    if (panel.style.display === "block") window.renderMasterSubjects();
 };
 
 window.renderMasterSubjects = () => {
@@ -2589,8 +2739,8 @@ window.renderMasterSubjects = () => {
 
 window.addMasterSubject = async () => {
     const val = document.getElementById("new-custom-subject").value.trim().toUpperCase();
-    if(!val) return;
-    if(window.examSubjects.includes(val)) return alert("Subject already exists!");
+    if (!val) return;
+    if (window.examSubjects.includes(val)) return alert("Subject already exists!");
     window.examSubjects.push(val);
     document.getElementById("new-custom-subject").value = "";
     window.renderMasterSubjects();
@@ -2606,7 +2756,7 @@ window.deleteMasterSubject = async (index) => {
 };
 
 window.resetMasterSubjects = async () => {
-    if(!confirm("Reset to factory defaults? All custom subjects will be lost.")) return;
+    if (!confirm("Reset to factory defaults? All custom subjects will be lost.")) return;
     window.examSubjects = [...window.factoryDefaultSubjects];
     window.renderMasterSubjects();
     window.updateSchedulerDatalists();
@@ -2620,15 +2770,15 @@ window.renderGlobalBonafideStudents = () => {
     const cls = document.getElementById("global-bonafide-class").value;
     const tbody = document.getElementById("global-bonafide-tbody");
     tbody.innerHTML = "";
-    
+
     let filtered = window.fetchedStudents.filter(s => s.status === 'Approved');
     if (cls !== "All") filtered = filtered.filter(s => s.class === cls);
-    
+
     if (filtered.length === 0) {
         tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; padding:10px;'>No approved students found.</td></tr>";
         return;
     }
-    
+
     filtered.forEach(st => {
         tbody.innerHTML += `<tr>
             <td style="padding: 10px;"><input type="checkbox" class="bonafide-checkbox" value="${st.id}"></td>
@@ -2653,45 +2803,45 @@ window.openGlobalBonafideModal = () => {
 window.triggerGlobalBonafideBatch = async () => {
     const checked = document.querySelectorAll(".bonafide-checkbox:checked");
     if (checked.length === 0) return alert("Please select at least one student.");
-    
+
     document.getElementById("global-bonafide-modal").style.display = "none";
     document.getElementById("cert-modal").style.display = "flex";
     document.getElementById("cert-printable").style.display = "none";
     document.getElementById("cert-actions").style.display = "none";
     document.getElementById("cert-generating-text").style.display = "block";
     document.getElementById("cert-generating-text").innerText = "Compiling Batch Bonafide PDF...";
-    
+
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF('l', 'mm', 'a4'); // Using landscape for certificates
-    
+
     let pageCount = 0;
-    
+
     for (let cb of checked) {
         const id = cb.value;
         const st = window.fetchedStudents.find(s => s.id === id);
         if (!st) continue;
-        
-        document.getElementById("cert-school-name").innerText = currentSchoolName; 
+
+        document.getElementById("cert-school-name").innerText = currentSchoolName;
         document.getElementById("cert-school-name").style.color = currentThemeColor;
-        document.getElementById("cert-title").innerText = "BONAFIDE CERTIFICATE"; 
+        document.getElementById("cert-title").innerText = "BONAFIDE CERTIFICATE";
         document.getElementById("cert-date").innerText = new Date().toLocaleDateString();
-        
+
         let bodyText = `This is to certify that <strong>${st.name}</strong>, son/daughter of <strong>${(st.parentage || st.fatherName)}</strong>, is a bona fide student of this institution, currently studying in class <strong>${st.class}</strong> during the current academic session.`;
         document.getElementById("cert-body").innerHTML = bodyText;
-        
+
         // Wait for render
         document.getElementById("cert-printable").style.display = "flex";
-        
+
         const canvas = await html2canvas(document.getElementById("cert-printable"), { useCORS: true, scale: 2 });
         const imgData = canvas.toDataURL("image/jpeg", 0.9);
-        
+
         document.getElementById("cert-printable").style.display = "none";
-        
+
         if (pageCount > 0) pdf.addPage();
         pdf.addImage(imgData, 'JPEG', 10, 10, 277, 190);
         pageCount++;
     }
-    
+
     pdf.save("Batch_Bonafide_Certificates.pdf");
     document.getElementById("cert-modal").style.display = "none";
 };
@@ -2712,7 +2862,7 @@ window.loadTransportRoutes = async () => {
             </tr>`;
         });
         document.getElementById("transport-body").innerHTML = html || "<tr><td colspan='5' style='text-align:center;'>No routes found.</td></tr>";
-    } catch(e) { console.error(e); }
+    } catch (e) { console.error(e); }
 };
 
 window.saveBusRoute = async () => {
@@ -2720,7 +2870,7 @@ window.saveBusRoute = async () => {
     const dn = document.getElementById("transportDriverName").value.trim();
     const dc = document.getElementById("transportDriverContact").value.trim();
     const fe = document.getElementById("transportBusFee").value.trim();
-    if(!rn || !dn || !dc || !fe) return alert("Fill all fields.");
+    if (!rn || !dn || !dc || !fe) return alert("Fill all fields.");
     try {
         await addDoc(collection(db, "bus_routes"), {
             schoolId: currentSchoolId, routeName: rn, driverName: dn, contact: dc, fee: Number(fe), createdAt: new Date().toISOString()
@@ -2731,12 +2881,12 @@ window.saveBusRoute = async () => {
         document.getElementById("transportDriverContact").value = "";
         document.getElementById("transportBusFee").value = "";
         loadTransportRoutes();
-    } catch(e) { alert("Error saving route"); }
+    } catch (e) { alert("Error saving route"); }
 };
 
 window.deleteBusRoute = async (id) => {
-    if(!confirm("Delete this route?")) return;
-    try { await deleteDoc(doc(db, "bus_routes", id)); loadTransportRoutes(); } catch(e) { alert("Error deleting route."); }
+    if (!confirm("Delete this route?")) return;
+    try { await deleteDoc(doc(db, "bus_routes", id)); loadTransportRoutes(); } catch (e) { alert("Error deleting route."); }
 };
 
 // ================= PHASE 2: INVENTORY MANAGER =================
@@ -2755,7 +2905,7 @@ window.loadInventory = async () => {
             </tr>`;
         });
         document.getElementById("inventory-body").innerHTML = html || "<tr><td colspan='5' style='text-align:center;'>No assets found.</td></tr>";
-    } catch(e) { console.error(e); }
+    } catch (e) { console.error(e); }
 };
 
 window.logAsset = async () => {
@@ -2763,7 +2913,7 @@ window.logAsset = async () => {
     const cat = document.getElementById("inventoryCategory").value;
     const qty = document.getElementById("inventoryQuantity").value.trim();
     const dt = document.getElementById("inventoryDate").value;
-    if(!iname || !qty || !dt) return alert("Fill all fields.");
+    if (!iname || !qty || !dt) return alert("Fill all fields.");
     try {
         await addDoc(collection(db, "inventory"), {
             schoolId: currentSchoolId, itemName: iname, category: cat, quantity: Number(qty), dateAcquired: dt, createdAt: new Date().toISOString()
@@ -2773,23 +2923,23 @@ window.logAsset = async () => {
         document.getElementById("inventoryQuantity").value = "";
         document.getElementById("inventoryDate").value = "";
         loadInventory();
-    } catch(e) { alert("Error saving asset"); }
+    } catch (e) { alert("Error saving asset"); }
 };
 
 window.deleteAsset = async (id) => {
-    if(!confirm("Delete this asset?")) return;
-    try { await deleteDoc(doc(db, "inventory", id)); loadInventory(); } catch(e) { alert("Error deleting asset."); }
+    if (!confirm("Delete this asset?")) return;
+    try { await deleteDoc(doc(db, "inventory", id)); loadInventory(); } catch (e) { alert("Error deleting asset."); }
 };
 
 // ================= PHASE 2: ATTENDANCE ENGINE =================
 window.loadClassForAttendance = () => {
     const cls = document.getElementById("attendanceClassSelect").value;
     const dt = document.getElementById("attendanceDateSelect").value;
-    if(!cls || !dt) return alert("Select both class and date.");
-    
+    if (!cls || !dt) return alert("Select both class and date.");
+
     document.getElementById("attendance-roster-panel").style.display = "block";
     const stds = (window.fetchedStudents || []).filter(s => s.class === cls && s.status === "Approved");
-    
+
     let html = "";
     stds.forEach(st => {
         html += `<tr class="hover-row">
@@ -2808,10 +2958,10 @@ window.loadClassForAttendance = () => {
 window.saveDailyAttendance = async () => {
     const cls = document.getElementById("attendanceClassSelect").value;
     const dt = document.getElementById("attendanceDateSelect").value;
-    if(!cls || !dt) return alert("Select both class and date.");
+    if (!cls || !dt) return alert("Select both class and date.");
 
     const stds = (window.fetchedStudents || []).filter(s => s.class === cls && s.status === "Approved");
-    if(stds.length === 0) return alert("No students to save.");
+    if (stds.length === 0) return alert("No students to save.");
 
     let records = {};
     stds.forEach(st => {
@@ -2830,7 +2980,7 @@ window.saveDailyAttendance = async () => {
         });
         alert("Attendance saved!");
         loadStudents();
-    } catch(e) { console.error(e); alert("Error saving attendance."); }
+    } catch (e) { console.error(e); alert("Error saving attendance."); }
 };
 
 // =============================================================================================
@@ -2888,15 +3038,15 @@ function renderStudentFeatureGrid() {
 window.openStudentView = (targetId) => {
     const mainGrid = document.getElementById('student-main-grid');
     if (mainGrid) mainGrid.style.display = 'none';
-    
+
     document.querySelectorAll('.student-view-section').forEach(el => el.style.display = 'none');
-    
+
     const targetEl = document.getElementById(targetId);
     if (targetEl) targetEl.style.display = 'block';
 };
 
 window.handleStudentFeatureClick = (featureId) => {
-    switch(featureId) {
+    switch (featureId) {
         case 'fee': window.showStudentPaymentSection(); break;
         case 'idcard': window.openStudentView('student-idcard-section'); break;
         case 'admit': window.openStudentView('student-admitcard-section'); break;
@@ -2923,14 +3073,14 @@ window.submitStudentComplaint = async (e) => {
     const target = document.getElementById("complaint-target").value;
     const subject = document.getElementById("complaint-subject").value;
     const desc = document.getElementById("complaint-desc").value;
-    
-    if(!target || !subject || !desc) return;
-    
+
+    if (!target || !subject || !desc) return;
+
     const btn = e.target.querySelector('button[type="submit"]');
     const originalText = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
     btn.disabled = true;
-    
+
     try {
         await addDoc(collection(db, "complaints"), {
             schoolId: currentStudentSchoolDoc.id || currentSchoolId,
@@ -2943,7 +3093,7 @@ window.submitStudentComplaint = async (e) => {
             timestamp: serverTimestamp(),
             status: 'Pending'
         });
-        
+
         alert("Complaint submitted successfully!");
         e.target.reset();
         window.openStudentView('student-main-grid');
@@ -2959,14 +3109,14 @@ window.submitStudentComplaint = async (e) => {
 window.showStudentReceiptsSection = () => {
     window.openStudentView('student-receipt-section');
     const tbody = document.getElementById("stu-receipt-table-body");
-    
+
     // Dummy Data
     const dummyReceipts = [
         { recNo: "REC-2026-001", date: "05-Apr-2026", period: "April", mode: "UPI", total: 1000, paid: 1000, due: 0 },
         { recNo: "REC-2026-054", date: "10-May-2026", period: "May", mode: "Cash", total: 1000, paid: 1000, due: 0 },
         { recNo: "REC-2026-102", date: "02-Jun-2026", period: "June", mode: "Bank Transfer", total: 1000, paid: 1000, due: 0 }
     ];
-    
+
     let html = "";
     dummyReceipts.forEach(r => {
         html += `
@@ -3059,15 +3209,15 @@ document.getElementById("doStudentLoginBtn").addEventListener("click", async () 
             if (dobFormatted === password) {
                 currentStudentUser = { id: docSnapshot.id, ...data };
                 currentSchoolId = data.schoolId;
-                
+
                 // Real-time listener for School Doc (Background, Settings, etc.)
-                if(currentSchoolId) {
+                if (currentSchoolId) {
                     // Initial fetch to avoid blank dashboard on slow connections
                     const schoolSnap = await getDoc(doc(db, "schools", currentSchoolId));
                     currentStudentSchoolDoc = schoolSnap.exists() ? schoolSnap.data() : {};
-                    
+
                     window.unsubSchool = onSnapshot(doc(db, "schools", currentSchoolId), (docSnap) => {
-                        if(docSnap.exists()) {
+                        if (docSnap.exists()) {
                             currentStudentSchoolDoc = docSnap.data();
                             if (document.getElementById("student-dashboard-wrapper").style.display === "block") {
                                 loadStudentDashboard();
@@ -3077,17 +3227,17 @@ document.getElementById("doStudentLoginBtn").addEventListener("click", async () 
                 } else {
                     currentStudentSchoolDoc = {};
                 }
-                
+
                 // Real-time listener for Student Doc (Attendance, SMS, etc.)
                 window.unsubStudent = onSnapshot(doc(db, "students", docSnapshot.id), (docSnap) => {
-                    if(docSnap.exists()) {
+                    if (docSnap.exists()) {
                         currentStudentUser = { id: docSnap.id, ...docSnap.data() };
                         if (document.getElementById("student-dashboard-wrapper").style.display === "block") {
                             loadStudentDashboard();
                         }
                     }
                 });
-                
+
                 matchFound = true;
                 break;
             }
@@ -3122,7 +3272,7 @@ async function loadStudentDashboard() {
     document.getElementById("banner-parentage").innerText = (currentStudentUser.parentage || currentStudentUser.fatherName) || "N/A";
     document.getElementById("banner-class").innerText = currentStudentUser.class || "N/A";
     document.getElementById("banner-reg").innerText = currentStudentUser.regNo || "N/A";
-    
+
     // Format DOB if available
     let formattedDob = "N/A";
     if (currentStudentUser.dob) {
@@ -3134,7 +3284,7 @@ async function loadStudentDashboard() {
         }
     }
     document.getElementById("banner-dob").innerText = formattedDob;
-    
+
     document.getElementById("banner-contact").innerText = currentStudentUser.mobile || "N/A";
     document.getElementById("banner-blood").innerText = currentStudentUser.bloodGroup || "N/A";
     document.getElementById("banner-emergency").innerText = currentStudentUser.emergencyNo || "N/A";
@@ -3159,15 +3309,15 @@ async function loadStudentDashboard() {
         document.getElementById("stu-banner-photo-icon").style.display = "none";
         const photoElem = document.getElementById("stu-banner-photo");
         photoElem.classList.remove("hidden");
-        
-        photoElem.src = currentStudentUser.photoUrl; 
-        
+
+        photoElem.src = currentStudentUser.photoUrl;
+
         const wrapperElem = document.getElementById("stu-banner-photo-bg");
         if (wrapperElem) {
             // Apply dynamic color ONLY to the photo wrapper
             wrapperElem.style.backgroundColor = currentStudentSchoolDoc.photoBgColor || '#ffffff';
         }
-        
+
         try {
             const transparentSrc = await getStudentTransparentPhoto(currentStudentUser.photoUrl);
             if (transparentSrc) {
@@ -3179,7 +3329,7 @@ async function loadStudentDashboard() {
     } else {
         document.getElementById("stu-banner-photo-icon").style.display = "block";
         document.getElementById("stu-banner-photo").classList.add("hidden");
-        
+
         const wrapperElem = document.getElementById("stu-banner-photo-bg");
         if (wrapperElem) {
             // Apply dynamic color ONLY to the photo wrapper even if no photo exists
@@ -3207,7 +3357,7 @@ window.showStudentPaymentSection = () => {
     if (!currentStudentSchoolDoc.paymentQrUrl || !currentStudentSchoolDoc.upiId) {
         alert("The school has not configured the QR Payment System yet."); return;
     }
-    
+
     window.openStudentView('student-payment-section');
     document.getElementById("stu-qr-img").src = currentStudentSchoolDoc.paymentQrUrl;
     document.getElementById("stu-upi-text").innerText = currentStudentSchoolDoc.upiId;
@@ -3215,13 +3365,13 @@ window.showStudentPaymentSection = () => {
     // Advanced Math Logic
     const dueAmount = Number(currentStudentUser.feeDue || currentStudentUser.dueBalance || 0);
     // If totalFee exists use it, otherwise fake a realistic total fee (e.g. 1000 * 12) or just dueAmount
-    const totalAmount = Number(currentStudentUser.totalFee || (dueAmount > 0 ? dueAmount + 12000 : 12000)); 
-    const paidAmount = Number(currentStudentUser.paidAmount || (totalAmount - dueAmount)); 
-    
+    const totalAmount = Number(currentStudentUser.totalFee || (dueAmount > 0 ? dueAmount + 12000 : 12000));
+    const paidAmount = Number(currentStudentUser.paidAmount || (totalAmount - dueAmount));
+
     document.getElementById("stu-total-fee").innerText = `₹${totalAmount}`;
     document.getElementById("stu-paid-fee").innerText = `₹${paidAmount}`;
     document.getElementById("stu-due-fee").innerText = `₹${dueAmount}`;
-    
+
     // Pie Chart Logic
     const percentagePaid = totalAmount > 0 ? Math.round((paidAmount / totalAmount) * 100) : 0;
     document.getElementById("stu-fee-percentage").innerText = `${percentagePaid}%`;
@@ -3232,7 +3382,7 @@ window.showStudentPaymentSection = () => {
     let html = "";
     const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     const currentMonthIndex = new Date().getMonth();
-    
+
     months.forEach((month, idx) => {
         if (idx <= currentMonthIndex) {
             const isPaid = idx < currentMonthIndex || (idx === currentMonthIndex && dueAmount === 0);
@@ -3241,7 +3391,7 @@ window.showStudentPaymentSection = () => {
             const due = isPaid ? 0 : amt;
             const statusIcon = isPaid ? '<i class="fas fa-check-circle" style="color:#10b981; font-size:16px;"></i>' : '<i class="fas fa-times-circle" style="color:#e53e3e; font-size:16px;"></i>';
             const actionBtn = isPaid ? '<span style="color:#10b981; font-weight:bold;">Paid</span>' : `<button class="action-btn" style="background:#1E3A8A; color:white; padding:6px 12px; font-size:12px; border-radius:6px; width:100%;" onclick="document.getElementById('stu-pay-amount').value='${due}'; document.getElementById('stu-pay-amount').focus();">Pay</button>`;
-            
+
             html += `
             <tr style="border-bottom: 1px solid #f1f5f9;">
                 <td style="padding: 12px; font-weight:bold;">${month}</td>
@@ -3298,7 +3448,7 @@ document.getElementById("student-verification-form").addEventListener("submit", 
 
         document.getElementById("student-payment-section").style.display = "none";
         document.getElementById("student-success-section").style.display = "block";
-    } catch(err) {
+    } catch (err) {
         alert("Error submitting verification: " + err.message);
         submitBtn.innerHTML = "<i class='fas fa-cloud-upload-alt'></i> Submit for Verification";
         submitBtn.disabled = false;
@@ -3350,7 +3500,7 @@ window.downloadStudentIDCard = async () => {
             })
         });
         const data = await response.json();
-        if(data.success && data.idCardUrl) {
+        if (data.success && data.idCardUrl) {
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF('p', 'mm', 'a4');
             pdf.addImage(data.idCardUrl, 'PNG', 10, 10, 54, 86);
@@ -3408,7 +3558,7 @@ window.downloadStudentAdmitCard = async () => {
                 });
                 const d = await res.json();
                 if (d.success) finalSigBase64 = d.base64;
-            } catch(e) {}
+            } catch (e) { }
         }
 
         let sigHtml = finalSigBase64 ? `<img src="${finalSigBase64}" style="height:50px;">` : '';
@@ -3419,7 +3569,7 @@ window.downloadStudentAdmitCard = async () => {
         let tbodyHtml = "";
         for (let i = 0; i < 6; i++) {
             let dStr = sched[i]?.date || "";
-            if (dStr && dStr.includes("-")) { let parts = dStr.split("-"); if(parts.length === 3) dStr = `${parts[2]}/${parts[1]}/${parts[0]}`; }
+            if (dStr && dStr.includes("-")) { let parts = dStr.split("-"); if (parts.length === 3) dStr = `${parts[2]}/${parts[1]}/${parts[0]}`; }
             tbodyHtml += `<tr><td style="border:1px solid #000; padding:8px;">${dStr}</td><td style="border:1px solid #000; padding:8px;">${sched[i]?.subject || ""}</td><td style="border:1px solid #000; padding:8px;">${sched[i]?.timing || ""}</td></tr>`;
         }
 
@@ -3468,34 +3618,34 @@ window.loadCoreEduChat = () => {
         let html = "";
         let unreadCount = 0;
         let batchUpdates = [];
-        
+
         snap.forEach(d => {
             let msg = d.data();
             let isMaster = msg.sender === "master";
-            if(isMaster && !msg.isRead) {
+            if (isMaster && !msg.isRead) {
                 unreadCount++;
                 batchUpdates.push(d.id);
             }
-            
+
             let ts = msg.timestamp ? new Date(msg.timestamp.toMillis()).toLocaleString() : "";
             let className = msg.sender === "school" ? "chat-bubble sent" : "chat-bubble received";
             let attachHtml = msg.attachmentUrl ? `<br><a href="${msg.attachmentUrl}" target="_blank" style="font-size:12px; color:blue;"><i class="fas fa-paperclip"></i> Attachment</a>` : "";
-            
+
             html += `<div class="${className}">${msg.text}${attachHtml}<span class="timestamp">${ts}</span></div>`;
         });
-        
+
         document.getElementById("coreedu-chat-history").innerHTML = html || "<div style='text-align:center; color:#555; padding:20px;'>No messages yet. Say hi to CoreEdu!</div>";
         document.getElementById("coreedu-chat-history").scrollTop = document.getElementById("coreedu-chat-history").scrollHeight;
-        
+
         if (unreadCount > 0) {
             document.getElementById("badge-coreedu").innerText = unreadCount;
             document.getElementById("badge-coreedu").style.display = "inline-block";
         } else {
             document.getElementById("badge-coreedu").style.display = "none";
         }
-        
-        if(unreadCount > 0 && document.getElementById("tab-coreedu-comm").classList.contains("active")) {
-            for(let id of batchUpdates) {
+
+        if (unreadCount > 0 && document.getElementById("tab-coreedu-comm").classList.contains("active")) {
+            for (let id of batchUpdates) {
                 await updateDoc(doc(db, "school_communications", id), { isRead: true });
             }
         }
@@ -3505,21 +3655,21 @@ window.loadCoreEduChat = () => {
 window.sendCoreEduMessage = async () => {
     let text = document.getElementById("coreedu-message-input").value.trim();
     let btn = document.getElementById("coreedu-send-btn");
-    
-    if(!text && document.getElementById("coreedu-attachment").files.length === 0) return alert("Type a message or attach a file.");
-    
+
+    if (!text && document.getElementById("coreedu-attachment").files.length === 0) return alert("Type a message or attach a file.");
+
     btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i>";
     btn.disabled = true;
-    
+
     let attachmentUrl = null;
     if (document.getElementById("coreedu-attachment").files.length > 0) {
         attachmentUrl = await uploadToCloudinary("coreedu-attachment", "coreedu-send-btn", "<i class='fas fa-paper-plane'></i>");
-        if(!attachmentUrl) {
+        if (!attachmentUrl) {
             btn.innerHTML = "<i class='fas fa-paper-plane'></i>"; btn.disabled = false;
             return alert("Upload failed.");
         }
     }
-    
+
     try {
         await addDoc(collection(db, "school_communications"), {
             schoolId: currentSchoolId,
@@ -3532,22 +3682,33 @@ window.sendCoreEduMessage = async () => {
         });
         document.getElementById("coreedu-message-input").value = "";
         document.getElementById("coreedu-attachment").value = "";
-    } catch(e) {
+    } catch (e) {
         alert("Error sending message");
     }
     btn.innerHTML = "<i class='fas fa-paper-plane'></i>"; btn.disabled = false;
 };
 
 // --- Mailbox Inter-School ---
+window.allSchoolsCache = [];
 window.loadAllSchools = async () => {
     try {
         const snap = await getDocs(collection(db, "schools"));
         let html = "<option value=''>-- Select School --</option>";
+        window.allSchoolsCache = [];
         snap.forEach(d => {
-            if(d.id !== currentSchoolId) html += `<option value="${d.id}">${d.data().schoolName || d.data().name || d.id}</option>`;
+            const school = { id: d.id, ...d.data() };
+            window.allSchoolsCache.push(school);
+            if (d.id !== currentSchoolId) html += `<option value="${d.id}">${school.schoolName || school.name || d.id}</option>`;
         });
-        document.getElementById("mail_specific_school").innerHTML = html;
-    } catch(e) {}
+        const mailSelect = document.getElementById("mail_specific_school");
+        if (mailSelect) mailSelect.innerHTML = html;
+        const transferSelect = document.getElementById("transfer_to_school_select");
+        if (transferSelect) transferSelect.innerHTML = html;
+        const schoolNameEl = document.getElementById("transfer-current-school-name");
+        if (schoolNameEl) schoolNameEl.innerText = currentSchoolName || "Current School";
+        const transferFromEl = document.getElementById("transfer-preview-from");
+        if (transferFromEl) transferFromEl.innerText = currentSchoolName || "Current School";
+    } catch (e) { }
 };
 
 // --- Mail Thread View Modal ---
@@ -3556,30 +3717,30 @@ window.openMailThread = async (msgId) => {
     window.currentMailThreadId = msgId;
     document.getElementById("mail-view-modal").style.display = "flex";
     document.getElementById("mail-thread-container").innerHTML = "<div style='text-align:center;'>Loading thread...</div>";
-    
+
     try {
         await updateDoc(doc(db, "direct_messages", msgId), { isRead: true });
-        
+
         onSnapshot(doc(db, "direct_messages", msgId), async (d) => {
-            if(!d.exists()) return;
+            if (!d.exists()) return;
             let msg = d.data();
             let html = "";
-            
+
             let updatedReplies = false;
             let replies = msg.replies || [];
             replies.forEach(r => {
-                if(r.senderRole !== "chairman" && !r.isRead) {
+                if (r.senderRole !== "chairman" && !r.isRead) {
                     r.isRead = true;
                     updatedReplies = true;
                 }
             });
-            if(updatedReplies) {
+            if (updatedReplies) {
                 await updateDoc(doc(db, "direct_messages", msgId), { replies: replies });
             }
-            
+
             let ts = msg.createdAt ? new Date(msg.createdAt.toMillis()).toLocaleString() : "";
             let attachHtml = msg.attachmentUrl ? `<div style="margin-top:10px;"><a href="${msg.attachmentUrl}" target="_blank" class="action-btn" style="background:#e2e8f0; color:#333; padding:5px 10px; font-size:12px; display:inline-block;"><i class="fas fa-paperclip"></i> View Attachment</a></div>` : "";
-            
+
             html += `<div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:15px;">
                         <div style="display:flex; justify-content:space-between; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:10px;">
                             <div><strong>${msg.senderName} (${msg.senderRole})</strong><br><span style="font-size:11px; color:#888;">To: ${msg.receiverType}</span></div>
@@ -3589,7 +3750,7 @@ window.openMailThread = async (msgId) => {
                         <div style="white-space:pre-wrap; font-size:14px;">${msg.body}</div>
                         ${attachHtml}
                      </div>`;
-            
+
             replies.forEach(r => {
                 let rTs = r.timestamp ? new Date(r.timestamp.toMillis()).toLocaleString() : "";
                 let rAttachHtml = r.attachmentUrl ? `<div style="margin-top:10px;"><a href="${r.attachmentUrl}" target="_blank" class="action-btn" style="background:#e2e8f0; color:#333; padding:5px 10px; font-size:12px; display:inline-block;"><i class="fas fa-paperclip"></i> View Attachment</a></div>` : "";
@@ -3603,39 +3764,39 @@ window.openMailThread = async (msgId) => {
                             ${rAttachHtml}
                          </div>`;
             });
-            
+
             document.getElementById("mail-thread-container").innerHTML = html;
             setTimeout(() => {
                 document.getElementById("mail-thread-container").scrollTop = document.getElementById("mail-thread-container").scrollHeight;
             }, 100);
-            
+
             loadInbox(); loadSentMail();
         });
-    } catch(e) { console.error(e); }
+    } catch (e) { console.error(e); }
 };
 
 window.replyToMailThread = async () => {
-    if(!window.currentMailThreadId) return;
+    if (!window.currentMailThreadId) return;
     let text = document.getElementById("mail-reply-body").value.trim();
     let btn = document.getElementById("mail-reply-btn");
-    
-    if(!text && document.getElementById("mail-reply-attachment").files.length === 0) return alert("Type a reply or attach a file.");
-    
+
+    if (!text && document.getElementById("mail-reply-attachment").files.length === 0) return alert("Type a reply or attach a file.");
+
     btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i>";
     btn.disabled = true;
-    
+
     let attachmentUrl = null;
     if (document.getElementById("mail-reply-attachment").files.length > 0) {
         attachmentUrl = await uploadToCloudinary("mail-reply-attachment", "mail-reply-btn", "<i class='fas fa-reply'></i>");
-        if(!attachmentUrl) {
+        if (!attachmentUrl) {
             btn.innerHTML = "<i class='fas fa-reply'></i> Reply"; btn.disabled = false;
             return alert("Upload failed.");
         }
     }
-    
+
     try {
         const d = await getDoc(doc(db, "direct_messages", window.currentMailThreadId));
-        if(!d.exists()) throw new Error();
+        if (!d.exists()) throw new Error();
         let replies = d.data().replies || [];
         replies.push({
             senderRole: "chairman",
@@ -3645,12 +3806,12 @@ window.replyToMailThread = async () => {
             timestamp: serverTimestamp(),
             isRead: false
         });
-        
+
         await updateDoc(doc(db, "direct_messages", window.currentMailThreadId), { replies: replies });
-        
+
         document.getElementById("mail-reply-body").value = "";
         document.getElementById("mail-reply-attachment").value = "";
-    } catch(e) {
+    } catch (e) {
         alert("Error sending reply");
     }
     btn.innerHTML = "<i class='fas fa-reply'></i> Reply"; btn.disabled = false;
