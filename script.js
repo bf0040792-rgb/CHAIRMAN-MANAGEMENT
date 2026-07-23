@@ -37,6 +37,43 @@ const licenseLockScreen = document.getElementById('license-lock-screen');
 
 window.closeCustomModal = (id) => { document.getElementById(id).style.display = 'none'; };
 
+window.switchTab = (targetId) => {
+    if (!targetId) return;
+    // Redirect the legacy CoreEdu menu tab into the unified Communication Hub (chat sub-section)
+    if (targetId === 'tab-coreedu-comm') {
+        window.switchTab('tab-mailbox');
+        if (window.switchCommSubtab) window.switchCommSubtab('sub-chat');
+        return;
+    }
+    document.querySelectorAll('#dashboard-wrapper .tab-content').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('#dashboard-wrapper .menu-item').forEach(item => item.classList.remove('active'));
+    const targetTab = document.getElementById(targetId);
+    const targetMenu = document.querySelector(`#dashboard-wrapper .menu-item[data-target="${targetId}"]`);
+    if (targetTab) targetTab.classList.add('active');
+    if (targetMenu) targetMenu.classList.add('active');
+    sessionStorage.setItem('chairmanActiveTab', targetId);
+    if (targetId === 'tab-student-transfer') {
+        populateTransferStudentOptions();
+        window.previewTransferStudent();
+        window.previewTransferSchoolName();
+        window.loadStudentTransfers();
+    }
+    // Refresh inbox/sent when opening the Communication Hub
+    if (targetId === 'tab-mailbox') {
+        loadInbox(); loadSentMail();
+    }
+};
+
+function initializeChairmanNavigation() {
+    document.querySelectorAll('#dashboard-wrapper .menu-item[data-target]').forEach(item => {
+        if (item.dataset.navReady === 'true') return;
+        item.dataset.navReady = 'true';
+        item.addEventListener('click', () => window.switchTab(item.dataset.target));
+    });
+}
+
+initializeChairmanNavigation();
+
 function showLoginScreen(errorText = "") {
     overlay.style.display = "none";
     dashboardWrapper.style.display = "none";
@@ -98,12 +135,10 @@ if (urlParams.get('isGhost') === 'true') {
 window.unlockChairmanDashboard = () => {
     document.getElementById("pin-wrapper").style.display = "none";
     dashboardWrapper.style.display = "flex";
+    initializeChairmanNavigation();
 
     const savedTab = sessionStorage.getItem('chairmanActiveTab');
-    if (savedTab) {
-        const targetMenu = document.querySelector(`.menu-item[data-target="${savedTab}"]`);
-        if (targetMenu) targetMenu.click();
-    }
+    window.switchTab(savedTab || 'tab-dashboard');
 };
 
 window.saveChairmanPin = async () => {
@@ -530,13 +565,33 @@ const uploadToCloudinary = async (fileInputId, btnId, defaultText) => {
     } catch (e) { btn.innerHTML = defaultText; return null; }
 };
 
-function loadAllData() { loadStudents(); loadStaff(); loadNotices(); loadInbox(); loadSentMail(); loadTransactions(); loadPendingResults(); window.initDashboardChart(); window.loadTransportRoutes(); window.loadInventory(); loadAllSchools(); loadStudentTransfers(); loadCoreEduChat(); }
+function loadAllData() { loadStudents(); loadStaff(); loadNotices(); loadInbox(); loadSentMail(); loadTransactions(); loadPendingResults(); window.initDashboardChart(); window.loadTransportRoutes(); window.loadInventory(); loadAllSchools(); loadStudentTransfers(); loadCoreEduChat(); window.loadStudentComplaints(); }
 
-// ================= STUDENT TRANSFER =================
-function populateTransferStudentOptions() {
+// ================= STUDENT TRANSFER (3-STAGE APPROVAL WORKFLOW) =================
+window.fetchedStudentTransfers = [];
+window.fetchedIncomingTransfers = [];
+
+const TRANSFER_CLASS_LIST = ["Nursery", "LKG", "UKG", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th"];
+
+function populateTransferClassFilters() {
+    const histFilter = document.getElementById("transfer_history_class_filter");
+    if (histFilter) {
+        let html = "<option value='All'>All Classes</option>";
+        TRANSFER_CLASS_LIST.forEach(c => html += `<option value="${c}">${c}</option>`);
+        histFilter.innerHTML = html;
+    }
+}
+
+window.populateTransferStudentOptions = () => {
     const select = document.getElementById("transfer_student_select");
     if (!select) return;
-    const approvedStudents = (window.fetchedStudents || []).filter(st => (st.status || "Approved") === "Approved" && !st.transferredOut);
+    const classFilter = document.getElementById("transfer_class_filter")?.value || "All";
+    const approvedStudents = (window.fetchedStudents || []).filter(st => {
+        const isApproved = (st.status || "Approved") === "Approved";
+        const isTransferred = st.transferStatus === "Completed" || st.transferStatus === "Pending HQ Approval" || st.transferStatus === "Pending Target Accept";
+        const classMatch = classFilter === "All" || st.class === classFilter;
+        return isApproved && !isTransferred && classMatch;
+    });
     let html = "<option value=''>-- Select Student --</option>";
     approvedStudents
         .sort((a, b) => (a.class || "").localeCompare(b.class || "") || (Number(a.rollNo) || 9999) - (Number(b.rollNo) || 9999))
@@ -544,7 +599,8 @@ function populateTransferStudentOptions() {
             html += `<option value="${st.id}">${st.name || "Student"} - Class ${st.class || "N/A"} (${st.rollNo || "No Roll"})</option>`;
         });
     select.innerHTML = html;
-}
+    window.previewTransferStudent();
+};
 
 window.previewTransferStudent = () => {
     const studentId = document.getElementById("transfer_student_select")?.value;
@@ -569,7 +625,7 @@ async function uploadTransferDocument(fileInputId, buttonId, defaultText) {
 
 window.submitStudentTransfer = async () => {
     const btn = document.getElementById("transfer-submit-btn");
-    const defaultText = "<i class='fas fa-share-from-square'></i> Submit Transfer";
+    const defaultText = "<i class='fas fa-paper-plane'></i> Submit Transfer Request";
     const studentId = document.getElementById("transfer_student_select").value;
     const toSchoolId = document.getElementById("transfer_to_school_select").value;
     const transferDate = document.getElementById("transfer_date").value || new Date().toLocaleDateString("en-CA");
@@ -579,8 +635,9 @@ window.submitStudentTransfer = async () => {
     const toSchool = (window.allSchoolsCache || []).find(sc => sc.id === toSchoolId);
 
     if (!studentId || !student) return alert("Please select a student.");
-    if (!toSchoolId || !toSchool) return alert("Please select transfer school.");
-    if (!confirm(`Transfer ${student.name || "student"} to ${toSchool.schoolName || toSchool.name || toSchool.id}?`)) return;
+    if (!toSchoolId || !toSchool) return alert("Please select the transfer target school.");
+    if (toSchoolId === currentSchoolId) return alert("Cannot transfer to the same school.");
+    if (!confirm(`Submit transfer request for ${student.name || "student"} to ${toSchool.schoolName || toSchool.name || toSchool.id}?\n\nThis request will first go to CoreEdu HQ for approval, then to the target school for acceptance.`)) return;
 
     btn.disabled = true;
     btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Uploading Documents...";
@@ -593,8 +650,10 @@ window.submitStudentTransfer = async () => {
             other: await uploadTransferDocument("transfer_doc_other", "transfer-submit-btn", defaultText)
         };
 
-        btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Saving Transfer...";
+        btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Submitting Request...";
+        const transferRef = doc(collection(db, "student_transfers"));
         const transferPayload = {
+            transferId: transferRef.id,
             studentId,
             studentName: student.name || "",
             studentClass: student.class || "",
@@ -608,25 +667,28 @@ window.submitStudentTransfer = async () => {
             reason,
             remarks,
             documents,
-            status: "Transferred",
+            status: "Pending HQ Approval",
+            workflowStage: 1,
+            workflowStages: [
+                { stage: "Submitted by Chairman", done: true, at: new Date().toISOString() },
+                { stage: "HQ Approval", done: false },
+                { stage: "Target School Acceptance", done: false },
+                { stage: "Completed", done: false }
+            ],
             createdAt: serverTimestamp(),
             createdBy: auth.currentUser?.uid || "chairman"
         };
 
         const batch = writeBatch(db);
-        const transferRef = doc(collection(db, "student_transfers"));
         batch.set(transferRef, transferPayload);
         batch.update(doc(db, "students", studentId), {
-            schoolId: toSchoolId,
-            previousSchoolId: currentSchoolId,
-            previousSchoolName: currentSchoolName,
-            transferStatus: "Transferred",
-            transferredAt: serverTimestamp(),
-            transferRecordId: transferRef.id
+            transferStatus: "Pending HQ Approval",
+            transferRecordId: transferRef.id,
+            pendingTransferTo: toSchoolId
         });
         await batch.commit();
 
-        alert("Student transfer completed successfully.");
+        alert("Transfer request submitted. Status: Pending HQ Approval.\nCoreEdu HQ will review and approve this request.");
         document.getElementById("transfer_student_select").value = "";
         document.getElementById("transfer_to_school_select").value = "";
         document.getElementById("transfer_date").value = "";
@@ -638,47 +700,287 @@ window.submitStudentTransfer = async () => {
         loadStudentTransfers();
     } catch (e) {
         console.error("Transfer failed:", e);
-        alert("Transfer failed: " + e.message);
+        alert("Transfer request failed: " + e.message);
     } finally {
         btn.disabled = false;
         btn.innerHTML = defaultText;
     }
 };
 
-window.loadStudentTransfers = async () => {
+function transferStatusLabel(status) {
+    switch (status) {
+        case "Pending HQ Approval": return `<span style="color:#fbbf24; font-weight:bold;"><i class="fas fa-clock"></i> Pending HQ Approval</span>`;
+        case "Pending Target Accept": return `<span style="color:#60a5fa; font-weight:bold;"><i class="fas fa-hourglass-half"></i> Pending Target Accept</span>`;
+        case "Completed": return `<span style="color:#5eead4; font-weight:bold;"><i class="fas fa-circle-check"></i> Completed</span>`;
+        case "Rejected": return `<span style="color:#fca5a5; font-weight:bold;"><i class="fas fa-circle-xmark"></i> Rejected</span>`;
+        case "Cancelled": return `<span style="color:#94a3b8; font-weight:bold;"><i class="fas fa-ban"></i> Cancelled</span>`;
+        default: return `<span style="color:#94a3b8;">${status || "Unknown"}</span>`;
+    }
+}
+
+function buildTransferDocLinks(docs) {
+    const entries = Object.entries(docs || {}).filter(([, url]) => !!url);
+    if (entries.length === 0) return "No documents";
+    return entries.map(([key, url]) => `<a class="transfer-doc-link" href="${url}" target="_blank"><i class="fas fa-paperclip"></i> ${key}</a>`).join("");
+}
+
+window.renderTransferHistory = () => {
     const tbody = document.getElementById("transfer-history-body");
-    if (!tbody || !currentSchoolId) return;
-    tbody.innerHTML = "<tr><td colspan='7' style='text-align:center;'>Loading transfers...</td></tr>";
+    if (!tbody) return;
+    const classFilter = document.getElementById("transfer_history_class_filter")?.value || "All";
+    const transfers = (window.fetchedStudentTransfers || []).filter(tr => classFilter === "All" || tr.studentClass === classFilter);
+
+    let html = "";
+    transfers.forEach(tr => {
+        html += `<tr>
+            <td>${tr.transferDate || "N/A"}</td>
+            <td><strong>${tr.studentName || "N/A"}</strong><br><small>Class ${tr.studentClass || "N/A"} | Roll ${tr.rollNo || "N/A"}</small></td>
+            <td>${tr.fromSchoolName || "N/A"}</td>
+            <td>${tr.toSchoolName || "N/A"}</td>
+            <td>${tr.reason || "N/A"}<br><small>${tr.remarks || ""}</small></td>
+            <td>${buildTransferDocLinks(tr.documents)}</td>
+            <td>${transferStatusLabel(tr.status)}</td>
+            <td><button class="action-btn btn-blue" style="padding:4px 10px; font-size:12px;" onclick="window.downloadTransferReceipt('${tr.id}')"><i class="fas fa-file-pdf"></i> Receipt</button></td>
+        </tr>`;
+    });
+    tbody.innerHTML = html || "<tr><td colspan='8' style='text-align:center;'>No transfer records found.</td></tr>";
+};
+
+window.renderIncomingTransfers = () => {
+    const tbody = document.getElementById("incoming-transfer-body");
+    if (!tbody) return;
+    const incoming = window.fetchedIncomingTransfers || [];
+    let html = "";
+    incoming.forEach(tr => {
+        let actionCell = "";
+        if (tr.status === "Pending Target Accept") {
+            actionCell = `<button class="action-btn btn-green" style="padding:4px 10px; font-size:12px; margin-right:5px;" onclick="window.acceptIncomingTransfer('${tr.id}')"><i class="fas fa-check"></i> Accept</button>
+                <button class="action-btn btn-red" style="padding:4px 10px; font-size:12px;" onclick="window.rejectIncomingTransfer('${tr.id}')"><i class="fas fa-times"></i> Reject</button>`;
+        } else {
+            actionCell = `<span style="color:#94a3b8; font-size:12px;">No action needed</span>`;
+        }
+        html += `<tr>
+            <td>${tr.transferDate || "N/A"}</td>
+            <td><strong>${tr.studentName || "N/A"}</strong><br><small>Class ${tr.studentClass || "N/A"} | Roll ${tr.rollNo || "N/A"}</small></td>
+            <td>${tr.fromSchoolName || "N/A"}</td>
+            <td>${tr.reason || "N/A"}</td>
+            <td>${buildTransferDocLinks(tr.documents)}</td>
+            <td>${transferStatusLabel(tr.status)}</td>
+            <td>${actionCell}</td>
+        </tr>`;
+    });
+    tbody.innerHTML = html || "<tr><td colspan='7' style='text-align:center;'>No incoming transfer requests.</td></tr>";
+};
+
+window.loadStudentTransfers = async () => {
+    if (!currentSchoolId) return;
+    populateTransferClassFilters();
+    const tbody = document.getElementById("transfer-history-body");
+    const incomingTbody = document.getElementById("incoming-transfer-body");
+    if (tbody) tbody.innerHTML = "<tr><td colspan='8' style='text-align:center;'>Loading transfers...</td></tr>";
+    if (incomingTbody) incomingTbody.innerHTML = "<tr><td colspan='7' style='text-align:center;'>Loading incoming requests...</td></tr>";
     try {
-        const snap = await getDocs(query(collection(db, "student_transfers"), where("fromSchoolId", "==", currentSchoolId)));
-        const transfers = [];
-        snap.forEach(d => transfers.push({ id: d.id, ...d.data() }));
-        transfers.sort((a, b) => {
+        const [outSnap, inSnap] = await Promise.all([
+            getDocs(query(collection(db, "student_transfers"), where("fromSchoolId", "==", currentSchoolId))),
+            getDocs(query(collection(db, "student_transfers"), where("toSchoolId", "==", currentSchoolId)))
+        ]);
+        window.fetchedStudentTransfers = [];
+        outSnap.forEach(d => window.fetchedStudentTransfers.push({ id: d.id, ...d.data() }));
+        window.fetchedStudentTransfers.sort((a, b) => {
             const aTime = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
             const bTime = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
             return bTime - aTime;
         });
 
-        let html = "";
-        transfers.forEach(tr => {
-            const docs = tr.documents || {};
-            const docLinks = Object.entries(docs)
-                .filter(([, url]) => !!url)
-                .map(([key, url]) => `<a class="transfer-doc-link" href="${url}" target="_blank"><i class="fas fa-paperclip"></i> ${key}</a>`)
-                .join("");
-            html += `<tr>
-                <td>${tr.transferDate || "N/A"}</td>
-                <td><strong>${tr.studentName || "N/A"}</strong><br><small>Class ${tr.studentClass || "N/A"} | Roll ${tr.rollNo || "N/A"}</small></td>
-                <td>${tr.fromSchoolName || "N/A"}</td>
-                <td>${tr.toSchoolName || "N/A"}</td>
-                <td>${tr.reason || "N/A"}<br><small>${tr.remarks || ""}</small></td>
-                <td>${docLinks || "No documents"}</td>
-                <td><span style="color:#5eead4; font-weight:bold;"><i class="fas fa-circle-check"></i> ${tr.status || "Transferred"}</span></td>
-            </tr>`;
+        window.fetchedIncomingTransfers = [];
+        inSnap.forEach(d => window.fetchedIncomingTransfers.push({ id: d.id, ...d.data() }));
+        window.fetchedIncomingTransfers.sort((a, b) => {
+            const aTime = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+            const bTime = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+            return bTime - aTime;
         });
-        tbody.innerHTML = html || "<tr><td colspan='7' style='text-align:center;'>No transfer records found.</td></tr>";
+
+        window.renderTransferHistory();
+        window.renderIncomingTransfers();
     } catch (e) {
-        tbody.innerHTML = "<tr><td colspan='7' style='text-align:center; color:#fca5a5;'>Unable to load transfer records.</td></tr>";
+        console.error("Load transfers failed:", e);
+        if (tbody) tbody.innerHTML = "<tr><td colspan='8' style='text-align:center; color:#fca5a5;'>Unable to load transfer records.</td></tr>";
+        if (incomingTbody) incomingTbody.innerHTML = "<tr><td colspan='7' style='text-align:center; color:#fca5a5;'>Unable to load incoming requests.</td></tr>";
+    }
+};
+
+window.acceptIncomingTransfer = async (transferId) => {
+    const tr = window.fetchedIncomingTransfers.find(t => t.id === transferId);
+    if (!tr) return alert("Transfer record not found.");
+    if (tr.status !== "Pending Target Accept") return alert("This transfer is not awaiting your acceptance.");
+    if (!confirm(`Accept transfer of ${tr.studentName || "student"} from ${tr.fromSchoolName || "previous school"}?\n\nThe student will be officially moved to your school.`)) return;
+    try {
+        const stages = tr.workflowStages || [];
+        stages.forEach(s => { if (s.stage === "Target School Acceptance") { s.done = true; s.at = new Date().toISOString(); } if (s.stage === "Completed") { s.done = true; s.at = new Date().toISOString(); } });
+        const batch = writeBatch(db);
+        batch.update(doc(db, "student_transfers", transferId), {
+            status: "Completed",
+            workflowStage: 4,
+            acceptedAt: serverTimestamp(),
+            acceptedBy: auth.currentUser?.uid || "chairman",
+            workflowStages: stages
+        });
+        batch.update(doc(db, "students", tr.studentId), {
+            schoolId: currentSchoolId,
+            previousSchoolId: tr.fromSchoolId,
+            previousSchoolName: tr.fromSchoolName,
+            transferStatus: "Completed",
+            transferredAt: serverTimestamp(),
+            transferRecordId: transferId
+        });
+        await batch.commit();
+        alert("Transfer accepted. Student has been moved to your school.");
+        loadStudents();
+        loadStudentTransfers();
+    } catch (e) {
+        console.error("Accept transfer failed:", e);
+        alert("Failed to accept transfer: " + e.message);
+    }
+};
+
+window.rejectIncomingTransfer = async (transferId) => {
+    const tr = window.fetchedIncomingTransfers.find(t => t.id === transferId);
+    if (!tr) return alert("Transfer record not found.");
+    const rejectReason = prompt(`Reason for rejecting transfer of ${tr.studentName || "student"}:`);
+    if (rejectReason === null) return;
+    try {
+        const stages = tr.workflowStages || [];
+        stages.forEach(s => { if (s.stage === "Target School Acceptance") { s.done = true; s.at = new Date().toISOString(); s.rejected = true; } });
+        const batch = writeBatch(db);
+        batch.update(doc(db, "student_transfers", transferId), {
+            status: "Rejected",
+            rejectedAt: serverTimestamp(),
+            rejectedBy: auth.currentUser?.uid || "chairman",
+            rejectReason: rejectReason || "Rejected by target school",
+            workflowStages: stages
+        });
+        batch.update(doc(db, "students", tr.studentId), {
+            transferStatus: deleteField(),
+            pendingTransferTo: deleteField()
+        });
+        await batch.commit();
+        alert("Transfer rejected. The student remains at the original school.");
+        loadStudents();
+        loadStudentTransfers();
+    } catch (e) {
+        console.error("Reject transfer failed:", e);
+        alert("Failed to reject transfer: " + e.message);
+    }
+};
+
+window.cancelTransferRequest = async (transferId) => {
+    const tr = window.fetchedStudentTransfers.find(t => t.id === transferId);
+    if (!tr) return alert("Transfer record not found.");
+    if (tr.status === "Completed") return alert("Cannot cancel a completed transfer.");
+    if (!confirm("Cancel this transfer request? The student will remain at this school.")) return;
+    try {
+        const batch = writeBatch(db);
+        batch.update(doc(db, "student_transfers", transferId), { status: "Cancelled", cancelledAt: serverTimestamp() });
+        batch.update(doc(db, "students", tr.studentId), { transferStatus: deleteField(), pendingTransferTo: deleteField() });
+        await batch.commit();
+        alert("Transfer request cancelled.");
+        loadStudents();
+        loadStudentTransfers();
+    } catch (e) {
+        console.error("Cancel transfer failed:", e);
+        alert("Failed to cancel transfer: " + e.message);
+    }
+};
+
+window.downloadTransferReceipt = (transferId) => {
+    const tr = [...(window.fetchedStudentTransfers || []), ...(window.fetchedIncomingTransfers || [])].find(t => t.id === transferId);
+    if (!tr) return alert("Transfer record not found.");
+    try {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const marginX = 15;
+        let y = 20;
+
+        pdf.setFillColor(30, 60, 114);
+        pdf.rect(0, 0, 210, 30, 'F');
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFontSize(18);
+        pdf.setFont(undefined, 'bold');
+        pdf.text("Student Transfer Receipt", marginX, 19);
+
+        pdf.setTextColor(0, 0, 0);
+        pdf.setFontSize(10);
+        pdf.setFont(undefined, 'normal');
+        y = 42;
+        pdf.text(`Receipt No: TRF-${tr.transferId ? tr.transferId.substring(0, 8).toUpperCase() : "N/A"}`, marginX, y);
+        pdf.text(`Date: ${new Date().toLocaleString()}`, 130, y);
+        y += 10;
+        pdf.setDrawColor(200, 200, 200);
+        pdf.line(marginX, y, 195, y);
+        y += 10;
+
+        const fields = [
+            ["Student Name", tr.studentName || "N/A"],
+            ["Class / Roll", `${tr.studentClass || "N/A"} / ${tr.rollNo || "N/A"}`],
+            ["Reg. No", tr.regNo || "N/A"],
+            ["From School", tr.fromSchoolName || "N/A"],
+            ["To School", tr.toSchoolName || "N/A"],
+            ["Transfer Date", tr.transferDate || "N/A"],
+            ["Reason", tr.reason || "N/A"],
+            ["Remarks", tr.remarks || "—"],
+            ["Status", tr.status || "N/A"]
+        ];
+        pdf.setFontSize(11);
+        fields.forEach(([label, value]) => {
+            pdf.setFont(undefined, 'bold');
+            pdf.text(`${label}:`, marginX, y);
+            pdf.setFont(undefined, 'normal');
+            const lines = pdf.splitTextToSize(String(value), 130);
+            pdf.text(lines, 70, y);
+            y += 7 * (lines.length || 1);
+        });
+
+        y += 5;
+        pdf.line(marginX, y, 195, y);
+        y += 10;
+        pdf.setFontSize(9);
+        pdf.setTextColor(120, 120, 120);
+        pdf.text("Workflow Progress:", marginX, y);
+        y += 6;
+        pdf.setTextColor(0, 0, 0);
+        (tr.workflowStages || []).forEach((s, i) => {
+            const mark = s.done ? "[x]" : "[ ]";
+            pdf.text(`${mark} ${s.stage}${s.at ? "  -  " + new Date(s.at).toLocaleString() : ""}`, marginX + 5, y);
+            y += 6;
+        });
+
+        y += 10;
+        pdf.setFontSize(9);
+        pdf.setTextColor(120, 120, 120);
+        pdf.text("Documents attached:", marginX, y);
+        y += 6;
+        pdf.setTextColor(0, 0, 0);
+        const docs = tr.documents || {};
+        const docEntries = Object.entries(docs).filter(([, url]) => !!url);
+        if (docEntries.length === 0) {
+            pdf.text("No documents attached", marginX + 5, y);
+        } else {
+            docEntries.forEach(([key, url]) => {
+                pdf.text(`- ${key}: ${url}`, marginX + 5, y);
+                y += 6;
+            });
+        }
+
+        y = 270;
+        pdf.setFontSize(8);
+        pdf.setTextColor(150, 150, 150);
+        pdf.text("This is a system-generated receipt from CoreEdu Tech Chairman Portal.", marginX, y);
+
+        const safeName = (tr.studentName || "student").replace(/[^a-zA-Z0-9]/g, "_");
+        pdf.save(`Transfer_Receipt_${safeName}.pdf`);
+    } catch (e) {
+        console.error("Receipt download failed:", e);
+        alert("Failed to generate receipt: " + e.message);
     }
 };
 
@@ -765,6 +1067,181 @@ window.initDashboardChart = () => {
             }
         }
     });
+
+    window.initAnalyticsCharts();
+};
+
+window.initAnalyticsCharts = async () => {
+    const chartFont = { color: '#94a3b8' };
+    const gridStyle = { color: 'rgba(148, 163, 184, 0.08)' };
+
+    // 1. Gender Distribution (Doughnut)
+    try {
+        const gCtx = document.getElementById('genderChart');
+        if (gCtx) {
+            if (window.genderChartInstance) window.genderChartInstance.destroy();
+            let male = 0, female = 0, other = 0;
+            (window.fetchedStudents || []).forEach(st => {
+                const g = (st.gender || "").toString().toLowerCase();
+                if (g === "male" || g === "m" || g === "boy") male++;
+                else if (g === "female" || g === "f" || g === "girl") female++;
+                else if (g) other++;
+            });
+            window.genderChartInstance = new Chart(gCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Male', 'Female', 'Other'],
+                    datasets: [{
+                        data: [male, female, other],
+                        backgroundColor: ['#3b82f6', '#ec4899', '#f59e0b'],
+                        borderColor: '#0f172a',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#cbd5e1', font: { size: 11 } } },
+                        tooltip: { callbacks: { label: (c) => `${c.label}: ${c.parsed} students` } }
+                    }
+                }
+            });
+        }
+    } catch (e) { console.warn("genderChart error", e); }
+
+    // 2. Class Enrollment (Bar)
+    try {
+        const cCtx = document.getElementById('classEnrollChart');
+        if (cCtx) {
+            if (window.classEnrollChartInstance) window.classEnrollChartInstance.destroy();
+            const classCounts = {};
+            (window.fetchedStudents || []).forEach(st => {
+                const c = st.class || "Unassigned";
+                classCounts[c] = (classCounts[c] || 0) + 1;
+            });
+            const sortedClasses = Object.keys(classCounts).sort((a, b) => {
+                const order = ["Nursery", "LKG", "UKG", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th"];
+                return order.indexOf(a) - order.indexOf(b);
+            });
+            window.classEnrollChartInstance = new Chart(cCtx, {
+                type: 'bar',
+                data: {
+                    labels: sortedClasses,
+                    datasets: [{
+                        label: 'Students',
+                        data: sortedClasses.map(c => classCounts[c]),
+                        backgroundColor: '#3b82f6',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { font: chartFont }, grid: { display: false } },
+                        y: { beginAtZero: true, ticks: { font: chartFont, precision: 0 }, grid: gridStyle }
+                    }
+                }
+            });
+        }
+    } catch (e) { console.warn("classEnrollChart error", e); }
+
+    // 3. Attendance Trend - last 7 days (Line)
+    try {
+        const aCtx = document.getElementById('attendanceTrendChart');
+        if (aCtx) {
+            if (window.attendanceTrendInstance) window.attendanceTrendInstance.destroy();
+            const labels = [];
+            const presentData = [];
+            const absentData = [];
+            const today = new Date();
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date(today);
+                d.setDate(d.getDate() - i);
+                const dateStr = d.toLocaleDateString("en-CA");
+                labels.push(d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' }));
+                let present = 0, absent = 0;
+                (window.fetchedAttendance || []).forEach(a => {
+                    if (a.date === dateStr) {
+                        if (a.status === "Present" || a.present) present++;
+                        else if (a.status === "Absent" || a.absent) absent++;
+                    }
+                });
+                if (present === 0 && absent === 0 && window.fetchedStudents) {
+                    // fallback: if no attendance records, estimate based on records matching date key
+                }
+                presentData.push(present);
+                absentData.push(absent);
+            }
+            window.attendanceTrendInstance = new Chart(aCtx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        { label: 'Present', data: presentData, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.15)', fill: true, tension: 0.4 },
+                        { label: 'Absent', data: absentData, borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.1)', fill: true, tension: 0.4 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#cbd5e1', font: { size: 11 } } } },
+                    scales: {
+                        x: { ticks: { font: chartFont }, grid: { display: false } },
+                        y: { beginAtZero: true, ticks: { font: chartFont, precision: 0 }, grid: gridStyle }
+                    }
+                }
+            });
+        }
+    } catch (e) { console.warn("attendanceTrendChart error", e); }
+
+    // 4. Fee Collection - monthly (Bar)
+    try {
+        const fCtx = document.getElementById('feeCollectionChart');
+        if (fCtx) {
+            if (window.feeCollectionChartInstance) window.feeCollectionChartInstance.destroy();
+            const monthMap = {};
+            const now = new Date();
+            for (let i = 5; i >= 0; i--) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const key = `${d.getFullYear()}-${d.getMonth()}`;
+                monthMap[key] = { label: d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }), fee: 0, expense: 0 };
+            }
+            (window.fetchedTransactions || []).forEach(t => {
+                if (!t.date) return;
+                const d = new Date(t.date);
+                if (isNaN(d)) return;
+                const key = `${d.getFullYear()}-${d.getMonth()}`;
+                if (monthMap[key]) {
+                    const amt = parseFloat(t.amount) || 0;
+                    if (t.type === "Fee") monthMap[key].fee += amt;
+                    else if (t.type === "Salary" || t.type === "Expense") monthMap[key].expense += amt;
+                }
+            });
+            const keys = Object.keys(monthMap);
+            window.feeCollectionChartInstance = new Chart(fCtx, {
+                type: 'bar',
+                data: {
+                    labels: keys.map(k => monthMap[k].label),
+                    datasets: [
+                        { label: 'Fee Collected', data: keys.map(k => monthMap[k].fee), backgroundColor: '#f59e0b', borderRadius: 4 },
+                        { label: 'Expenses', data: keys.map(k => monthMap[k].expense), backgroundColor: '#94a3b8', borderRadius: 4 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#cbd5e1', font: { size: 11 } } } },
+                    scales: {
+                        x: { ticks: { font: chartFont }, grid: { display: false } },
+                        y: { beginAtZero: true, ticks: { font: chartFont }, grid: gridStyle }
+                    }
+                }
+            });
+        }
+    } catch (e) { console.warn("feeCollectionChart error", e); }
 };
 
 window.selectTemplateUI = (style) => {
@@ -938,6 +1415,101 @@ async function loadSentMail() {
         document.getElementById("sent-list").innerHTML = html || "<p style='padding:20px; text-align:center;'>No sent messages.</p>";
     } catch (e) { console.error(e); }
 }
+
+// ================= COMM HUB SUB-TABS & COMPLAINTS =================
+window.switchCommSubtab = (subId) => {
+    document.querySelectorAll(".comm-subtab").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".comm-subsection").forEach(s => s.classList.remove("active"));
+    const btn = document.querySelector(`.comm-subtab[data-subtab="${subId}"]`);
+    const sec = document.getElementById(subId);
+    if (btn) btn.classList.add("active");
+    if (sec) sec.classList.add("active");
+    if (subId === "sub-complaints") window.loadStudentComplaints();
+    if (subId === "sub-chat") window.loadCoreEduChat();
+};
+
+window.fetchedStudentComplaints = [];
+
+window.loadStudentComplaints = async () => {
+    const tbody = document.getElementById("complaints-list-body");
+    if (!tbody || !currentSchoolId) return;
+    tbody.innerHTML = "<tr><td colspan='7' style='text-align:center;'>Loading complaints...</td></tr>";
+    try {
+        const snap = await getDocs(query(collection(db, "complaints"), where("schoolId", "==", currentSchoolId)));
+        window.fetchedStudentComplaints = [];
+        snap.forEach(d => window.fetchedStudentComplaints.push({ id: d.id, ...d.data() }));
+        window.fetchedStudentComplaints.sort((a, b) => {
+            const aTime = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+            const bTime = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+            return bTime - aTime;
+        });
+        window.renderStudentComplaints();
+    } catch (e) {
+        console.error("Load complaints failed:", e);
+        tbody.innerHTML = "<tr><td colspan='7' style='text-align:center; color:#fca5a5;'>Unable to load complaints.</td></tr>";
+    }
+};
+
+window.renderStudentComplaints = () => {
+    const tbody = document.getElementById("complaints-list-body");
+    if (!tbody) return;
+    let openCount = 0;
+    let html = "";
+    (window.fetchedStudentComplaints || []).forEach(c => {
+        const status = c.status || "Open";
+        if (status === "Open") openCount++;
+        const statusColor = status === "Open" ? "#f59e0b" : status === "In Progress" ? "#3b82f6" : "#10b981";
+        const ts = c.createdAt ? new Date(c.createdAt.toMillis()).toLocaleDateString("en-CA") : "N/A";
+        html += `<tr>
+            <td>${ts}</td>
+            <td><strong>${c.studentName || "N/A"}</strong><br><small>Class ${c.studentClass || "N/A"}</small></td>
+            <td>${c.target || "N/A"}</td>
+            <td><strong>${c.subject || "N/A"}</strong></td>
+            <td style="max-width:260px;">${c.description || "N/A"}</td>
+            <td><span style="color:${statusColor}; font-weight:bold;">${status}</span></td>
+            <td>
+                <button class="action-btn btn-blue" style="padding:4px 10px; font-size:12px; margin-bottom:4px;" onclick="window.resolveComplaint('${c.id}')"><i class="fas fa-check"></i> Resolve</button>
+                <button class="action-btn" style="padding:4px 10px; font-size:12px; background:#64748b;" onclick="window.replyToComplaint('${c.id}')"><i class="fas fa-reply"></i> Reply</button>
+            </td>
+        </tr>`;
+    });
+    tbody.innerHTML = html || "<tr><td colspan='7' style='text-align:center;'>No complaints found.</td></tr>";
+
+    const badge = document.getElementById("badge-complaints");
+    if (badge) {
+        if (openCount > 0) { badge.innerText = openCount; badge.style.display = "inline-block"; }
+        else { badge.style.display = "none"; }
+    }
+};
+
+window.resolveComplaint = async (complaintId) => {
+    const c = window.fetchedStudentComplaints.find(x => x.id === complaintId);
+    if (!c) return alert("Complaint not found.");
+    if (!confirm(`Mark complaint "${c.subject || "this complaint"}" as Resolved?`)) return;
+    try {
+        await updateDoc(doc(db, "complaints", complaintId), { status: "Resolved", resolvedAt: serverTimestamp(), resolvedBy: auth.currentUser?.uid || "chairman" });
+        alert("Complaint marked as resolved.");
+        window.loadStudentComplaints();
+    } catch (e) {
+        console.error("Resolve complaint failed:", e);
+        alert("Failed to resolve complaint: " + e.message);
+    }
+};
+
+window.replyToComplaint = async (complaintId) => {
+    const c = window.fetchedStudentComplaints.find(x => x.id === complaintId);
+    if (!c) return alert("Complaint not found.");
+    const reply = prompt(`Reply to ${c.studentName || "student"} regarding "${c.subject || "complaint"}":`);
+    if (!reply) return;
+    try {
+        await updateDoc(doc(db, "complaints", complaintId), { chairmanReply: reply, status: "In Progress", repliedAt: serverTimestamp() });
+        alert("Reply sent to student.");
+        window.loadStudentComplaints();
+    } catch (e) {
+        console.error("Reply complaint failed:", e);
+        alert("Failed to send reply: " + e.message);
+    }
+};
 
 // ================= FINANCE & PAYROLL & EXPENSES =================
 window.saveFeeStructure = async () => {

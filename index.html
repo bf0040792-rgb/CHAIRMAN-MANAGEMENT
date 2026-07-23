@@ -393,13 +393,13 @@
                     </div>
                     <div class="menu-item" data-target="tab-notices"><i class="fas fa-bullhorn"></i> Notices & Ticker
                     </div>
-                    <div class="menu-item" data-target="tab-mailbox"><i class="fas fa-envelope"></i> Mail Box <span
-                            id="badge-mailbox"
-                            style="display:none; background:red; color:white; border-radius:50%; width:18px; height:18px; text-align:center; font-size:10px; line-height:18px; margin-left:10px; display:inline-block;"></span>
-                    </div>
-                    <div class="menu-item" data-target="tab-coreedu-comm"><i class="fab fa-whatsapp"
-                            style="color: #25D366;"></i> CoreEdu Comm Hub <span id="badge-coreedu"
-                            style="display:none; background:red; color:white; border-radius:50%; width:18px; height:18px; text-align:center; font-size:10px; line-height:18px; margin-left:10px; display:inline-block;"></span>
+                    <div class="menu-item" data-target="tab-mailbox"><i class="fas fa-comments"></i> Communication Hub
+                        <span id="badge-mailbox"
+                            style="display:none; background:red; color:white; border-radius:50%; width:18px; height:18px; text-align:center; font-size:10px; line-height:18px; margin-left:10px; display:inline-block;"></span><span
+                            id="badge-coreedu"
+                            style="display:none; background:#25D366; color:white; border-radius:50%; width:18px; height:18px; text-align:center; font-size:10px; line-height:18px; margin-left:4px; display:inline-block;"></span><span
+                            id="badge-complaints"
+                            style="display:none; background:#f59e0b; color:white; border-radius:50%; width:18px; height:18px; text-align:center; font-size:10px; line-height:18px; margin-left:4px; display:inline-block;"></span>
                     </div>
 
                     <div id="module-qr-fee" class="menu-item" data-target="tab-qr-fee" style="display:none"><i
@@ -463,9 +463,10 @@
                     </div>
 
                     <div class="card" style="border-left: 4px solid #8b5cf6;">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div
+                            style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                             <h3 style="margin:0;"><i class="fas fa-chart-pie"></i> Visual Analytics</h3>
-                            <div style="display:flex; gap:10px;">
+                            <div style="display:flex; gap:10px; flex-wrap:wrap;">
                                 <input type="date" id="chart-specific-date" class="input-premium"
                                     style="padding: 5px 10px; font-size: 12px; width: auto;"
                                     onchange="window.initDashboardChart()">
@@ -477,9 +478,36 @@
                                     <option value="Last Month">Last Month</option>
                                     <option value="This Year">This Year</option>
                                 </select>
+                                <button class="action-btn btn-blue" onclick="window.initDashboardChart()"
+                                    style="padding:5px 12px; font-size:12px;"><i class="fas fa-rotate"></i>
+                                    Refresh</button>
                             </div>
                         </div>
-                        <canvas id="dashboardChart" style="max-height: 350px; width: 100%; margin-top: 15px;"></canvas>
+                        <canvas id="dashboardChart" style="max-height: 320px; width: 100%; margin-top: 15px;"></canvas>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-top:15px;"
+                        class="analytics-grid">
+                        <div class="card" style="border-left: 4px solid #ec4899;">
+                            <h3 style="margin:0 0 10px 0;"><i class="fas fa-venus-mars" style="color:#ec4899"></i>
+                                Gender Distribution</h3>
+                            <canvas id="genderChart" style="max-height: 240px; width:100%;"></canvas>
+                        </div>
+                        <div class="card" style="border-left: 4px solid #3b82f6;">
+                            <h3 style="margin:0 0 10px 0;"><i class="fas fa-users" style="color:#3b82f6"></i> Class
+                                Enrollment</h3>
+                            <canvas id="classEnrollChart" style="max-height: 240px; width:100%;"></canvas>
+                        </div>
+                        <div class="card" style="border-left: 4px solid #10b981;">
+                            <h3 style="margin:0 0 10px 0;"><i class="fas fa-calendar-check" style="color:#10b981"></i>
+                                Attendance Trend (Last 7 Days)</h3>
+                            <canvas id="attendanceTrendChart" style="max-height: 240px; width:100%;"></canvas>
+                        </div>
+                        <div class="card" style="border-left: 4px solid #f59e0b;">
+                            <h3 style="margin:0 0 10px 0;"><i class="fas fa-indian-rupee-sign"
+                                    style="color:#f59e0b"></i> Fee Collection (Monthly)</h3>
+                            <canvas id="feeCollectionChart" style="max-height: 240px; width:100%;"></canvas>
+                        </div>
                     </div>
 
                     <div class="card" style="border-left: 4px solid #38b2ac;">
@@ -598,8 +626,8 @@
                         <div>
                             <span class="section-kicker">Inter-School Movement</span>
                             <h2>Student Transfer Command</h2>
-                            <p>Student ko current school se dusri registered school mein transfer record ke saath move
-                                karein.</p>
+                            <p>Transfer a student from this school to another registered school. Each request goes
+                                through HQ approval and target school acceptance before completion.</p>
                         </div>
                         <div class="transfer-school-chip">
                             <i class="fas fa-school"></i>
@@ -609,8 +637,30 @@
 
                     <div class="transfer-layout-grid">
                         <div class="glass-panel transfer-form-panel">
-                            <h3><i class="fas fa-paper-plane"></i> New Transfer</h3>
+                            <h3><i class="fas fa-paper-plane"></i> New Transfer Request</h3>
                             <div class="form-row">
+                                <div class="form-group">
+                                    <label>Filter by Class</label>
+                                    <select id="transfer_class_filter" class="input-premium"
+                                        onchange="window.populateTransferStudentOptions()">
+                                        <option value="All">All Classes</option>
+                                        <option value="Nursery">Nursery</option>
+                                        <option value="LKG">LKG</option>
+                                        <option value="UKG">UKG</option>
+                                        <option value="1st">1st</option>
+                                        <option value="2nd">2nd</option>
+                                        <option value="3rd">3rd</option>
+                                        <option value="4th">4th</option>
+                                        <option value="5th">5th</option>
+                                        <option value="6th">6th</option>
+                                        <option value="7th">7th</option>
+                                        <option value="8th">8th</option>
+                                        <option value="9th">9th</option>
+                                        <option value="10th">10th</option>
+                                        <option value="11th">11th</option>
+                                        <option value="12th">12th</option>
+                                    </select>
+                                </div>
                                 <div class="form-group">
                                     <label>Student</label>
                                     <select id="transfer_student_select" class="input-premium"
@@ -618,12 +668,18 @@
                                         <option value="">-- Select Student --</option>
                                     </select>
                                 </div>
+                            </div>
+                            <div class="form-row">
                                 <div class="form-group">
                                     <label>Transfer To School</label>
                                     <select id="transfer_to_school_select" class="input-premium"
                                         onchange="window.previewTransferSchoolName()">
                                         <option value="">-- Select School --</option>
                                     </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Transfer Date</label>
+                                    <input type="date" id="transfer_date" class="input-premium">
                                 </div>
                             </div>
 
@@ -634,21 +690,15 @@
                                 <div><strong>To:</strong> <span id="transfer-preview-school">Not selected</span></div>
                             </div>
 
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>Transfer Date</label>
-                                    <input type="date" id="transfer_date" class="input-premium">
-                                </div>
-                                <div class="form-group">
-                                    <label>Reason</label>
-                                    <select id="transfer_reason" class="input-premium">
-                                        <option value="Parent Request">Parent Request</option>
-                                        <option value="Address Change">Address Change</option>
-                                        <option value="Academic Transfer">Academic Transfer</option>
-                                        <option value="Fee/Administrative Case">Fee/Administrative Case</option>
-                                        <option value="Other">Other</option>
-                                    </select>
-                                </div>
+                            <div class="form-group">
+                                <label>Reason</label>
+                                <select id="transfer_reason" class="input-premium">
+                                    <option value="Parent Request">Parent Request</option>
+                                    <option value="Address Change">Address Change</option>
+                                    <option value="Academic Transfer">Academic Transfer</option>
+                                    <option value="Fee/Administrative Case">Fee / Administrative Case</option>
+                                    <option value="Other">Other</option>
+                                </select>
                             </div>
 
                             <div class="form-group">
@@ -669,16 +719,22 @@
                             </div>
 
                             <button class="submit-btn" id="transfer-submit-btn"
-                                onclick="window.submitStudentTransfer()"><i class="fas fa-share-from-square"></i> Submit
-                                Transfer</button>
+                                onclick="window.submitStudentTransfer()"><i class="fas fa-paper-plane"></i> Submit
+                                Transfer Request</button>
                         </div>
 
                         <div class="glass-panel transfer-history-panel">
                             <div
-                                style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px;">
+                                style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
                                 <h3 style="margin:0;"><i class="fas fa-clock-rotate-left"></i> Transfer History</h3>
-                                <button class="action-btn btn-blue" onclick="window.loadStudentTransfers()"><i
-                                        class="fas fa-rotate"></i> Refresh</button>
+                                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                                    <select id="transfer_history_class_filter" class="input-premium"
+                                        style="width:auto; padding:6px 10px;" onchange="window.renderTransferHistory()">
+                                        <option value="All">All Classes</option>
+                                    </select>
+                                    <button class="action-btn btn-blue" onclick="window.loadStudentTransfers()"><i
+                                            class="fas fa-rotate"></i> Refresh</button>
+                                </div>
                             </div>
                             <div class="table-container">
                                 <table class="data-table">
@@ -691,15 +747,45 @@
                                             <th>Reason</th>
                                             <th>Documents</th>
                                             <th>Status</th>
+                                            <th>Receipt</th>
                                         </tr>
                                     </thead>
                                     <tbody id="transfer-history-body">
                                         <tr>
-                                            <td colspan="7" style="text-align:center;">No transfer records loaded.</td>
+                                            <td colspan="8" style="text-align:center;">No transfer records loaded.</td>
                                         </tr>
                                     </tbody>
                                 </table>
                             </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-panel" style="margin-top:20px;">
+                        <div
+                            style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
+                            <h3 style="margin:0;"><i class="fas fa-inbox-in"></i> Incoming Transfer Requests</h3>
+                            <span style="font-size:12px; color:#94a3b8;">Requests from other schools awaiting your
+                                acceptance</span>
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Student</th>
+                                        <th>From School</th>
+                                        <th>Reason</th>
+                                        <th>Documents</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="incoming-transfer-body">
+                                    <tr>
+                                        <td colspan="7" style="text-align:center;">No incoming requests.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -1095,193 +1181,287 @@
                     </div>
                 </div>
 
-                <!-- TAB: COREEDU COMM HUB -->
+                <!-- TAB: COREEDU COMM HUB (kept for backward compat; merged into Comm Hub) -->
                 <div id="tab-coreedu-comm" class="tab-content">
-                    <div class="card" style="height: 70vh; display: flex; flex-direction: column;">
-                        <h3><i class="fab fa-whatsapp" style="color: #25D366;"></i> CoreEdu Direct Comm Hub</h3>
-                        <div id="coreedu-chat-history"
-                            style="flex:1; overflow-y:auto; padding:15px; background:#e5ddd5; border-radius:8px; margin-bottom:15px; display:flex; flex-direction:column; gap:10px;">
-                            <div style="text-align:center; color:#555; padding:20px;">Loading chat history...</div>
-                        </div>
-                        <div style="display:flex; gap:10px; align-items:center;">
-                            <label for="coreedu-attachment"
-                                style="cursor:pointer; padding:10px; background:#f0f0f0; border-radius:50%; width:40px; height:40px; text-align:center;"><i
-                                    class="fas fa-paperclip"></i></label>
-                            <input type="file" id="coreedu-attachment" style="display:none;">
-                            <input type="text" id="coreedu-message-input" class="input-premium" style="flex:1;"
-                                placeholder="Type your message to CoreEdu...">
-                            <button id="coreedu-send-btn" class="action-btn btn-blue" onclick="sendCoreEduMessage()"><i
-                                    class="fas fa-paper-plane"></i></button>
-                        </div>
-                        <style>
-                            .chat-bubble {
-                                max-width: 80%;
-                                padding: 10px 15px;
-                                border-radius: 15px;
-                                position: relative;
-                                font-size: 14px;
-                            }
-
-                            .chat-bubble.sent {
-                                background-color: #dcf8c6;
-                                align-self: flex-end;
-                                border-bottom-right-radius: 0;
-                            }
-
-                            .chat-bubble.received {
-                                background-color: #ffffff;
-                                align-self: flex-start;
-                                border-bottom-left-radius: 0;
-                            }
-
-                            .chat-bubble .timestamp {
-                                display: block;
-                                font-size: 10px;
-                                color: #999;
-                                margin-top: 5px;
-                                text-align: right;
-                            }
-                        </style>
-                    </div>
+                    <p style="text-align:center; color:#888; padding:30px;">This section has moved to the Communication
+                        Hub. <button class="action-btn btn-blue" onclick="switchTab('tab-mailbox')">Open Communication
+                            Hub</button></p>
                 </div>
 
-                <!-- TAB: MAILBOX -->
+                <!-- TAB: COMMUNICATION HUB (unified) -->
                 <div id="tab-mailbox" class="tab-content">
-                    <div class="card" style="margin-bottom: 20px;">
-                        <h3><i class="fas fa-paper-plane"></i> Internal Mail Audit & Compose</h3>
-                        <p style="font-size:13px; color:#666; margin-bottom:15px;">Send private warnings or direct
-                            messages to specific staff members or groups.</p>
-                        <div class="form-group">
-                            <label>To (Target Audience)</label>
-                            <select id="mail_target" onchange="toggleMailTarget()">
-                                <option value="developer">Super Admin</option>
-                                <option value="all_schools">All Schools</option>
-                                <option value="specific_school">Specific School</option>
-                                <option value="staff">All Staff</option>
-                                <option value="specific_staff">Specific Staff Member</option>
-                            </select>
-                        </div>
-                        <div class="form-group" id="specific_staff_div" style="display:none;">
-                            <label>Select Staff Member</label>
-                            <select id="mail_specific_staff">
-                                <option value="">-- Loading Staff --</option>
-                            </select>
-                        </div>
-                        <div class="form-group" id="specific_school_div" style="display:none;">
-                            <label>Select School</label>
-                            <select id="mail_specific_school">
-                                <option value="">-- Loading Schools --</option>
-                            </select>
-                        </div>
-                        <div class="form-group"><label>Message Title</label><input type="text" id="mail_title"
-                                placeholder="Enter subject..."></div>
-                        <div class="form-group"><label>Message Body</label><textarea id="mail_body" rows="4"
-                                placeholder="Type your message here..."></textarea></div>
-                        <div class="form-group"><label>Attach File (Optional)</label><input type="file"
-                                id="mail_attachment" class="input-premium"></div>
-                        <button class="submit-btn" id="mail_send_btn" onclick="sendChairmanMessage()"><i
-                                class="fas fa-paper-plane"></i> Send Message</button>
+                    <div
+                        style="display:flex; gap:8px; margin-bottom:15px; flex-wrap:wrap; border-bottom:2px solid #e2e8f0; padding-bottom:0;">
+                        <button class="comm-subtab active" data-subtab="sub-mail"
+                            onclick="window.switchCommSubtab('sub-mail')"><i class="fas fa-envelope"></i> Internal
+                            Mail</button>
+                        <button class="comm-subtab" data-subtab="sub-chat"
+                            onclick="window.switchCommSubtab('sub-chat')"><i class="fab fa-whatsapp"
+                                style="color:#25D366;"></i> CoreEdu Chat</button>
+                        <button class="comm-subtab" data-subtab="sub-complaints"
+                            onclick="window.switchCommSubtab('sub-complaints')"><i class="fas fa-wrench"
+                                style="color:#f59e0b;"></i> Student Complaints</button>
                     </div>
-
                     <style>
-                        .gmail-list {
-                            display: flex;
-                            flex-direction: column;
-                            gap: 8px;
-                        }
-
-                        .gmail-item {
-                            display: flex;
-                            align-items: center;
-                            padding: 12px 15px;
-                            border-bottom: 1px solid #f0f0f0;
+                        .comm-subtab {
+                            padding: 10px 18px;
+                            background: transparent;
+                            border: none;
+                            border-bottom: 3px solid transparent;
                             cursor: pointer;
-                            transition: background 0.2s;
-                            border-radius: 8px;
-                            background: #fafafa;
-                        }
-
-                        .gmail-item:hover {
-                            background: #f1f5f9;
-                            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-                        }
-
-                        .gmail-avatar {
-                            width: 40px;
-                            height: 40px;
-                            border-radius: 50%;
-                            background: var(--theme-color, #1e3c72);
-                            color: white;
+                            font-size: 13px;
+                            font-weight: 600;
+                            color: #64748b;
+                            transition: 0.2s;
                             display: flex;
                             align-items: center;
-                            justify-content: center;
-                            font-weight: bold;
-                            font-size: 16px;
-                            margin-right: 15px;
-                            flex-shrink: 0;
+                            gap: 6px;
                         }
 
-                        .gmail-content {
-                            flex: 1;
-                            min-width: 0;
+                        .comm-subtab:hover {
+                            color: #1e3c72;
                         }
 
-                        .gmail-header {
-                            display: flex;
-                            justify-content: space-between;
-                            margin-bottom: 4px;
-                            align-items: baseline;
+                        .comm-subtab.active {
+                            color: #1e3c72;
+                            border-bottom-color: #1e3c72;
                         }
 
-                        .gmail-sender {
-                            font-weight: bold;
-                            color: #334155;
-                            font-size: 15px;
-                            white-space: nowrap;
-                            overflow: hidden;
-                            text-overflow: ellipsis;
+                        .comm-subsection {
+                            display: none;
                         }
 
-                        .gmail-date {
-                            font-size: 12px;
-                            color: #64748b;
-                            white-space: nowrap;
-                            margin-left: 10px;
+                        .comm-subsection.active {
+                            display: block;
                         }
 
-                        .gmail-subject {
+                        .chat-bubble {
+                            max-width: 80%;
+                            padding: 10px 15px;
+                            border-radius: 15px;
+                            position: relative;
                             font-size: 14px;
-                            color: #0f172a;
-                            margin-bottom: 2px;
-                            font-weight: 500;
-                            white-space: nowrap;
-                            overflow: hidden;
-                            text-overflow: ellipsis;
                         }
 
-                        .gmail-snippet {
-                            font-size: 13px;
-                            color: #64748b;
-                            white-space: nowrap;
-                            overflow: hidden;
-                            text-overflow: ellipsis;
+                        .chat-bubble.sent {
+                            background-color: #dcf8c6;
+                            align-self: flex-end;
+                            border-bottom-right-radius: 0;
+                        }
+
+                        .chat-bubble.received {
+                            background-color: #ffffff;
+                            align-self: flex-start;
+                            border-bottom-left-radius: 0;
+                        }
+
+                        .chat-bubble .timestamp {
+                            display: block;
+                            font-size: 10px;
+                            color: #999;
+                            margin-top: 5px;
+                            text-align: right;
                         }
                     </style>
 
-                    <div class="card" style="margin-bottom: 20px;">
-                        <h3><i class="fas fa-inbox"></i> Inbox (Incoming Messages)</h3>
-                        <div id="inbox-list" class="gmail-list">
-                            <div style="text-align:center; padding:20px; color:#888;">Loading messages...</div>
+                    <!-- SUBSECTION: INTERNAL MAIL -->
+                    <div class="comm-subsection active" id="sub-mail">
+                        <div class="card" style="margin-bottom: 20px;">
+                            <h3><i class="fas fa-paper-plane"></i> Compose Internal Mail</h3>
+                            <p style="font-size:13px; color:#666; margin-bottom:15px;">Send private messages to staff
+                                members,
+                                schools, or the Super Admin. Threaded replies are supported.</p>
+                            <div class="form-group">
+                                <label>To (Target Audience)</label>
+                                <select id="mail_target" onchange="toggleMailTarget()">
+                                    <option value="developer">Super Admin</option>
+                                    <option value="all_schools">All Schools</option>
+                                    <option value="specific_school">Specific School</option>
+                                    <option value="staff">All Staff</option>
+                                    <option value="specific_staff">Specific Staff Member</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="specific_staff_div" style="display:none;">
+                                <label>Select Staff Member</label>
+                                <select id="mail_specific_staff">
+                                    <option value="">-- Loading Staff --</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="specific_school_div" style="display:none;">
+                                <label>Select School</label>
+                                <select id="mail_specific_school">
+                                    <option value="">-- Loading Schools --</option>
+                                </select>
+                            </div>
+                            <div class="form-group"><label>Message Title</label><input type="text" id="mail_title"
+                                    placeholder="Enter subject..."></div>
+                            <div class="form-group"><label>Message Body</label><textarea id="mail_body" rows="4"
+                                    placeholder="Type your message here..."></textarea></div>
+                            <div class="form-group"><label>Attach File (Optional)</label><input type="file"
+                                    id="mail_attachment" class="input-premium"></div>
+                            <button class="submit-btn" id="mail_send_btn" onclick="sendChairmanMessage()"><i
+                                    class="fas fa-paper-plane"></i> Send Message</button>
                         </div>
-                    </div>
 
-                    <div class="card">
-                        <h3><i class="fas fa-paper-plane"></i> Sent Messages</h3>
-                        <div id="sent-list" class="gmail-list">
-                            <div style="text-align:center; padding:20px; color:#888;">Loading sent messages...</div>
+                        <style>
+                            .gmail-list {
+                                display: flex;
+                                flex-direction: column;
+                                gap: 8px;
+                            }
+
+                            .gmail-item {
+                                display: flex;
+                                align-items: center;
+                                padding: 12px 15px;
+                                border-bottom: 1px solid #f0f0f0;
+                                cursor: pointer;
+                                transition: background 0.2s;
+                                border-radius: 8px;
+                                background: #fafafa;
+                            }
+
+                            .gmail-item:hover {
+                                background: #f1f5f9;
+                                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+                            }
+
+                            .gmail-avatar {
+                                width: 40px;
+                                height: 40px;
+                                border-radius: 50%;
+                                background: var(--theme-color, #1e3c72);
+                                color: white;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                font-weight: bold;
+                                font-size: 16px;
+                                margin-right: 15px;
+                                flex-shrink: 0;
+                            }
+
+                            .gmail-content {
+                                flex: 1;
+                                min-width: 0;
+                            }
+
+                            .gmail-header {
+                                display: flex;
+                                justify-content: space-between;
+                                margin-bottom: 4px;
+                                align-items: baseline;
+                            }
+
+                            .gmail-sender {
+                                font-weight: bold;
+                                color: #334155;
+                                font-size: 15px;
+                                white-space: nowrap;
+                                overflow: hidden;
+                                text-overflow: ellipsis;
+                            }
+
+                            .gmail-date {
+                                font-size: 12px;
+                                color: #64748b;
+                                white-space: nowrap;
+                                margin-left: 10px;
+                            }
+
+                            .gmail-subject {
+                                font-size: 14px;
+                                color: #0f172a;
+                                margin-bottom: 2px;
+                                font-weight: 500;
+                                white-space: nowrap;
+                                overflow: hidden;
+                                text-overflow: ellipsis;
+                            }
+
+                            .gmail-snippet {
+                                font-size: 13px;
+                                color: #64748b;
+                                white-space: nowrap;
+                                overflow: hidden;
+                                text-overflow: ellipsis;
+                            }
+                        </style>
+
+                        <div class="card" style="margin-bottom: 20px;">
+                            <h3><i class="fas fa-inbox"></i> Inbox (Incoming Messages)</h3>
+                            <div id="inbox-list" class="gmail-list">
+                                <div style="text-align:center; padding:20px; color:#888;">Loading messages...</div>
+                            </div>
                         </div>
-                    </div>
-                </div>
+
+                        <div class="card">
+                            <h3><i class="fas fa-paper-plane"></i> Sent Messages</h3>
+                            <div id="sent-list" class="gmail-list">
+                                <div style="text-align:center; padding:20px; color:#888;">Loading sent messages...</div>
+                            </div>
+                        </div>
+                    </div><!-- end sub-mail -->
+
+                    <!-- SUBSECTION: COREEDU CHAT -->
+                    <div class="comm-subsection" id="sub-chat">
+                        <div class="card" style="height: 70vh; display: flex; flex-direction: column;">
+                            <h3><i class="fab fa-whatsapp" style="color: #25D366;"></i> CoreEdu Direct Chat</h3>
+                            <p style="font-size:13px; color:#666; margin-bottom:10px;">Real-time chat with the CoreEdu
+                                support team. Share messages and attachments.</p>
+                            <div id="coreedu-chat-history"
+                                style="flex:1; overflow-y:auto; padding:15px; background:#e5ddd5; border-radius:8px; margin-bottom:15px; display:flex; flex-direction:column; gap:10px;">
+                                <div style="text-align:center; color:#555; padding:20px;">Loading chat history...</div>
+                            </div>
+                            <div style="display:flex; gap:10px; align-items:center;">
+                                <label for="coreedu-attachment"
+                                    style="cursor:pointer; padding:10px; background:#f0f0f0; border-radius:50%; width:40px; height:40px; text-align:center; display:flex; align-items:center; justify-content:center;"><i
+                                        class="fas fa-paperclip"></i></label>
+                                <input type="file" id="coreedu-attachment" style="display:none;">
+                                <input type="text" id="coreedu-message-input" class="input-premium" style="flex:1;"
+                                    placeholder="Type your message to CoreEdu...">
+                                <button id="coreedu-send-btn" class="action-btn btn-blue"
+                                    onclick="sendCoreEduMessage()"><i class="fas fa-paper-plane"></i></button>
+                            </div>
+                        </div>
+                    </div><!-- end sub-chat -->
+
+                    <!-- SUBSECTION: STUDENT COMPLAINTS -->
+                    <div class="comm-subsection" id="sub-complaints">
+                        <div class="card" style="margin-bottom:20px;">
+                            <div
+                                style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                                <h3 style="margin:0;"><i class="fas fa-wrench" style="color:#f59e0b;"></i> Student
+                                    Complaints Inbox</h3>
+                                <button class="action-btn btn-blue" onclick="window.loadStudentComplaints()"
+                                    style="padding:6px 14px;"><i class="fas fa-rotate"></i> Refresh</button>
+                            </div>
+                            <p style="font-size:13px; color:#666; margin:10px 0;">Complaints raised by students of this
+                                school. Resolve or reply directly from here.</p>
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Student</th>
+                                            <th>Target</th>
+                                            <th>Subject</th>
+                                            <th>Description</th>
+                                            <th>Status</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="complaints-list-body">
+                                        <tr>
+                                            <td colspan="7" style="text-align:center;">No complaints loaded.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div><!-- end sub-complaints -->
+
+                </div><!-- end tab-mailbox (Communication Hub) -->
 
 
 
@@ -1289,7 +1469,8 @@
                 <div id="tab-password" class="tab-content">
                     <div class="card">
                         <h3><i class="fas fa-key"></i> Request Password Change</h3>
-                        <p style="color:#666; font-size:13px; margin-bottom:15px;">Enter a new password below. A request
+                        <p style="color:#666; font-size:13px; margin-bottom:15px;">Enter a new password below. A
+                            request
                             will be sent to the Super Admin. Once approved, your password will be updated.</p>
 
                         <div class="form-group"><label>Current Password</label><input type="text" id="req_old_pass"
@@ -1338,7 +1519,8 @@
                         <h3><i class="fas fa-cogs"></i> School White-Labeling & ID Settings</h3>
 
                         <div class="setting-row" style="flex-direction: column; align-items: flex-start;">
-                            <label style="font-weight: bold; margin-bottom: 10px;">ID Card Template Selection</label>
+                            <label style="font-weight: bold; margin-bottom: 10px;">ID Card Template
+                                Selection</label>
                             <div style="display: flex; gap: 20px; overflow-x: auto; width: 100%; padding: 10px 0;">
                                 <label style="cursor: pointer; text-align: center;">
                                     <input type="radio" name="template_style" value="wave" style="display:none;"
@@ -1349,7 +1531,8 @@
                                             style="position: absolute; top: 0; left: 0; width: 100%; height: 40px; background: var(--theme-color, #1e3c72); border-bottom-left-radius: 50%; border-bottom-right-radius: 50%;">
                                         </div>
                                     </div>
-                                    <span style="font-size: 12px; display: block; margin-top: 5px;">Modern Wave</span>
+                                    <span style="font-size: 12px; display: block; margin-top: 5px;">Modern
+                                        Wave</span>
                                 </label>
                                 <label style="cursor: pointer; text-align: center;">
                                     <input type="radio" name="template_style" value="triangle" style="display:none;"
@@ -1360,7 +1543,8 @@
                                             style="position: absolute; top: 0; left: 0; width: 0; height: 0; border-left: 40px solid transparent; border-right: 40px solid transparent; border-top: 50px solid var(--theme-color, #1e3c72);">
                                         </div>
                                     </div>
-                                    <span style="font-size: 12px; display: block; margin-top: 5px;">Corporate V</span>
+                                    <span style="font-size: 12px; display: block; margin-top: 5px;">Corporate
+                                        V</span>
                                 </label>
                                 <label style="cursor: pointer; text-align: center;">
                                     <input type="radio" name="template_style" value="curved" style="display:none;"
@@ -1371,7 +1555,8 @@
                                             style="position: absolute; top: 0; left: 0; width: 100%; height: 40px; background: var(--theme-color, #1e3c72); border-bottom-left-radius: 20px;">
                                         </div>
                                     </div>
-                                    <span style="font-size: 12px; display: block; margin-top: 5px;">Smooth Curve</span>
+                                    <span style="font-size: 12px; display: block; margin-top: 5px;">Smooth
+                                        Curve</span>
                                 </label>
                                 <label style="cursor: pointer; text-align: center;">
                                     <input type="radio" name="template_style" value="corners" style="display:none;"
@@ -1385,7 +1570,8 @@
                                             style="position: absolute; bottom: -10px; right: -10px; width: 40px; height: 40px; background: var(--theme-color, #1e3c72); border-radius: 50%;">
                                         </div>
                                     </div>
-                                    <span style="font-size: 12px; display: block; margin-top: 5px;">Creative Dots</span>
+                                    <span style="font-size: 12px; display: block; margin-top: 5px;">Creative
+                                        Dots</span>
                                 </label>
                                 <label style="cursor: pointer; text-align: center;">
                                     <input type="radio" name="template_style" value="diagonal" style="display:none;"
@@ -1411,7 +1597,8 @@
                                             style="position: absolute; top: 25px; left: 0; width: 100%; height: 10px; background: #ccc;">
                                         </div>
                                     </div>
-                                    <span style="font-size: 12px; display: block; margin-top: 5px;">Double Banner</span>
+                                    <span style="font-size: 12px; display: block; margin-top: 5px;">Double
+                                        Banner</span>
                                 </label>
                                 <label style="cursor: pointer; text-align: center;">
                                     <input type="radio" name="template_style" value="vertical_edge"
@@ -1423,7 +1610,8 @@
                                             style="position: absolute; top: 0; left: 0; width: 20px; height: 100%; background: var(--theme-color, #1e3c72);">
                                         </div>
                                     </div>
-                                    <span style="font-size: 12px; display: block; margin-top: 5px;">Vertical Edge</span>
+                                    <span style="font-size: 12px; display: block; margin-top: 5px;">Vertical
+                                        Edge</span>
                                 </label>
                                 <label style="cursor: pointer; text-align: center;">
                                     <input type="radio" name="template_style" value="bubbles" style="display:none;"
@@ -1494,7 +1682,8 @@
                         <div class="setting-row" style="flex-direction: column; align-items: stretch;">
                             <div
                                 style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap:20px;">
-                                <div class="form-group" style="flex:1;"><label>Principal's Signature (Auto-removes white
+                                <div class="form-group" style="flex:1;"><label>Principal's Signature (Auto-removes
+                                        white
                                         background & prints at bottom right)</label><input type="file" id="sig_photo"
                                         accept="image/*"></div>
                                 <img src="https://via.placeholder.com/100x40?text=Signature" id="preview-signature"
@@ -1535,7 +1724,8 @@
                                 style="max-width: 150px; margin-top: 10px; border-radius: 8px; border: 1px solid #ddd; object-fit: cover;">
                         </div>
                         <div class="form-group" style="margin-bottom: 15px;">
-                            <label style="font-weight: bold; display: block; margin-bottom: 5px;">School UPI ID</label>
+                            <label style="font-weight: bold; display: block; margin-bottom: 5px;">School UPI
+                                ID</label>
                             <input type="text" id="upi_id_input" class="input-premium" placeholder="e.g. school@upi">
                         </div>
                         <button class="submit-btn" id="save_qr_btn" onclick="savePaymentSettings()"><i
@@ -1625,7 +1815,8 @@
                 <!-- TAB: DAILY ATTENDANCE -->
                 <div id="tab-daily-attendance" class="tab-content">
                     <div class="glass-panel" style="margin-bottom: 20px;">
-                        <h3 style="margin-bottom: 15px;"><i class="fas fa-calendar-day"></i> Select Class & Date</h3>
+                        <h3 style="margin-bottom: 15px;"><i class="fas fa-calendar-day"></i> Select Class & Date
+                        </h3>
                         <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
                             <select id="attendanceClassSelect" class="input-premium" style="flex: 1;">
                                 <option value="">-- Select Class --</option>
@@ -1825,7 +2016,8 @@
                     <h2
                         style="color:#1E3A8A; font-family:'Inter',sans-serif; font-weight:700; margin-bottom:4px; font-size: 1.1rem;">
                         Welcome, <span id="stu-display-name">Student</span></h2>
-                    <p style="color:#1E3A8A; font-family:'Inter',sans-serif; font-weight:700; font-size: 1rem;">Quick
+                    <p style="color:#1E3A8A; font-family:'Inter',sans-serif; font-weight:700; font-size: 1rem;">
+                        Quick
                         Access</p>
                 </div>
 
@@ -1858,7 +2050,8 @@
                 <div class="card"
                     style="text-align: center; padding: 25px; border-radius:16px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.06);">
                     <i class="fas fa-id-badge" style="font-size: 36px; color: #1E3A8A; margin-bottom: 12px;"></i>
-                    <h3 style="color: #1E3A8A; margin-bottom: 8px; font-family:'Inter',sans-serif;">My Digital ID Card
+                    <h3 style="color: #1E3A8A; margin-bottom: 8px; font-family:'Inter',sans-serif;">My Digital ID
+                        Card
                     </h3>
                     <p style="color: #64748b; font-size: 13px; margin-bottom: 16px;">Download your official digital
                         student ID card.</p>
@@ -1877,7 +2070,8 @@
                 <div class="card"
                     style="text-align: center; padding: 25px; border-radius:16px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.06);">
                     <i class="fas fa-calendar-alt" style="font-size: 36px; color: #e67e22; margin-bottom: 12px;"></i>
-                    <h3 style="color: #e67e22; margin-bottom: 8px; font-family:'Inter',sans-serif;">My Exam Admit Card
+                    <h3 style="color: #e67e22; margin-bottom: 8px; font-family:'Inter',sans-serif;">My Exam Admit
+                        Card
                     </h3>
                     <p style="color: #64748b; font-size: 13px; margin-bottom: 16px;">Download exam schedule & admit
                         card.</p>
@@ -1898,7 +2092,8 @@
                 <div class="card p-6 rounded-2xl bg-white shadow-sm border border-gray-100">
                     <h3 class="text-xl font-bold text-[#1E3A8A] mb-2 flex items-center gap-2"><i
                             class="fas fa-wrench"></i> Register Complaint</h3>
-                    <p class="text-sm text-gray-500 mb-6">Send your complaints securely. They will be directed to the
+                    <p class="text-sm text-gray-500 mb-6">Send your complaints securely. They will be directed to
+                        the
                         appropriate department.</p>
 
                     <form id="student-complaint-form" onsubmit="submitStudentComplaint(event)"
@@ -1915,7 +2110,8 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-1">Complaint Subject *</label>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Complaint Subject
+                                *</label>
                             <input type="text" id="complaint-subject" required placeholder="Brief title of issue"
                                 class="w-full p-3 rounded-xl border border-gray-200 bg-gray-50 focus:ring-2 focus:ring-[#1E3A8A] outline-none">
                         </div>
@@ -1940,9 +2136,11 @@
                 <div
                     class="card p-8 rounded-2xl bg-white shadow-sm border border-gray-100 text-center flex flex-col items-center justify-center h-64">
                     <i id="placeholder-icon" class="fas fa-tools text-5xl text-gray-300 mb-4"></i>
-                    <h3 id="placeholder-title" class="text-xl font-bold text-gray-700 mb-2">Module Under Construction
+                    <h3 id="placeholder-title" class="text-xl font-bold text-gray-700 mb-2">Module Under
+                        Construction
                     </h3>
-                    <p class="text-sm text-gray-500">This feature is currently being built and will be available soon.
+                    <p class="text-sm text-gray-500">This feature is currently being built and will be available
+                        soon.
                     </p>
                 </div>
             </div>
@@ -1958,8 +2156,10 @@
                     <div>
                         <p style="margin: 0; font-size: 14px; opacity: 0.9;">Total Fee</p>
                         <h2 style="margin: 0 0 10px 0; font-size: 28px;" id="stu-total-fee">₹0</h2>
-                        <p style="margin: 0; font-size: 13px; color: #10b981;"><i class="fas fa-check-circle"></i> Paid:
-                            <span id="stu-paid-fee">₹0</span></p>
+                        <p style="margin: 0; font-size: 13px; color: #10b981;"><i class="fas fa-check-circle"></i>
+                            Paid:
+                            <span id="stu-paid-fee">₹0</span>
+                        </p>
                         <p style="margin: 5px 0 0 0; font-size: 13px; color: #fecaca;"><i
                                 class="fas fa-exclamation-circle"></i> Due: <span id="stu-due-fee">₹0</span></p>
                     </div>
@@ -1969,7 +2169,8 @@
                         </div>
                         <div
                             style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 70px; height: 70px; background: #1E3A8A; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">
-                            <span id="stu-fee-percentage">0%</span></div>
+                            <span id="stu-fee-percentage">0%</span>
+                        </div>
                     </div>
                 </div>
 
@@ -2004,7 +2205,8 @@
                     style="text-align: center; padding:30px; border-radius:16px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.06);">
                     <h2 style="color: #1E3A8A; margin-bottom: 15px; font-family:'Inter',sans-serif;"><i
                             class="fas fa-mobile-alt"></i> Scan & Pay</h2>
-                    <p style="color: #64748b; margin-bottom: 20px;">Use any UPI App to scan the QR code below or tap the
+                    <p style="color: #64748b; margin-bottom: 20px;">Use any UPI App to scan the QR code below or tap
+                        the
                         direct link.</p>
 
                     <div
@@ -2024,7 +2226,8 @@
 
                     <h2 style="color: #1E3A8A; margin-bottom: 15px; font-family:'Inter',sans-serif;"><i
                             class="fas fa-file-invoice"></i> Submit Payment Verification</h2>
-                    <p style="color: #64748b; margin-bottom: 20px; font-size:14px;">After payment, upload the screenshot
+                    <p style="color: #64748b; margin-bottom: 20px; font-size:14px;">After payment, upload the
+                        screenshot
                         and enter the UTR / Transaction ID.</p>
 
                     <form id="student-verification-form" style="max-width: 400px; margin: 0 auto; text-align: left;">
@@ -2042,7 +2245,8 @@
                             <input type="file" id="stu-pay-screenshot" class="input-premium" accept="image/*" required>
                         </div>
                         <button type="submit" id="stu-submit-verification-btn" class="submit-btn"
-                            style="width: 100%; border-radius:10px;"><i class="fas fa-cloud-upload-alt"></i> Submit for
+                            style="width: 100%; border-radius:10px;"><i class="fas fa-cloud-upload-alt"></i> Submit
+                            for
                             Verification</button>
                     </form>
                 </div>
@@ -2052,7 +2256,8 @@
                 style="display: none; text-align: center; padding: 50px 20px; border-radius:16px; background:white;">
                 <i class="fas fa-check-circle" style="font-size: 60px; color: #10b981; margin-bottom: 20px;"></i>
                 <h2 style="color: #1E3A8A; font-family:'Inter',sans-serif;">Verification Submitted!</h2>
-                <p style="color: #64748b;">Your payment details have been sent to the Chairman. Once verified, your due
+                <p style="color: #64748b;">Your payment details have been sent to the Chairman. Once verified, your
+                    due
                     balance will be updated automatically.</p>
             </div>
 
@@ -2106,11 +2311,14 @@
                 <div class="menu-container">
                     <div class="menu-item active" data-target="staff-tab-attendance"><i
                             class="fas fa-clipboard-list"></i> Daily Attendance</div>
-                    <div class="menu-item" data-target="staff-tab-marks"><i class="fas fa-pen-alt"></i> Enter Exam Marks
+                    <div class="menu-item" data-target="staff-tab-marks"><i class="fas fa-pen-alt"></i> Enter Exam
+                        Marks
                     </div>
-                    <div class="menu-item" data-target="staff-tab-notices"><i class="fas fa-bullhorn"></i> Notice Board
+                    <div class="menu-item" data-target="staff-tab-notices"><i class="fas fa-bullhorn"></i> Notice
+                        Board
                     </div>
-                    <div class="menu-item" data-target="staff-tab-profile"><i class="fas fa-user-circle"></i> My Profile
+                    <div class="menu-item" data-target="staff-tab-profile"><i class="fas fa-user-circle"></i> My
+                        Profile
                     </div>
                     <div class="logout-btn" onclick="doLogout()" style="background: #e53e3e;"><i
                             class="fas fa-power-off"></i> Secure Logout</div>
@@ -2128,7 +2336,8 @@
                 <div id="staff-tab-attendance" class="tab-content active">
                     <div class="card" style="border-left: 4px solid #3b82f6;">
                         <h3><i class="fas fa-clipboard-list"></i> Class Attendance</h3>
-                        <p style="font-size:13px; color:#666;">Select your class to mark daily student attendance.</p>
+                        <p style="font-size:13px; color:#666;">Select your class to mark daily student attendance.
+                        </p>
                         <!-- Form fields for attendance will come here -->
                         <button class="submit-btn"><i class="fas fa-search"></i> Load Students</button>
                     </div>
@@ -2138,10 +2347,12 @@
                 <div id="staff-tab-marks" class="tab-content">
                     <div class="card" style="border-left: 4px solid #10b981;">
                         <h3><i class="fas fa-pen-alt"></i> Enter Students Marks</h3>
-                        <p style="font-size:13px; color:#666;">Marks entered here will go to the Chairman for Final Veto
+                        <p style="font-size:13px; color:#666;">Marks entered here will go to the Chairman for Final
+                            Veto
                             Approval.</p>
                         <!-- Form fields for marks entry will come here -->
-                        <button class="submit-btn" style="background: #10b981;"><i class="fas fa-upload"></i> Submit for
+                        <button class="submit-btn" style="background: #10b981;"><i class="fas fa-upload"></i> Submit
+                            for
                             Veto</button>
                     </div>
                 </div>
@@ -2160,7 +2371,8 @@
             </div>
         </div>
 
-        <div id="role-footer" style="background: #1e293b; border-top: 2px solid #3b82f6;">System Access: STAFF AUTHORITY
+        <div id="role-footer" style="background: #1e293b; border-top: 2px solid #3b82f6;">System Access: STAFF
+            AUTHORITY
         </div>
     </div>
     <!-- MODAL: EDIT STAFF & PRIVILEGES -->
@@ -2339,7 +2551,8 @@
         <img id="final-id-image" src="" alt="Student ID Card">
         <div class="id-action-buttons" id="id-actions" style="display:none;">
             <button class="submit-btn" style="background:#3498db;"
-                onclick="shareImage('final-id-image', 'ID_Card.png')"><i class="fas fa-share-alt"></i> Share</button>
+                onclick="shareImage('final-id-image', 'ID_Card.png')"><i class="fas fa-share-alt"></i>
+                Share</button>
             <button class="submit-btn" style="background:#e53e3e;" onclick="closeCustomModal('id-modal')"><i
                     class="fas fa-times"></i> Close</button>
         </div>
@@ -2412,17 +2625,20 @@
             style="max-width: 450px; background: #fff; margin: 15vh auto; padding: 20px; border-radius: 10px; text-align: center;">
             <div class="modal-header"
                 style="justify-content: center; background: #fff3cd; color: #856404; padding: 20px; border-radius: 8px; margin-bottom: 15px;">
-                <h3 style="margin:0;"><i class="fas fa-exclamation-triangle fa-2x"></i><br><br>Defaulters Detected</h3>
+                <h3 style="margin:0;"><i class="fas fa-exclamation-triangle fa-2x"></i><br><br>Defaulters Detected
+                </h3>
             </div>
             <div>
                 <p style="margin-bottom: 20px; color: #4a5568; font-size: 16px;">Some students have pending fees.
                     Generate Admit Cards for them as well?</p>
                 <div style="display: flex; flex-direction: column; gap: 10px;">
                     <button class="action-btn" style="background:#e53e3e; padding:12px; font-size:15px;"
-                        onclick="window.proceedAdmitCards('enable')"><i class="fas fa-check"></i> Enable (Generate for
+                        onclick="window.proceedAdmitCards('enable')"><i class="fas fa-check"></i> Enable (Generate
+                        for
                         ALL with Watermark)</button>
                     <button class="action-btn" style="background:#3182ce; padding:12px; font-size:15px;"
-                        onclick="window.proceedAdmitCards('disable')"><i class="fas fa-times"></i> Disable (Only Paid
+                        onclick="window.proceedAdmitCards('disable')"><i class="fas fa-times"></i> Disable (Only
+                        Paid
                         Students)</button>
                     <button class="action-btn btn-dark" style="padding:12px; font-size:15px;"
                         onclick="document.getElementById('defaulter-admit-modal').style.display='none'">Cancel</button>
@@ -2438,7 +2654,8 @@
             style="max-width: 800px; width: 95%; background: #fff; margin: 5vh auto; padding: 20px; border-radius: 10px; max-height: 90vh; overflow-y: auto;">
             <div
                 style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1e3c72; padding-bottom: 15px; margin-bottom: 20px;">
-                <h2 style="color: #1e3c72; margin: 0;"><i class="fas fa-calendar-alt"></i> Exam Routine Scheduler</h2>
+                <h2 style="color: #1e3c72; margin: 0;"><i class="fas fa-calendar-alt"></i> Exam Routine Scheduler
+                </h2>
                 <div style="display: flex; gap: 10px; align-items: center;">
                     <button class="action-btn btn-dark" style="background:#64748b; padding:5px 10px;"
                         onclick="window.toggleSubjectSettings()"><i class="fas fa-cog"></i> Subjects</button>
@@ -2470,9 +2687,12 @@
 
             <div
                 style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e2e8f0;">
-                <p style="margin: 0; color: #475569; font-size: 14px;"><i class="fas fa-info-circle"></i> <strong>Smart
-                        Inheritance:</strong> Changes here will clone to the next class you select to save typing. Make
-                    sure to click "Save Schedule" for each class!</p>
+                <p style="margin: 0; color: #475569; font-size: 14px;"><i class="fas fa-info-circle"></i>
+                    <strong>Smart
+                        Inheritance:</strong> Changes here will clone to the next class you select to save typing.
+                    Make
+                    sure to click "Save Schedule" for each class!
+                </p>
             </div>
 
             <div id="subject-settings-panel"
@@ -2709,7 +2929,8 @@
             </div>
             <div style="margin-top:20px; display:flex; gap:10px;">
                 <button class="action-btn btn-blue" id="bulk-trigger-btn" style="flex:1; padding:12px; font-size:16px;"
-                    onclick="window.triggerBulkAction()">Generate PDFs</button>
+                    onclick="window.triggerBulkAction()">Generate
+                    PDFs</button>
             </div>
         </div>
     </div>
