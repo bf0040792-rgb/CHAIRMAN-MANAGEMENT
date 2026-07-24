@@ -1,3 +1,4 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs, query, where, deleteDoc, serverTimestamp, deleteField, onSnapshot, orderBy, limit, addDoc, writeBatch, increment } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
@@ -20,6 +21,29 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp");
 const secondaryAuth = getAuth(secondaryApp);
+
+const SUPABASE_URL = "https://lxhamuwhsohdrhjwhlfi.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_ySbDycWqKv_ApSIho-ZlHQ_U_u5b5lq";
+const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+    accessToken: async () => {
+        const user = auth.currentUser;
+        return user ? user.getIdToken() : null;
+    },
+    auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false
+    },
+    global: {
+        headers: { "X-Client-Info": "school-erp-firebase-bridge" }
+    }
+});
+window.supabase = supabase;
+
+window.syncSupabaseSessionWithFirebase = async (user = auth.currentUser) => {
+    if (!user) return null;
+    return user.getIdToken(true);
+};
 
 const appCheck = initializeAppCheck(app, {
     provider: new ReCaptchaV3Provider('6LeAT9csAAAAANn9sBk-BPOFASXX9liQLCwwO5_4'),
@@ -259,6 +283,7 @@ window.logoutFromPin = () => signOut(auth);
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         try {
+            await window.syncSupabaseSessionWithFirebase(user);
             const userDoc = await getDoc(doc(db, "users", user.uid));
             if (!userDoc.exists()) { await signOut(auth); showLoginScreen("Account not found."); return; }
             const data = userDoc.data();
@@ -391,6 +416,7 @@ onAuthStateChanged(auth, async (user) => {
                     showLoginScreen("Impersonation Failed: " + e.message);
                 });
         } else {
+            await window.syncSupabaseSessionWithFirebase(null);
             document.getElementById('auth-overlay').style.display = 'none';
             showLoginScreen();
         }
