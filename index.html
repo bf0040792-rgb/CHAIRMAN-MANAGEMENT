@@ -370,7 +370,12 @@
                 <span id="top-school-name" class="desktop-name">School Name</span>
                 <span id="top-school-name-mobile" class="mobile-name" style="display:none;">SN</span>
             </div>
-            <label class="device-toggle"><input type="checkbox" id="deviceModeToggle"> 💻 PC Mode</label>
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
+                <span id="dashboard-role-badge"
+                    style="display:none; background:rgba(255,255,255,0.12); color:#fff; border:1px solid rgba(255,255,255,0.18); padding:6px 12px; border-radius:999px; font-size:12px; font-weight:600;">Role:
+                    Chairman</span>
+                <label class="device-toggle"><input type="checkbox" id="deviceModeToggle"> 💻 PC Mode</label>
+            </div>
         </div>
 
         <div class="dashboard-body">
@@ -431,34 +436,46 @@
                 <!-- TAB: DASHBOARD -->
                 <div id="tab-dashboard" class="tab-content active">
                     <div class="stats-grid">
-                        <div class="stat-card" style="cursor: pointer;" onclick="filterByStatus('all')">
+                        <div class="stat-card dashboard-drill-card" style="cursor: pointer;"
+                            onclick="window.openDashboardDetail('students-all')">
                             <h3>Total Students</h3>
                             <h2 id="count-students">0</h2>
+                            <small>Click to view full student database</small>
                         </div>
-                        <div class="stat-card" style="border-bottom-color: #3182ce; cursor: pointer;"
-                            onclick="switchTab('tab-students')">
+                        <div class="stat-card dashboard-drill-card"
+                            style="border-bottom-color: #3182ce; cursor: pointer;"
+                            onclick="window.openDashboardDetail('attendance')">
                             <h3>Today's Attendance</h3>
                             <h2 id="count-attendance" style="color:#3182ce">0%</h2>
+                            <small>Click to open daily attendance</small>
                         </div>
-                        <div class="stat-card" style="border-bottom-color: #e53e3e; cursor: pointer;"
-                            onclick="filterByStatus('Pending')">
+                        <div class="stat-card dashboard-drill-card"
+                            style="border-bottom-color: #e53e3e; cursor: pointer;"
+                            onclick="window.openDashboardDetail('pending')">
                             <h3>Pending Approvals</h3>
                             <h2 id="count-pending" style="color:#e53e3e">0</h2>
+                            <small>Click to filter pending students</small>
                         </div>
-                        <div class="stat-card" style="border-bottom-color: #38a169; cursor: pointer;"
-                            onclick="switchTab('tab-staff')">
+                        <div class="stat-card dashboard-drill-card"
+                            style="border-bottom-color: #38a169; cursor: pointer;"
+                            onclick="window.openDashboardDetail('staff')">
                             <h3>Total Staff</h3>
                             <h2 id="count-staff">0</h2>
+                            <small>Click to manage staff</small>
                         </div>
-                        <div class="stat-card" style="border-bottom-color: #f39c12; cursor: pointer;"
-                            onclick="switchTab('tab-notices')">
+                        <div class="stat-card dashboard-drill-card"
+                            style="border-bottom-color: #f39c12; cursor: pointer;"
+                            onclick="window.openDashboardDetail('notices')">
                             <h3>Active Notices</h3>
                             <h2 id="count-notices">0</h2>
+                            <small>Click to open notices</small>
                         </div>
-                        <div class="stat-card" style="border-bottom-color: #27ae60; cursor: pointer;"
-                            onclick="switchTab('tab-finance')">
+                        <div class="stat-card dashboard-drill-card"
+                            style="border-bottom-color: #27ae60; cursor: pointer;"
+                            onclick="window.openDashboardDetail('finance')">
                             <h3>Total Revenue</h3>
                             <h2 id="count-revenue" style="color:#27ae60">₹ 0</h2>
+                            <small>Click to open ledger</small>
                         </div>
                     </div>
 
@@ -539,7 +556,13 @@
                         <div
                             style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom: 15px;">
                             <h3 style="margin:0;"><i class="fas fa-list"></i> Student Database & Certificates</h3>
-                            <div style="display: flex; gap: 10px; align-items: center;">
+                            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                                <label
+                                    style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; color:#334155; background:#f8fafc; border:1px solid #e2e8f0; padding:7px 10px; border-radius:8px;">
+                                    <input type="checkbox" id="select-all-students"
+                                        onchange="window.toggleSelectAllStudents(this.checked)">
+                                    Select All
+                                </label>
                                 <select id="bulk_class_select" class="input-premium"
                                     style="width: auto; padding: 8px 10px;">
                                     <option value="ALL">All Classes</option>
@@ -573,6 +596,9 @@
                                 <button class="action-btn btn-dark"
                                     style="background:#e67e22; padding:5px 10px; font-size:12px;"
                                     onclick="window.openBulkActionModal('bonafide')">🎓 Generate Bonafide</button>
+                                <button class="action-btn btn-blue" style="padding:5px 10px; font-size:12px;"
+                                    onclick="window.exportSelectedStudentsPDF()"><i class="fas fa-file-pdf"></i> Export
+                                    PDF</button>
                                 <button class="action-btn btn-dark" style="padding:5px 10px; font-size:12px;"
                                     onclick="runDefaulterLockdown()"><i class="fas fa-lock"></i> Auto-Lock
                                     Defaulters</button>
@@ -605,6 +631,7 @@
                             <table>
                                 <thead>
                                     <tr>
+                                        <th style="width:42px; text-align:center;">Select</th>
                                         <th>Photo</th>
                                         <th>Name & Contact</th>
                                         <th>Roll No</th>
@@ -732,6 +759,10 @@
                                         style="width:auto; padding:6px 10px;" onchange="window.renderTransferHistory()">
                                         <option value="All">All Classes</option>
                                     </select>
+                                    <select id="transfer_history_school_filter" class="input-premium"
+                                        style="width:auto; padding:6px 10px;" onchange="window.renderTransferHistory()">
+                                        <option value="All">All Schools</option>
+                                    </select>
                                     <button class="action-btn btn-blue" onclick="window.loadStudentTransfers()"><i
                                             class="fas fa-rotate"></i> Refresh</button>
                                 </div>
@@ -800,8 +831,10 @@
                             <div class="form-group"><label>Full Name</label><input type="text" id="s_name"></div>
                             <div class="form-group"><label>Email ID</label><input type="email" id="s_email"></div>
                             <div class="form-group"><label>Password</label><input type="text" id="s_pass"></div>
-                            <div class="form-group"><label>Staff Role</label>
+                            <div class="form-group"><label>Role</label>
                                 <select id="s_role">
+                                    <option value="Chairman">Chairman</option>
+                                    <option value="Principal">Principal</option>
                                     <option value="Teacher">Teacher</option>
                                     <option value="Accountant">Accountant</option>
                                     <option value="Clerk">Clerk</option>
@@ -817,7 +850,12 @@
                     </div>
 
                     <div class="card">
-                        <h3>Staff Life-Cycle & Auth Control</h3>
+                        <div
+                            style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+                            <h3 style="margin:0;">Staff Life-Cycle & Auth Control</h3>
+                            <button class="action-btn btn-blue" onclick="window.downloadGlobalStaffCSV()"><i
+                                    class="fas fa-download"></i> Download Global Network Staff</button>
+                        </div>
                         <div style="overflow-x:auto;">
                             <table>
                                 <thead>
@@ -1713,6 +1751,11 @@
 
                     </div>
 
+                    <div class="card" style="margin-top:20px; border-left:4px solid #8b5cf6;">
+                        <h3><i class="fas fa-toggle-on"></i> Feature Toggles</h3>
+                        <div id="feature-toggle-settings" style="display:grid; gap:12px; margin-top:15px;"></div>
+                    </div>
+
                     <div class="card">
                         <h3><i class="fas fa-qrcode"></i> Zero-Commission Manual QR Fee System</h3>
                         <div class="form-group" style="margin-bottom: 15px;">
@@ -2300,9 +2343,15 @@
             <div class="brand">
                 <span id="staff-school-name" class="desktop-name" style="color: #60a5fa;">School Name</span>
             </div>
-            <div
-                style="color: white; font-weight: bold; font-size: 14px; background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px;">
-                <i class="fas fa-chalkboard-teacher"></i> Staff Portal
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
+                <span id="staff-role-badge"
+                    style="display:none; color: white; font-weight: bold; font-size: 13px; background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px;">
+                    Role: Staff
+                </span>
+                <div
+                    style="color: white; font-weight: bold; font-size: 14px; background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px;">
+                    <i class="fas fa-chalkboard-teacher"></i> Staff Portal
+                </div>
             </div>
         </div>
 
@@ -2385,6 +2434,8 @@
                     style="background:#eee;"></div>
             <div class="form-group"><label>Set New Password</label><input type="text" id="edit_s_pass"></div>
             <div class="form-group"><label>Role</label><select id="edit_s_role">
+                    <option value="Chairman">Chairman</option>
+                    <option value="Principal">Principal</option>
                     <option value="Teacher">Teacher</option>
                     <option value="Accountant">Accountant</option>
                     <option value="Clerk">Clerk</option>
@@ -2415,6 +2466,17 @@
                     onclick="closeCustomModal('edit-staff-modal')">Cancel</button>
                 <button class="submit-btn" id="save_staff_edit_btn" onclick="saveStaffEdits()">Save Updates</button>
             </div>
+        </div>
+    </div>
+
+    <div id="transfer-doc-modal" class="custom-modal-overlay">
+        <div class="custom-modal-box transfer-doc-viewer-box">
+            <div class="custom-modal-header"><span id="transfer-doc-title"><i class="fas fa-file-alt"></i> Transfer
+                    Document</span><button class="action-btn btn-red"
+                    onclick="closeCustomModal('transfer-doc-modal')"><i class="fas fa-times"></i></button></div>
+            <div id="transfer-doc-preview" class="transfer-doc-preview"></div>
+            <div style="margin-top:15px; text-align:right;"><a id="transfer-doc-open-link" class="action-btn btn-blue"
+                    href="#" target="_blank"><i class="fas fa-external-link-alt"></i> Open Original</a></div>
         </div>
     </div>
 

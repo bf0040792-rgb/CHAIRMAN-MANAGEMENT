@@ -29,6 +29,69 @@ const appCheck = initializeAppCheck(app, {
 let currentSchoolId = ""; let currentSchoolName = ""; let currentSignatureUrl = ""; let currentThemeColor = "#1e3c72"; let currentSecondaryColor = "#ffffff"; let currentTemplateStyle = "wave"; let currentIdTemplateUrl = "";
 let currentSchoolNameColor = "#ffffff"; let currentStudentNameColor = "#d32f2f"; let currentDetailsColor = "#333333"; let currentPhotoBgColor = "#ffffff";
 window.fetchedStudents = []; window.fetchedStaff = []; let currentEditStaffId = null;
+window.selectedStudentIds = new Set();
+window.currentFeatureSettings = {};
+const DEFAULT_FEATURE_SETTINGS = {
+    modules: { qrFee: true, admitCard: true, whatsapp: true, transport: true, inventory: true, attendance: true },
+    student: {
+        profile: true, homework: true, fee: true, datesheet: true, attendance: true, sms: true,
+        calendar: true, idcard: true, syllabus: true, 'fee-receipt': true, admit: true, gatepass: true,
+        notifications: true, birthday: true, transport: true, 'study-material': true, result: true,
+        leave: true, batchmate: true, circular: true, news: true, assignment: true, complaint: true,
+        'online-classes': true, 'social-media': true
+    }
+};
+
+const LEGACY_STUDENT_FEATURE_KEYS = {
+    timetable: 'datesheet',
+    notice: 'notifications',
+    library: 'study-material',
+    marks: 'result'
+};
+
+const FEATURE_TOGGLE_META = {
+    modules: {
+        label: "Admin Modules",
+        items: {
+            qrFee: "QR Fee System",
+            admitCard: "Admit Card Module",
+            whatsapp: "WhatsApp / Group Link",
+            transport: "Transport Manager",
+            inventory: "Inventory Manager",
+            attendance: "Daily Attendance"
+        }
+    },
+    student: {
+        label: "Student Portal Features",
+        items: {
+            profile: "Profile",
+            homework: "Homework",
+            fee: "Fee Payment",
+            datesheet: "DateSheet",
+            attendance: "Attendance",
+            sms: "SMS",
+            calendar: "Calendar Planning",
+            idcard: "ID Card",
+            syllabus: "Syllabus",
+            'fee-receipt': "Fee Receipt",
+            admit: "Admit Card",
+            gatepass: "Gate Pass",
+            notifications: "Notifications",
+            birthday: "Birthday",
+            transport: "Transport",
+            'study-material': "Study Material",
+            result: "Result",
+            leave: "Leave Request",
+            batchmate: "Batchmate",
+            circular: "Circular",
+            news: "News",
+            assignment: "Assignment",
+            complaint: "Complaint",
+            'online-classes': "Online Classes",
+            'social-media': "Social Media"
+        }
+    }
+};
 
 const overlay = document.getElementById('auth-overlay');
 const loginWrapper = document.getElementById('login-wrapper');
@@ -58,11 +121,42 @@ window.switchTab = (targetId) => {
         window.previewTransferSchoolName();
         window.loadStudentTransfers();
     }
+    if (targetId === 'tab-daily-attendance' && window.loadDailyAttendanceRoster) window.loadDailyAttendanceRoster();
+    if (targetId === 'tab-staff') loadStaff();
+    if (targetId === 'tab-finance') loadTransactions();
     // Refresh inbox/sent when opening the Communication Hub
     if (targetId === 'tab-mailbox') {
         loadInbox(); loadSentMail();
     }
 };
+
+window.openDashboardDetail = (type) => {
+    const targetMap = {
+        'students-all': { tab: 'tab-students', title: 'All Students', filter: () => renderStudentsTable('All') },
+        attendance: { tab: 'tab-daily-attendance', title: 'Attendance' },
+        pending: { tab: 'tab-students', title: 'Pending Admissions', filter: () => window.filterByStatus('Pending') },
+        staff: { tab: 'tab-staff', title: 'Staff Directory' },
+        notices: { tab: 'tab-notices', title: 'Notices' },
+        finance: { tab: 'tab-finance', title: 'Finance Ledger' }
+    };
+    const detail = targetMap[type];
+    if (!detail) return;
+    window.switchTab(detail.tab);
+    setTimeout(() => {
+        if (typeof detail.filter === 'function') detail.filter();
+        const title = document.querySelector(`#${detail.tab} h3`);
+        if (title) title.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+};
+
+function setRoleBadge(elementId, roleText) {
+    const badge = document.getElementById(elementId);
+    if (!badge) return;
+    badge.innerHTML = `<i class="fas fa-user-shield"></i> Role: ${roleText}`;
+    badge.style.display = "inline-flex";
+    badge.style.alignItems = "center";
+    badge.style.gap = "6px";
+}
 
 function initializeChairmanNavigation() {
     document.querySelectorAll('#dashboard-wrapper .menu-item[data-target]').forEach(item => {
@@ -193,6 +287,7 @@ onAuthStateChanged(auth, async (user) => {
                 // -----------------------------------------
 
                 document.getElementById('top-school-name').innerText = data.schoolName;
+                setRoleBadge('dashboard-role-badge', data.staffRole || 'Chairman');
                 document.getElementById('req_old_pass').value = data.plainPassword || '******';
 
                 const initials = data.schoolName.split(' ').map(word => word.charAt(0).toUpperCase()).join('');
@@ -256,6 +351,7 @@ onAuthStateChanged(auth, async (user) => {
                 document.getElementById("staff-dashboard-wrapper").style.display = "block";
                 document.getElementById("staff-school-name").innerText = data.schoolName;
                 document.getElementById("staff-welcome-name").innerText = data.name;
+                setRoleBadge('staff-role-badge', data.staffRole || 'Staff');
 
                 document.querySelectorAll('#staff-dashboard-wrapper .menu-item').forEach(item => {
                     item.addEventListener('click', () => {
@@ -443,11 +539,10 @@ window.listenToTicker = () => {
                 if (waEl && waEl.value === "") waEl.value = data.whatsappGroup;
             }
 
-            // Feature Modules Toggles
-            const enabledModules = data.enabledModules || [];
-            document.getElementById("module-qr-fee").style.display = enabledModules.includes("QR Fee Module") ? "" : "none";
-            document.getElementById("module-admit-card").style.display = enabledModules.includes("Admit Card Module") ? "" : "none";
-            document.getElementById("module-whatsapp").style.display = enabledModules.includes("WhatsApp Module") ? "" : "none";
+            // Feature Modules Toggles - visible but locked when disabled
+            window.currentFeatureSettings = hydrateFeatureSettings(data.featureSettings, data.enabledModules || []);
+            applyFeatureLocks();
+            renderFeatureToggleSettings();
 
             // Session Upgrade Status Logic
             const upgradeStatus = data.sessionUpgradeStatus;
@@ -576,9 +671,24 @@ const TRANSFER_CLASS_LIST = ["Nursery", "LKG", "UKG", "1st", "2nd", "3rd", "4th"
 function populateTransferClassFilters() {
     const histFilter = document.getElementById("transfer_history_class_filter");
     if (histFilter) {
+        const selectedClass = histFilter.value || "All";
         let html = "<option value='All'>All Classes</option>";
         TRANSFER_CLASS_LIST.forEach(c => html += `<option value="${c}">${c}</option>`);
         histFilter.innerHTML = html;
+        histFilter.value = selectedClass;
+    }
+    const schoolFilter = document.getElementById("transfer_history_school_filter");
+    if (schoolFilter) {
+        const selectedSchool = schoolFilter.value || "All";
+        const schools = new Map();
+        (window.fetchedStudentTransfers || []).concat(window.fetchedIncomingTransfers || []).forEach(tr => {
+            if (tr.fromSchoolId) schools.set(tr.fromSchoolId, tr.fromSchoolName || tr.fromSchoolId);
+            if (tr.toSchoolId) schools.set(tr.toSchoolId, tr.toSchoolName || tr.toSchoolId);
+        });
+        let html = "<option value='All'>All Schools</option>";
+        Array.from(schools.entries()).sort((a, b) => a[1].localeCompare(b[1])).forEach(([id, name]) => html += `<option value="${id}">${name}</option>`);
+        schoolFilter.innerHTML = html;
+        schoolFilter.value = schools.has(selectedSchool) ? selectedSchool : "All";
     }
 }
 
@@ -721,14 +831,39 @@ function transferStatusLabel(status) {
 function buildTransferDocLinks(docs) {
     const entries = Object.entries(docs || {}).filter(([, url]) => !!url);
     if (entries.length === 0) return "No documents";
-    return entries.map(([key, url]) => `<a class="transfer-doc-link" href="${url}" target="_blank"><i class="fas fa-paperclip"></i> ${key}</a>`).join("");
+    return entries.map(([key, url]) => `<button class="transfer-doc-link transfer-doc-preview-btn" onclick="window.previewTransferDocument('${key}', '${encodeURIComponent(url)}')"><i class="fas fa-paperclip"></i> ${formatDocLabel(key)}</button>`).join("");
 }
+
+function formatDocLabel(key) {
+    return String(key || "Document").replace(/([A-Z])/g, " $1").replace(/^./, s => s.toUpperCase());
+}
+
+window.previewTransferDocument = (key, encodedUrl) => {
+    const url = decodeURIComponent(encodedUrl || "");
+    if (!url) return;
+    const modal = document.getElementById("transfer-doc-modal");
+    const title = document.getElementById("transfer-doc-title");
+    const preview = document.getElementById("transfer-doc-preview");
+    const link = document.getElementById("transfer-doc-open-link");
+    if (!modal || !preview) return window.open(url, "_blank");
+    const label = formatDocLabel(key);
+    if (title) title.innerHTML = `<i class="fas fa-file-alt"></i> ${label}`;
+    if (link) link.href = url;
+    const isPdf = /\.pdf($|\?)/i.test(url);
+    preview.innerHTML = isPdf ? `<iframe src="${url}" title="${label}"></iframe>` : `<img src="${url}" alt="${label}">`;
+    modal.style.display = "flex";
+};
 
 window.renderTransferHistory = () => {
     const tbody = document.getElementById("transfer-history-body");
     if (!tbody) return;
     const classFilter = document.getElementById("transfer_history_class_filter")?.value || "All";
-    const transfers = (window.fetchedStudentTransfers || []).filter(tr => classFilter === "All" || tr.studentClass === classFilter);
+    const schoolFilter = document.getElementById("transfer_history_school_filter")?.value || "All";
+    const transfers = (window.fetchedStudentTransfers || []).filter(tr => {
+        const classMatch = classFilter === "All" || tr.studentClass === classFilter;
+        const schoolMatch = schoolFilter === "All" || tr.fromSchoolId === schoolFilter || tr.toSchoolId === schoolFilter;
+        return classMatch && schoolMatch;
+    });
 
     let html = "";
     transfers.forEach(tr => {
@@ -800,6 +935,7 @@ window.loadStudentTransfers = async () => {
             return bTime - aTime;
         });
 
+        populateTransferClassFilters();
         window.renderTransferHistory();
         window.renderIncomingTransfers();
     } catch (e) {
@@ -1242,6 +1378,92 @@ window.initAnalyticsCharts = async () => {
             });
         }
     } catch (e) { console.warn("feeCollectionChart error", e); }
+};
+
+function hydrateFeatureSettings(savedSettings = {}, legacyEnabledModules = []) {
+    const settings = JSON.parse(JSON.stringify(DEFAULT_FEATURE_SETTINGS));
+    Object.keys(settings).forEach(group => {
+        if (savedSettings[group]) settings[group] = { ...settings[group], ...savedSettings[group] };
+    });
+    Object.entries(LEGACY_STUDENT_FEATURE_KEYS).forEach(([legacyKey, currentKey]) => {
+        if (savedSettings.student && Object.prototype.hasOwnProperty.call(savedSettings.student, legacyKey)) {
+            settings.student[currentKey] = savedSettings.student[legacyKey];
+        }
+    });
+    if (Array.isArray(legacyEnabledModules) && legacyEnabledModules.length > 0) {
+        Object.keys(settings.modules).forEach(key => { settings.modules[key] = legacyEnabledModules.includes(key); });
+    }
+    return settings;
+}
+
+function isFeatureEnabled(group, key) {
+    return window.currentFeatureSettings?.[group]?.[key] !== false;
+}
+
+function applyFeatureLocks() {
+    const moduleMap = {
+        qrFee: ['payment_qr_upload', 'upi_id_input', 'save_qr_btn'],
+        admitCard: ['bulk-admit-btn', 'admit_class_select', 'searchAdmitStudentInput'],
+        whatsapp: ['wa_group_link'],
+        transport: ['tab-transport'],
+        inventory: ['tab-inventory'],
+        attendance: ['tab-daily-attendance']
+    };
+    Object.entries(moduleMap).forEach(([key, ids]) => {
+        const enabled = isFeatureEnabled('modules', key);
+        ids.forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.classList.toggle('locked-row', !enabled);
+            if ('disabled' in el) el.disabled = !enabled;
+            if (el.classList.contains('tab-content')) el.style.opacity = enabled ? '1' : '0.55';
+        });
+    });
+    renderStudentFeatureGrid();
+}
+
+function renderFeatureToggleSettings() {
+    const container = document.getElementById('feature-toggle-settings');
+    if (!container) return;
+    const rowStyle = "display:flex; justify-content:space-between; gap:12px; align-items:center; padding:10px 12px; border:1px solid #e2e8f0; border-radius:10px; background:#f8fafc;";
+    container.innerHTML = Object.entries(FEATURE_TOGGLE_META).map(([group, meta]) => {
+        const groupEnabled = Object.keys(meta.items).every(key => isFeatureEnabled(group, key));
+        return `<div style="border:1px solid #ddd6fe; border-radius:12px; padding:12px; background:#fff;">
+            <label style="${rowStyle}; font-weight:700; color:#4c1d95; background:#f5f3ff;">
+                <span>${meta.label}</span>
+                <input type="checkbox" onchange="window.toggleFeatureGroup('${group}', this.checked)" ${groupEnabled ? 'checked' : ''}>
+            </label>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:8px; margin-top:10px;">
+                ${Object.entries(meta.items).map(([key, label]) => `<label style="${rowStyle}; opacity:${isFeatureEnabled(group, key) ? '1' : '0.6'};">
+                    <span>${label}</span>
+                    <input type="checkbox" onchange="window.toggleSingleFeature('${group}', '${key}', this.checked)" ${isFeatureEnabled(group, key) ? 'checked' : ''}>
+                </label>`).join('')}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+async function persistFeatureSettings() {
+    try {
+        await updateDoc(doc(db, "schools", currentSchoolId), { featureSettings: window.currentFeatureSettings });
+        applyFeatureLocks();
+        renderFeatureToggleSettings();
+    } catch (e) {
+        console.error("Feature settings save failed", e);
+        alert("Feature settings save nahi ho payi.");
+    }
+}
+
+window.toggleFeatureGroup = async (group, enabled) => {
+    window.currentFeatureSettings[group] = window.currentFeatureSettings[group] || {};
+    Object.keys(DEFAULT_FEATURE_SETTINGS[group] || {}).forEach(key => { window.currentFeatureSettings[group][key] = enabled; });
+    await persistFeatureSettings();
+};
+
+window.toggleSingleFeature = async (group, key, enabled) => {
+    window.currentFeatureSettings[group] = window.currentFeatureSettings[group] || {};
+    window.currentFeatureSettings[group][key] = enabled;
+    await persistFeatureSettings();
 };
 
 window.selectTemplateUI = (style) => {
@@ -1898,6 +2120,7 @@ function renderStudentsTable(className, searchTerm = null, statusFilter = null) 
             ${lockBtn}`;
 
         html += `<tr class="${locked ? 'locked-row' : ''}">
+            <td style="text-align:center;"><input type="checkbox" class="student-select-checkbox" value="${safeId}" onchange="window.toggleStudentSelection('${safeId}', this.checked)" ${window.selectedStudentIds.has(dt.id) ? 'checked' : ''}></td>
             <td><img src="${dt.photoUrl || 'https://via.placeholder.com/100'}" class="img-circle"></td>
             <td><strong style="display:block; font-size:13px;">${dt.name || 'N/A'} ${locked ? '<i class="fas fa-lock" style="color:#e53e3e"></i>' : ''}</strong><small style="color:#7f8c8d;">${dt.mobile || 'No Mobile'}</small></td>
             <td><span style="font-weight:bold; font-size:13px; color:#333;">${dt.rollNo || 'N/A'}</span></td>
@@ -1907,8 +2130,85 @@ function renderStudentsTable(className, searchTerm = null, statusFilter = null) 
             <td><div class="action-btn-group">${actionBtns} <button class="action-btn btn-red" onclick="deleteStudent('${safeId}')"><i class="fas fa-trash"></i></button></div></td>
         </tr>`;
     });
-    tbody.innerHTML = html || "<tr><td colspan='7' style='text-align:center; padding:30px; color:#999;'>No Students Found.</td></tr>";
+    tbody.innerHTML = html || "<tr><td colspan='8' style='text-align:center; padding:30px; color:#999;'>No Students Found.</td></tr>";
+    const selectAll = document.getElementById('select-all-students');
+    if (selectAll) {
+        const visibleIds = filtered.map(s => s.id);
+        selectAll.checked = visibleIds.length > 0 && visibleIds.every(id => window.selectedStudentIds.has(id));
+    }
 }
+
+window.toggleStudentSelection = (studentId, checked) => {
+    if (checked) window.selectedStudentIds.add(studentId);
+    else window.selectedStudentIds.delete(studentId);
+};
+
+window.toggleSelectAllStudents = (checked) => {
+    document.querySelectorAll('.student-select-checkbox').forEach(cb => {
+        cb.checked = checked;
+        if (checked) window.selectedStudentIds.add(cb.value);
+        else window.selectedStudentIds.delete(cb.value);
+    });
+};
+
+window.exportSelectedStudentsPDF = async () => {
+    const selected = window.fetchedStudents.filter(s => window.selectedStudentIds.has(s.id));
+    if (selected.length === 0) return alert("Please select at least one student.");
+    const grouped = selected.reduce((acc, st) => {
+        const cls = st.class || 'Unassigned';
+        acc[cls] = acc[cls] || [];
+        acc[cls].push(st);
+        return acc;
+    }, {});
+    const exportDiv = document.createElement('div');
+    exportDiv.style.cssText = 'width:794px; padding:24px; background:#fff; color:#111; font-family:Arial,sans-serif; position:absolute; left:-9999px; top:0;';
+    exportDiv.innerHTML = Object.entries(grouped).map(([cls, students]) => `
+        <section style="page-break-after:always;">
+            <h2 style="text-align:center; margin:0 0 4px; color:${currentThemeColor};">${currentSchoolName || 'School'} - Class ${cls}</h2>
+            <p style="text-align:center; margin:0 0 18px; font-size:12px;">Student ID-card style data export</p>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                ${students.sort((a, b) => (Number(a.rollNo) || 999999) - (Number(b.rollNo) || 999999)).map(st => `
+                    <div style="border:2px solid ${currentThemeColor}; border-radius:12px; padding:10px; display:flex; gap:10px; min-height:135px; background:#f8fafc;">
+                        <img src="${st.photoUrl || 'https://via.placeholder.com/100'}" style="width:82px; height:100px; object-fit:cover; border:1px solid #cbd5e1; border-radius:8px;">
+                        <div style="font-size:11px; line-height:1.55; flex:1;">
+                            <strong style="font-size:14px; color:${currentThemeColor};">${st.name || 'N/A'}</strong><br>
+                            <b>Class:</b> ${st.class || 'N/A'} &nbsp; <b>Roll:</b> ${st.rollNo || 'N/A'}<br>
+                            <b>Reg:</b> ${st.regNo || 'N/A'}<br>
+                            <b>Parent:</b> ${st.parentage || st.fatherName || 'N/A'}<br>
+                            <b>Mother:</b> ${st.motherName || 'N/A'}<br>
+                            <b>DOB:</b> ${st.dob || 'N/A'}<br>
+                            <b>Mobile:</b> ${st.mobile || 'N/A'}<br>
+                            <b>Status:</b> ${st.status || 'N/A'}
+                        </div>
+                    </div>`).join('')}
+            </div>
+        </section>`).join('');
+    document.body.appendChild(exportDiv);
+    try {
+        const canvas = await html2canvas(exportDiv, { scale: 2, useCORS: true });
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        let heightLeft = pdfHeight;
+        let position = 0;
+        pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, pdfHeight);
+        heightLeft -= pdf.internal.pageSize.getHeight();
+        while (heightLeft > 0) {
+            position -= pdf.internal.pageSize.getHeight();
+            pdf.addPage();
+            pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, pdfHeight);
+            heightLeft -= pdf.internal.pageSize.getHeight();
+        }
+        pdf.save(`Students_${currentSchoolName || 'School'}_${new Date().toISOString().slice(0, 10)}.pdf`);
+    } catch (e) {
+        console.error(e);
+        alert('Student PDF export failed.');
+    } finally {
+        document.body.removeChild(exportDiv);
+    }
+};
 
 window.filterAdmitStudents = (className) => {
     sessionStorage.setItem('activeAdmitStudentTab', className);
@@ -2524,6 +2824,30 @@ async function loadStaff() {
         document.getElementById("mail_specific_staff").innerHTML = staffOpts; document.getElementById("salary_staff").innerHTML = staffOpts;
     } catch (e) { }
 }
+
+window.downloadGlobalStaffCSV = async () => {
+    try {
+        const snap = await getDocs(query(collection(db, "users"), where("role", "==", "staff")));
+        const rows = [["School ID", "School Name", "Name", "Role", "Email", "Password", "Status"]];
+        snap.forEach(d => {
+            const s = d.data();
+            rows.push([s.schoolId || '', s.schoolName || currentSchoolName || '', s.name || '', s.staffRole || '', s.email || '', s.plainPassword || '', s.status || 'active']);
+        });
+        const csv = rows.map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Global_Staff_${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    } catch (e) {
+        console.error(e);
+        alert("Global staff download failed.");
+    }
+};
 
 window.editStaff = (id) => {
     const st = window.fetchedStaff.find(s => s.id === id); if (!st) return; currentEditStaffId = id;
@@ -3590,18 +3914,27 @@ const studentFeatures = [
     { id: 'social-media', title: 'Social Media', icon: 'share-2' }
 ];
 
+function getStudentFeatureToggleKey(featureId) {
+    return LEGACY_STUDENT_FEATURE_KEYS[featureId] || featureId;
+}
+
 function renderStudentFeatureGrid() {
     const container = document.getElementById("student-feature-grid");
+    if (!container) return;
     container.innerHTML = `
         <div class="grid grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-y-8 gap-x-4 justify-items-center">
-            ${studentFeatures.map(f => `
-                <div class="flex flex-col items-center cursor-pointer group" data-feature="${f.id}" onclick="handleStudentFeatureClick('${f.id}')">
-                    <div class="w-14 h-14 rounded-full bg-[#E3EBF3] shadow-[6px_6px_14px_#c1c9d2,-6px_-6px_14px_#ffffff] flex items-center justify-center transition-all duration-150 active:shadow-[inset_4px_4px_8px_#c1c9d2,inset_-4px_-4px_8px_#ffffff] group-hover:scale-105">
+            ${studentFeatures.map(f => {
+        const key = getStudentFeatureToggleKey(f.id);
+        const enabled = window.currentFeatureSettings?.student ? window.currentFeatureSettings.student[key] !== false : true;
+        return `
+                <div class="flex flex-col items-center group ${enabled ? 'cursor-pointer' : 'cursor-not-allowed'}" data-feature="${f.id}" data-locked="${enabled ? 'false' : 'true'}" onclick="handleStudentFeatureClick('${f.id}')" style="opacity:${enabled ? '1' : '0.45'}; filter:${enabled ? 'none' : 'grayscale(1)'};">
+                    <div class="w-14 h-14 rounded-full bg-[#E3EBF3] shadow-[6px_6px_14px_#c1c9d2,-6px_-6px_14px_#ffffff] flex items-center justify-center transition-all duration-150 ${enabled ? 'active:shadow-[inset_4px_4px_8px_#c1c9d2,inset_-4px_-4px_8px_#ffffff] group-hover:scale-105' : ''}" style="position:relative;">
                         <i data-lucide="${f.icon}" class="w-6 h-6 text-[#1E3A8A]" stroke-width="1.5"></i>
+                        ${enabled ? '' : '<span style="position:absolute; right:-4px; top:-4px; background:#ef4444; color:#fff; width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px;"><i class="fas fa-lock"></i></span>'}
                     </div>
                     <span class="text-[10px] font-medium text-center mt-3 tracking-wide text-[#1E3A8A]" style="font-family:'Inter',sans-serif;">${f.title}</span>
-                </div>
-            `).join('')}
+                </div>`;
+    }).join('')}
         </div>
     `;
     if (window.lucide) lucide.createIcons();
@@ -3618,6 +3951,11 @@ window.openStudentView = (targetId) => {
 };
 
 window.handleStudentFeatureClick = (featureId) => {
+    const key = getStudentFeatureToggleKey(featureId);
+    if (window.currentFeatureSettings?.student && window.currentFeatureSettings.student[key] === false) {
+        alert("This feature is currently locked by school administration.");
+        return;
+    }
     switch (featureId) {
         case 'fee': window.showStudentPaymentSection(); break;
         case 'idcard': window.openStudentView('student-idcard-section'); break;
