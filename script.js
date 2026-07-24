@@ -1425,7 +1425,7 @@ function applyFeatureLocks() {
 function renderFeatureToggleSettings() {
     const container = document.getElementById('feature-toggle-settings');
     if (!container) return;
-    container.innerHTML = Object.entries(FEATURE_TOGGLE_META).map(([group, meta]) => {
+    container.innerHTML = Object.entries(FEATURE_TOGGLE_META).filter(([group]) => group === 'student').map(([group, meta]) => {
         const entries = Object.entries(meta.items);
         const enabledCount = entries.filter(([key]) => isFeatureEnabled(group, key)).length;
         const groupEnabled = enabledCount === entries.length;
@@ -1433,7 +1433,7 @@ function renderFeatureToggleSettings() {
         return `<section class="feature-toggle-card" data-feature-group="${group}">
             <div class="feature-toggle-head">
                 <div>
-                    <span class="section-kicker">Company Portal Control</span>
+                    <span class="section-kicker">School Portal Control</span>
                     <h4>${meta.label}</h4>
                     <p>${enabledCount}/${entries.length} features active. Locked features student/school side par visible rahengi, par click disabled rahega.</p>
                 </div>

@@ -422,6 +422,9 @@
                         Daily Attendance</div>
 
                     <div class="menu-item" data-target="tab-password"><i class="fas fa-key"></i> Change Password</div>
+                    <div class="menu-item" data-target="tab-student-features"><i class="fas fa-toggle-on"></i> Student
+                        Portal
+                        Features</div>
                     <div class="menu-item" data-target="tab-settings"><i class="fas fa-cogs"></i> School Settings</div>
                     <div class="logout-btn" id="logoutBtn" onclick="doLogout()"><i class="fas fa-power-off"></i> Secure
                         Logout</div>
@@ -1751,11 +1754,6 @@
 
                     </div>
 
-                    <div class="card" style="margin-top:20px; border-left:4px solid #8b5cf6;">
-                        <h3><i class="fas fa-toggle-on"></i> Feature Toggles</h3>
-                        <div id="feature-toggle-settings" style="display:grid; gap:12px; margin-top:15px;"></div>
-                    </div>
-
                     <div class="card">
                         <h3><i class="fas fa-qrcode"></i> Zero-Commission Manual QR Fee System</h3>
                         <div class="form-group" style="margin-bottom: 15px;">
@@ -1773,6 +1771,17 @@
                         </div>
                         <button class="submit-btn" id="save_qr_btn" onclick="savePaymentSettings()"><i
                                 class="fas fa-save"></i> Save Payment Settings</button>
+                    </div>
+                </div>
+
+                <!-- TAB: STUDENT PORTAL FEATURES -->
+                <div id="tab-student-features" class="tab-content">
+                    <div class="card" style="border-left:4px solid #8b5cf6;">
+                        <h3><i class="fas fa-toggle-on"></i> Student Portal Features</h3>
+                        <p style="color:#64748b; margin-bottom:15px; font-size:13px;">Yahan se sirf Student Portal ke
+                            features ON/OFF honge. Disabled features student side par visible rahenge, lekin locked
+                            rahenge.</p>
+                        <div id="feature-toggle-settings" style="display:grid; gap:12px; margin-top:15px;"></div>
                     </div>
                 </div>
 
