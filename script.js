@@ -1607,29 +1607,32 @@ window.sendPasswordRequest = async () => {
 
 // ================= MAIL BOX =================
 window.toggleSpecificStaff = () => { const val = document.getElementById("mail_target").value; document.getElementById("specific_staff_div").style.display = val === "specific_staff" ? "block" : "none"; };
+const messagingTimestamp = value => value ? new Date(value).toLocaleString() : "Unknown";
 window.sendChairmanMessage = async () => {
     const target = document.getElementById("mail_target").value; const title = document.getElementById("mail_title").value.trim(); const body = document.getElementById("mail_body").value.trim();
     if (!title || !body) return alert("Fill title and body");
     let receiverId = target; let receiverType = target;
     if (target === "specific_staff") { receiverId = document.getElementById("mail_specific_staff").value; receiverType = "staff_member"; if (!receiverId) return alert("Please select a staff member."); }
-    try { await setDoc(doc(collection(db, "direct_messages")), { senderId: auth.currentUser.uid, senderName: currentSchoolName + " (Chairman)", senderRole: "chairman", schoolId: currentSchoolId, receiverType: receiverType, receiverId: receiverId, title: title, body: body, isRead: false, createdAt: serverTimestamp() }); alert("Message Sent!"); document.getElementById("mail_title").value = ""; document.getElementById("mail_body").value = ""; loadSentMail(); } catch (e) { }
+    const { error } = await supabase.from("direct_messages").insert({ sender_id: auth.currentUser.uid, sender_name: currentSchoolName + " (Chairman)", sender_role: "chairman", school_id: currentSchoolId, receiver_type: receiverType, receiver_id: receiverId, title, body, is_read: false });
+    if (error) return alert("Message failed: " + error.message);
+    alert("Message Sent!"); document.getElementById("mail_title").value = ""; document.getElementById("mail_body").value = ""; loadSentMail();
 };
 async function loadInbox() {
     try {
-        const snap = await getDocs(query(collection(db, "direct_messages"), where("schoolId", "==", currentSchoolId), where("receiverType", "==", "chairman")));
-        let html = ""; let msgs = []; snap.forEach(d => msgs.push({ id: d.id, ...d.data() }));
-        msgs.sort((a, b) => { if (!a.createdAt) return 1; if (!b.createdAt) return -1; return b.createdAt.toMillis() - a.createdAt.toMillis(); });
+        const { data: msgs, error } = await supabase.from("direct_messages").select("*").eq("school_id", currentSchoolId).eq("receiver_id", auth.currentUser.uid).order("created_at", { ascending: false });
+        if (error) throw error;
+        let html = "";
         let unreadCount = 0;
         msgs.forEach(msg => {
-            let isUnread = !msg.isRead;
+            let isUnread = !msg.is_read;
             if (msg.replies && msg.replies.length > 0) {
                 let lastReply = msg.replies[msg.replies.length - 1];
                 if (lastReply.senderRole !== "chairman" && !lastReply.isRead) isUnread = true;
             }
             if (isUnread) unreadCount++;
 
-            let ts = msg.createdAt ? new Date(msg.createdAt.toMillis()).toLocaleString() : "Unknown";
-            let sender = msg.senderRole || 'Admin';
+            let ts = messagingTimestamp(msg.created_at);
+            let sender = msg.sender_role || 'Admin';
             let initial = sender.charAt(0).toUpperCase();
             html += `<div class="gmail-item" onclick="openMailThread('${msg.id}')" style="${isUnread ? 'font-weight:bold; background:#f0f7ff;' : ''}">
                         <div class="gmail-avatar">${initial}</div>
@@ -1654,17 +1657,17 @@ async function loadInbox() {
 }
 async function loadSentMail() {
     try {
-        const snap = await getDocs(query(collection(db, "direct_messages"), where("senderId", "==", auth.currentUser.uid)));
-        let html = ""; let msgs = []; snap.forEach(d => msgs.push({ id: d.id, ...d.data() }));
-        msgs.sort((a, b) => { if (!a.createdAt) return 1; if (!b.createdAt) return -1; return b.createdAt.toMillis() - a.createdAt.toMillis(); });
+        const { data: msgs, error } = await supabase.from("direct_messages").select("*").eq("sender_id", auth.currentUser.uid).order("created_at", { ascending: false });
+        if (error) throw error;
+        let html = "";
         msgs.forEach(msg => {
             let isUnreadReply = false;
             if (msg.replies && msg.replies.length > 0) {
                 let lastReply = msg.replies[msg.replies.length - 1];
                 if (lastReply.senderRole !== "chairman" && !lastReply.isRead) isUnreadReply = true;
             }
-            let ts = msg.createdAt ? new Date(msg.createdAt.toMillis()).toLocaleString() : "Unknown";
-            let toWho = msg.receiverType === 'staff_member' ? 'Specific Staff' : (msg.receiverType === 'school' ? 'Specific School' : msg.receiverType);
+            let ts = messagingTimestamp(msg.created_at);
+            let toWho = msg.receiver_type === 'staff_member' ? 'Specific Staff' : (msg.receiver_type === 'school' ? 'Specific School' : msg.receiver_type);
             let initial = toWho.charAt(0).toUpperCase();
             html += `<div class="gmail-item" onclick="openMailThread('${msg.id}')" style="${isUnreadReply ? 'font-weight:bold; background:#f0f7ff;' : ''}">
                         <div class="gmail-avatar" style="background:#8e44ad;">${initial}</div>
@@ -3695,17 +3698,21 @@ window.openDirectMessageModal = (id, name) => {
 };
 
 window.sendDirectMessage = async () => {
-    const msg = document.getElementById("dm-message-body").value.trim();
-    if (!msg) return alert("Please type a message.");
+    const body = document.getElementById("dm-message-body").value.trim();
+    if (!body) return alert("Please type a message.");
     try {
-        await addDoc(collection(db, "direct_messages"), {
-            schoolId: currentSchoolId,
-            studentId: currentDMStudentId,
-            message: msg,
-            sender: "Chairman",
-            timestamp: serverTimestamp(),
-            read: false
+        const { error } = await supabase.from("direct_messages").insert({
+            school_id: currentSchoolId,
+            sender_id: auth.currentUser.uid,
+            sender_name: currentSchoolName + " (Chairman)",
+            sender_role: "chairman",
+            receiver_id: currentDMStudentId,
+            receiver_type: "student",
+            title: "DIRECT MESSAGE",
+            body,
+            is_read: false
         });
+        if (error) throw error;
         alert("Message sent successfully!");
         closeCustomModal("direct-message-modal");
     } catch (e) {
@@ -4621,45 +4628,32 @@ window.downloadStudentAdmitCard = async () => {
     btn.innerHTML = originalText; btn.disabled = false;
 };
 
-// --- CoreEdu Chat ---
-window.loadCoreEduChat = () => {
-    const q = query(collection(db, "school_communications"), where("schoolId", "==", currentSchoolId), orderBy("timestamp"));
-    onSnapshot(q, async (snap) => {
-        let html = "";
+// --- CoreEdu Chat (Supabase Realtime) ---
+window.coreEduChatChannel = null;
+window.loadCoreEduChat = async () => {
+    const history = document.getElementById("coreedu-chat-history");
+    if (!history || !currentSchoolId) return;
+    if (window.coreEduChatChannel) await supabase.removeChannel(window.coreEduChatChannel);
+    const render = messages => {
         let unreadCount = 0;
-        let batchUpdates = [];
-
-        snap.forEach(d => {
-            let msg = d.data();
-            let isMaster = msg.sender === "master";
-            if (isMaster && !msg.isRead) {
-                unreadCount++;
-                batchUpdates.push(d.id);
-            }
-
-            let ts = msg.timestamp ? new Date(msg.timestamp.toMillis()).toLocaleString() : "";
-            let className = msg.sender === "school" ? "chat-bubble sent" : "chat-bubble received";
-            let attachHtml = msg.attachmentUrl ? `<br><a href="${msg.attachmentUrl}" target="_blank" style="font-size:12px; color:blue;"><i class="fas fa-paperclip"></i> Attachment</a>` : "";
-
-            html += `<div class="${className}">${msg.text}${attachHtml}<span class="timestamp">${ts}</span></div>`;
-        });
-
-        document.getElementById("coreedu-chat-history").innerHTML = html || "<div style='text-align:center; color:#555; padding:20px;'>No messages yet. Say hi to CoreEdu!</div>";
-        document.getElementById("coreedu-chat-history").scrollTop = document.getElementById("coreedu-chat-history").scrollHeight;
-
-        if (unreadCount > 0) {
-            document.getElementById("badge-coreedu").innerText = unreadCount;
-            document.getElementById("badge-coreedu").style.display = "inline-block";
-        } else {
-            document.getElementById("badge-coreedu").style.display = "none";
-        }
-
-        if (unreadCount > 0 && document.getElementById("tab-coreedu-comm").classList.contains("active")) {
-            for (let id of batchUpdates) {
-                await updateDoc(doc(db, "school_communications", id), { isRead: true });
-            }
-        }
-    });
+        history.innerHTML = (messages || []).map(msg => {
+            const isMaster = msg.sender_role === "developer";
+            if (isMaster && !msg.is_read) unreadCount++;
+            const ts = msg.created_at ? new Date(msg.created_at).toLocaleString() : "";
+            const attachment = msg.attachment_url ? `<br><a href="${msg.attachment_url}" target="_blank" style="font-size:12px;color:blue;"><i class="fas fa-paperclip"></i> Attachment</a>` : "";
+            return `<div class="${isMaster ? "chat-bubble received" : "chat-bubble sent"}">${msg.message || ""}${attachment}<span class="timestamp">${ts}</span></div>`;
+        }).join("") || "<div style='text-align:center;color:#555;padding:20px;'>No messages yet. Say hi to CoreEdu!</div>";
+        history.scrollTop = history.scrollHeight;
+        const badge = document.getElementById("badge-coreedu");
+        if (badge) { badge.innerText = unreadCount; badge.style.display = unreadCount ? "inline-block" : "none"; }
+    };
+    const refresh = async payload => {
+        const { data, error } = await supabase.from("school_communications").select("*").eq("school_id", currentSchoolId).order("created_at", { ascending: true });
+        if (!error) render(data);
+        if (payload?.new?.id && document.getElementById("sub-chat")?.classList.contains("active")) await supabase.from("school_communications").update({ is_read: true }).eq("id", payload.new.id).eq("sender_role", "developer");
+    };
+    await refresh();
+    window.coreEduChatChannel = supabase.channel(`school-communications-${currentSchoolId}`).on("postgres_changes", { event: "*", schema: "public", table: "school_communications", filter: `school_id=eq.${currentSchoolId}` }, refresh).subscribe();
 };
 
 window.sendCoreEduMessage = async () => {
@@ -4681,15 +4675,16 @@ window.sendCoreEduMessage = async () => {
     }
 
     try {
-        await addDoc(collection(db, "school_communications"), {
-            schoolId: currentSchoolId,
-            schoolName: currentSchoolName,
-            sender: "school",
-            text: text,
-            attachmentUrl: attachmentUrl,
-            timestamp: serverTimestamp(),
-            isRead: false
+        const { error } = await supabase.from("school_communications").insert({
+            school_id: currentSchoolId,
+            sender_id: auth.currentUser.uid,
+            sender_name: currentSchoolName,
+            sender_role: "chairman",
+            message: text,
+            attachment_url: attachmentUrl,
+            is_read: false
         });
+        if (error) throw error;
         document.getElementById("coreedu-message-input").value = "";
         document.getElementById("coreedu-attachment").value = "";
     } catch (e) {
@@ -4729,27 +4724,14 @@ window.openMailThread = async (msgId) => {
     document.getElementById("mail-thread-container").innerHTML = "<div style='text-align:center;'>Loading thread...</div>";
 
     try {
-        await updateDoc(doc(db, "direct_messages", msgId), { isRead: true });
-
-        onSnapshot(doc(db, "direct_messages", msgId), async (d) => {
-            if (!d.exists()) return;
-            let msg = d.data();
+        const { data: msg, error } = await supabase.from("direct_messages").update({ is_read: true }).eq("id", msgId).select("*").single();
+        if (error || !msg) throw error || new Error("Message not found");
+        const renderThread = async (msg) => {
             let html = "";
 
-            let updatedReplies = false;
             let replies = msg.replies || [];
-            replies.forEach(r => {
-                if (r.senderRole !== "chairman" && !r.isRead) {
-                    r.isRead = true;
-                    updatedReplies = true;
-                }
-            });
-            if (updatedReplies) {
-                await updateDoc(doc(db, "direct_messages", msgId), { replies: replies });
-            }
-
-            let ts = msg.createdAt ? new Date(msg.createdAt.toMillis()).toLocaleString() : "";
-            let attachHtml = msg.attachmentUrl ? `<div style="margin-top:10px;"><a href="${msg.attachmentUrl}" target="_blank" class="action-btn" style="background:#e2e8f0; color:#333; padding:5px 10px; font-size:12px; display:inline-block;"><i class="fas fa-paperclip"></i> View Attachment</a></div>` : "";
+            let ts = msg.created_at ? new Date(msg.created_at).toLocaleString() : "";
+            let attachHtml = msg.attachment_url ? `<div style="margin-top:10px;"><a href="${msg.attachment_url}" target="_blank" class="action-btn" style="background:#e2e8f0;color:#333;padding:5px 10px;font-size:12px;display:inline-block;"><i class="fas fa-paperclip"></i> View Attachment</a></div>` : "";
 
             html += `<div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:15px;">
                         <div style="display:flex; justify-content:space-between; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:10px;">
@@ -4776,12 +4758,12 @@ window.openMailThread = async (msgId) => {
             });
 
             document.getElementById("mail-thread-container").innerHTML = html;
-            setTimeout(() => {
-                document.getElementById("mail-thread-container").scrollTop = document.getElementById("mail-thread-container").scrollHeight;
-            }, 100);
-
-            loadInbox(); loadSentMail();
-        });
+            setTimeout(() => { document.getElementById("mail-thread-container").scrollTop = document.getElementById("mail-thread-container").scrollHeight; }, 100);
+        };
+        await renderThread(msg);
+        if (window.mailThreadChannel) await supabase.removeChannel(window.mailThreadChannel);
+        window.mailThreadChannel = supabase.channel(`direct-message-${msgId}`).on("postgres_changes", { event: "UPDATE", schema: "public", table: "direct_messages", filter: `id=eq.${msgId}` }, event => renderThread(event.new)).subscribe();
+        loadInbox(); loadSentMail();
     } catch (e) { console.error(e); }
 };
 
@@ -4805,19 +4787,20 @@ window.replyToMailThread = async () => {
     }
 
     try {
-        const d = await getDoc(doc(db, "direct_messages", window.currentMailThreadId));
-        if (!d.exists()) throw new Error();
-        let replies = d.data().replies || [];
+        const { data: d, error: loadError } = await supabase.from("direct_messages").select("replies").eq("id", window.currentMailThreadId).single();
+        if (loadError || !d) throw loadError || new Error();
+        let replies = d.replies || [];
         replies.push({
             senderRole: "chairman",
             senderName: currentSchoolName + " (Chairman)",
             text: text,
             attachmentUrl: attachmentUrl,
-            timestamp: serverTimestamp(),
+            timestamp: new Date().toISOString(),
             isRead: false
         });
 
-        await updateDoc(doc(db, "direct_messages", window.currentMailThreadId), { replies: replies });
+        const { error } = await supabase.from("direct_messages").update({ replies }).eq("id", window.currentMailThreadId);
+        if (error) throw error;
 
         document.getElementById("mail-reply-body").value = "";
         document.getElementById("mail-reply-attachment").value = "";
