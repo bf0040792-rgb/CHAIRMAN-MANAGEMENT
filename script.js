@@ -1425,21 +1425,36 @@ function applyFeatureLocks() {
 function renderFeatureToggleSettings() {
     const container = document.getElementById('feature-toggle-settings');
     if (!container) return;
-    const rowStyle = "display:flex; justify-content:space-between; gap:12px; align-items:center; padding:10px 12px; border:1px solid #e2e8f0; border-radius:10px; background:#f8fafc;";
     container.innerHTML = Object.entries(FEATURE_TOGGLE_META).map(([group, meta]) => {
-        const groupEnabled = Object.keys(meta.items).every(key => isFeatureEnabled(group, key));
-        return `<div style="border:1px solid #ddd6fe; border-radius:12px; padding:12px; background:#fff;">
-            <label style="${rowStyle}; font-weight:700; color:#4c1d95; background:#f5f3ff;">
-                <span>${meta.label}</span>
-                <input type="checkbox" onchange="window.toggleFeatureGroup('${group}', this.checked)" ${groupEnabled ? 'checked' : ''}>
-            </label>
-            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:8px; margin-top:10px;">
-                ${Object.entries(meta.items).map(([key, label]) => `<label style="${rowStyle}; opacity:${isFeatureEnabled(group, key) ? '1' : '0.6'};">
-                    <span>${label}</span>
-                    <input type="checkbox" onchange="window.toggleSingleFeature('${group}', '${key}', this.checked)" ${isFeatureEnabled(group, key) ? 'checked' : ''}>
-                </label>`).join('')}
+        const entries = Object.entries(meta.items);
+        const enabledCount = entries.filter(([key]) => isFeatureEnabled(group, key)).length;
+        const groupEnabled = enabledCount === entries.length;
+        const groupPartial = enabledCount > 0 && enabledCount < entries.length;
+        return `<section class="feature-toggle-card" data-feature-group="${group}">
+            <div class="feature-toggle-head">
+                <div>
+                    <span class="section-kicker">Company Portal Control</span>
+                    <h4>${meta.label}</h4>
+                    <p>${enabledCount}/${entries.length} features active. Locked features student/school side par visible rahengi, par click disabled rahega.</p>
+                </div>
+                <label class="feature-master-switch ${groupEnabled ? 'is-on' : ''} ${groupPartial ? 'is-partial' : ''}">
+                    <span>${groupEnabled ? 'All ON' : (groupPartial ? 'Partial' : 'All OFF')}</span>
+                    <input type="checkbox" onchange="window.toggleFeatureGroup('${group}', this.checked)" ${groupEnabled ? 'checked' : ''}>
+                </label>
             </div>
-        </div>`;
+            <div class="feature-toggle-grid">
+                ${entries.map(([key, label]) => {
+            const enabled = isFeatureEnabled(group, key);
+            return `<label class="feature-toggle-item ${enabled ? 'enabled' : 'locked'}">
+                        <span class="feature-toggle-copy">
+                            <strong>${label}</strong>
+                            <small>${enabled ? 'Live & clickable' : 'Visible but locked'}</small>
+                        </span>
+                        <input type="checkbox" onchange="window.toggleSingleFeature('${group}', '${key}', this.checked)" ${enabled ? 'checked' : ''}>
+                    </label>`;
+        }).join('')}
+            </div>
+        </section>`;
     }).join('');
 }
 
@@ -1456,13 +1471,16 @@ async function persistFeatureSettings() {
 
 window.toggleFeatureGroup = async (group, enabled) => {
     window.currentFeatureSettings[group] = window.currentFeatureSettings[group] || {};
-    Object.keys(DEFAULT_FEATURE_SETTINGS[group] || {}).forEach(key => { window.currentFeatureSettings[group][key] = enabled; });
+    Object.keys(FEATURE_TOGGLE_META[group]?.items || DEFAULT_FEATURE_SETTINGS[group] || {}).forEach(key => { window.currentFeatureSettings[group][key] = enabled; });
     await persistFeatureSettings();
 };
 
 window.toggleSingleFeature = async (group, key, enabled) => {
     window.currentFeatureSettings[group] = window.currentFeatureSettings[group] || {};
     window.currentFeatureSettings[group][key] = enabled;
+    Object.entries(LEGACY_STUDENT_FEATURE_KEYS).forEach(([legacyKey, currentKey]) => {
+        if (group === 'student' && currentKey === key) window.currentFeatureSettings.student[legacyKey] = enabled;
+    });
     await persistFeatureSettings();
 };
 
@@ -1896,51 +1914,74 @@ window.requestTransactionDeletion = async (id) => {
 };
 
 window.downloadLedgerPDF = () => {
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF('l', 'mm', 'a4');
-
-    pdf.setFontSize(18);
-    pdf.text("Combined Financial Ledger", 14, 22);
-
-    const nameSearch = document.getElementById("ledger-search-name").value.toLowerCase();
-    const classSearch = document.getElementById("ledger-search-class").value;
-    const staffSearch = document.getElementById("ledger-search-staff").value;
-
-    let filtered = window.fetchedTransactions;
-    if (window.currentLedgerTab !== 'All') { filtered = filtered.filter(t => t.type === window.currentLedgerTab); }
-    if (classSearch) { filtered = filtered.filter(t => t.class === classSearch); }
-    if (staffSearch) { filtered = filtered.filter(t => t.personName === staffSearch); }
-    if (nameSearch) { filtered = filtered.filter(t => t.personName?.toLowerCase().includes(nameSearch)); }
-
-    let y = 40;
-    pdf.setFontSize(10);
-    pdf.setFont(undefined, 'bold');
-    pdf.text("Date", 14, y);
-    pdf.text("Type", 40, y);
-    pdf.text("Name/Title", 70, y);
-    pdf.text("Details", 120, y);
-    pdf.text("Amount", 180, y);
-    pdf.text("Mode", 220, y);
-
-    pdf.setFont(undefined, 'normal');
-    y += 10;
-
-    filtered.forEach((t, i) => {
-        if (y > 190) {
-            pdf.addPage();
-            y = 20;
+    try {
+        if (!window.jspdf?.jsPDF) {
+            alert("PDF library abhi load nahi hui. Page refresh karke dobara try karein.");
+            return;
         }
-        const details = t.type === "Fee" ? `Class: ${t.class || 'N/A'}` : (t.type === "Expense" ? "School Expense" : "Staff Pay");
-        pdf.text(t.date || '', 14, y);
-        pdf.text(t.type || '', 40, y);
-        pdf.text((t.personName || 'N/A').substring(0, 20), 70, y);
-        pdf.text(details.substring(0, 25), 120, y);
-        pdf.text("Rs. " + t.amount, 180, y);
-        pdf.text(t.mode || '', 220, y);
-        y += 10;
-    });
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('l', 'mm', 'a4');
 
-    pdf.save("Ledger_Report.pdf");
+        const transactions = Array.isArray(window.fetchedTransactions) ? window.fetchedTransactions : [];
+        const nameSearch = (document.getElementById("ledger-search-name")?.value || "").toLowerCase();
+        const classSearch = document.getElementById("ledger-search-class")?.value || "";
+        const staffSearch = document.getElementById("ledger-search-staff")?.value || "";
+
+        let filtered = [...transactions];
+        if ((window.currentLedgerTab || 'All') !== 'All') { filtered = filtered.filter(t => t.type === window.currentLedgerTab); }
+        if (classSearch) { filtered = filtered.filter(t => t.class === classSearch); }
+        if (staffSearch) { filtered = filtered.filter(t => t.personName === staffSearch); }
+        if (nameSearch) { filtered = filtered.filter(t => t.personName?.toLowerCase().includes(nameSearch)); }
+
+        if (!filtered.length) {
+            alert("Is filter ke liye koi ledger record available nahi hai.");
+            return;
+        }
+
+        pdf.setFontSize(18);
+        pdf.text(currentSchoolName || "Combined Financial Ledger", 14, 18);
+        pdf.setFontSize(11);
+        pdf.text(`Report: ${(window.currentLedgerTab || 'All')} Transactions | Records: ${filtered.length}`, 14, 26);
+        pdf.text(`Generated: ${new Date().toLocaleString()}`, 14, 33);
+
+        let y = 45;
+        const drawHeader = () => {
+            pdf.setFillColor(239, 246, 255);
+            pdf.rect(12, y - 6, 270, 9, 'F');
+            pdf.setFontSize(10);
+            pdf.setFont(undefined, 'bold');
+            pdf.text("Date", 14, y);
+            pdf.text("Type", 42, y);
+            pdf.text("Name/Title", 72, y);
+            pdf.text("Details", 125, y);
+            pdf.text("Amount", 188, y);
+            pdf.text("Mode", 228, y);
+            pdf.setFont(undefined, 'normal');
+            y += 10;
+        };
+        drawHeader();
+
+        filtered.forEach(t => {
+            if (y > 190) {
+                pdf.addPage();
+                y = 20;
+                drawHeader();
+            }
+            const details = t.type === "Fee" ? `Class: ${t.class || 'N/A'}` : (t.type === "Expense" ? "School Expense" : "Staff Pay");
+            pdf.text(String(t.date || '').substring(0, 12), 14, y);
+            pdf.text(String(t.type || ''), 42, y);
+            pdf.text(String(t.personName || 'N/A').substring(0, 24), 72, y);
+            pdf.text(details.substring(0, 28), 125, y);
+            pdf.text("Rs. " + (t.amount || 0), 188, y);
+            pdf.text(String(t.mode || '').substring(0, 18), 228, y);
+            y += 9;
+        });
+
+        pdf.save(`Ledger_Report_${new Date().toISOString().slice(0, 10)}.pdf`);
+    } catch (e) {
+        console.error(e);
+        alert("Ledger PDF generate nahi ho paya. Console mein details available hain.");
+    }
 };
 
 window.generatePayslip = async (id) => {
@@ -2825,14 +2866,29 @@ async function loadStaff() {
     } catch (e) { }
 }
 
-window.downloadGlobalStaffCSV = async () => {
+window.downloadGlobalStaffCSV = async (evt = null) => {
+    const triggerBtn = evt?.currentTarget || (typeof event !== "undefined" ? event.currentTarget : null);
+    const originalHtml = triggerBtn?.innerHTML;
     try {
-        const snap = await getDocs(query(collection(db, "users"), where("role", "==", "staff")));
-        const rows = [["School ID", "School Name", "Name", "Role", "Email", "Password", "Status"]];
-        snap.forEach(d => {
-            const s = d.data();
-            rows.push([s.schoolId || '', s.schoolName || currentSchoolName || '', s.name || '', s.staffRole || '', s.email || '', s.plainPassword || '', s.status || 'active']);
+        if (triggerBtn) { triggerBtn.disabled = true; triggerBtn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Preparing CSV..."; }
+        const [staffSnap, schoolsSnap] = await Promise.all([
+            getDocs(query(collection(db, "users"), where("role", "==", "staff"))),
+            getDocs(collection(db, "schools")).catch(() => null)
+        ]);
+        const schoolMap = {};
+        schoolsSnap?.forEach(d => {
+            const school = d.data();
+            schoolMap[d.id] = school.name || school.schoolName || school.entityName || "";
         });
+        const rows = [["School ID", "School Name", "Name", "Role", "Email", "Password", "Status"]];
+        staffSnap.forEach(d => {
+            const s = d.data();
+            rows.push([s.schoolId || '', s.schoolName || schoolMap[s.schoolId] || currentSchoolName || '', s.name || '', s.staffRole || '', s.email || '', s.plainPassword || '', s.status || 'active']);
+        });
+        if (rows.length === 1) {
+            alert("Global staff records abhi available nahi hain.");
+            return;
+        }
         const csv = rows.map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
@@ -2845,13 +2901,21 @@ window.downloadGlobalStaffCSV = async () => {
         URL.revokeObjectURL(url);
     } catch (e) {
         console.error(e);
-        alert("Global staff download failed.");
+        alert("Global staff download failed. Permission ya network issue ho sakta hai.");
+    } finally {
+        if (triggerBtn) { triggerBtn.disabled = false; triggerBtn.innerHTML = originalHtml; }
     }
 };
 
 window.editStaff = (id) => {
     const st = window.fetchedStaff.find(s => s.id === id); if (!st) return; currentEditStaffId = id;
-    document.getElementById("edit_s_email").value = st.email; document.getElementById("edit_s_pass").value = st.plainPassword || ""; document.getElementById("edit_s_role").value = st.staffRole || "Teacher";
+    const resolvedSchoolName = st.schoolName || currentSchoolName || "";
+    document.getElementById("edit_s_school_name").value = resolvedSchoolName;
+    document.getElementById("edit_s_name").value = st.name || "";
+    document.getElementById("edit_s_email").value = st.email || "";
+    document.getElementById("edit_s_pass").value = st.plainPassword || "";
+    document.getElementById("edit_s_role").value = ["Chairman", "Principal"].includes(st.staffRole) ? st.staffRole : "Principal";
+    document.getElementById("edit_s_status").value = (st.status || "active").toUpperCase();
     let p = st.privileges || {};
     document.getElementById("priv_attendance").checked = p.attendance === true;
     document.getElementById("priv_marks").checked = p.marks === true;
@@ -2867,7 +2931,15 @@ window.editStaff = (id) => {
 };
 
 window.saveStaffEdits = async () => {
-    const p = document.getElementById("edit_s_pass").value; const r = document.getElementById("edit_s_role").value;
+    const schoolName = document.getElementById("edit_s_school_name").value.trim();
+    const name = document.getElementById("edit_s_name").value.trim();
+    const email = document.getElementById("edit_s_email").value.trim();
+    const p = document.getElementById("edit_s_pass").value.trim();
+    const r = document.getElementById("edit_s_role").value;
+    if (!schoolName || !name || !email) {
+        alert("Entity Name, Chairman Name aur Auth Email required hain.");
+        return;
+    }
     const privs = {
         attendance: document.getElementById("priv_attendance").checked,
         marks: document.getElementById("priv_marks").checked,
@@ -2881,9 +2953,11 @@ window.saveStaffEdits = async () => {
         delete: document.getElementById("priv_delete").checked
     };
     try {
-        await updateDoc(doc(db, "users", currentEditStaffId), { plainPassword: p, staffRole: r, privileges: privs });
-        alert("Staff Privileges & Auth updated successfully!"); document.getElementById("edit-staff-modal").style.display = "none"; loadStaff();
-    } catch (e) { alert("Error saving."); }
+        const updatePayload = { schoolName, name, email, staffRole: r, privileges: privs, updatedAt: serverTimestamp() };
+        if (p) updatePayload.plainPassword = p;
+        await updateDoc(doc(db, "users", currentEditStaffId), updatePayload);
+        alert("Node, Chairman details aur privileges updated successfully!"); document.getElementById("edit-staff-modal").style.display = "none"; loadStaff();
+    } catch (e) { console.error(e); alert("Error saving node details."); }
 };
 
 window.updateStaffStatus = async (uid, newStatus) => {

@@ -853,7 +853,7 @@
                         <div
                             style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
                             <h3 style="margin:0;">Staff Life-Cycle & Auth Control</h3>
-                            <button class="action-btn btn-blue" onclick="window.downloadGlobalStaffCSV()"><i
+                            <button class="action-btn btn-blue" onclick="window.downloadGlobalStaffCSV(event)"><i
                                     class="fas fa-download"></i> Download Global Network Staff</button>
                         </div>
                         <div style="overflow-x:auto;">
@@ -2426,44 +2426,45 @@
     </div>
     <!-- MODAL: EDIT STAFF & PRIVILEGES -->
     <div id="edit-staff-modal" class="custom-modal-overlay">
-        <div class="custom-modal-box">
-            <div class="custom-modal-header"><span><i class="fas fa-user-shield"></i> Edit Staff &
-                    Privileges</span><button class="action-btn btn-red"
-                    onclick="closeCustomModal('edit-staff-modal')"><i class="fas fa-times"></i></button></div>
-            <div class="form-group"><label>Email (Username)</label><input type="text" id="edit_s_email" readonly
-                    style="background:#eee;"></div>
-            <div class="form-group"><label>Set New Password</label><input type="text" id="edit_s_pass"></div>
-            <div class="form-group"><label>Role</label><select id="edit_s_role">
-                    <option value="Chairman">Chairman</option>
-                    <option value="Principal">Principal</option>
-                    <option value="Teacher">Teacher</option>
-                    <option value="Accountant">Accountant</option>
-                    <option value="Clerk">Clerk</option>
-                    <option value="Vice Principal">Vice Principal</option>
-                    <option value="Head Clerk">Head Clerk</option>
-                    <option value="Librarian">Librarian</option>
-                    <option value="Receptionist">Receptionist</option>
-                </select></div>
-
-            <div class="form-group" style="margin-top:20px; padding-top:10px; border-top:1px solid #eee;">
-                <label style="color:#e67e22;"><i class="fas fa-key"></i> Assign Specific Privileges</label>
-                <div style="display:flex; flex-direction:column; gap:8px; margin-top:10px;">
-                    <label><input type="checkbox" id="priv_attendance"> Can Manage Attendance</label>
-                    <label><input type="checkbox" id="priv_marks"> Can Enter Exam Marks</label>
-                    <label><input type="checkbox" id="priv_finance"> Can Collect Fees & Finance</label>
-                    <label><input type="checkbox" id="priv_notices"> Can Publish Notices</label>
-                    <label><input type="checkbox" id="priv_admissions"> Can Manage Admissions</label>
-                    <label><input type="checkbox" id="priv_certs"> Can Generate Certificates</label>
-                    <label><input type="checkbox" id="priv_exams"> Can Manage Exams & Schedules</label>
-                    <label><input type="checkbox" id="priv_settings"> Can Update School Settings</label>
-                    <label><input type="checkbox" id="priv_view_finance"> Can View Financial Reports</label>
-                    <label><input type="checkbox" id="priv_delete"> Can Delete Records</label>
+        <div class="custom-modal-box auth-edit-modal">
+            <div class="custom-modal-header"><span><i class="fas fa-building-user"></i> Edit Node &
+                    Chairman</span><button class="action-btn btn-red" onclick="closeCustomModal('edit-staff-modal')"><i
+                        class="fas fa-times"></i></button></div>
+            <div class="auth-edit-grid">
+                <div class="form-group"><label>Entity / School Name</label><input type="text" id="edit_s_school_name"
+                        placeholder="School or entity name"></div>
+                <div class="form-group"><label>Commander / Chairman Name</label><input type="text" id="edit_s_name"
+                        placeholder="Chairman or principal name"></div>
+                <div class="form-group"><label>Auth Email / Gmail</label><input type="email" id="edit_s_email"
+                        placeholder="login@gmail.com"></div>
+                <div class="form-group"><label>Set New Password</label><input type="text" id="edit_s_pass"
+                        placeholder="Leave existing password or update"></div>
+                <div class="form-group"><label>Role</label><select id="edit_s_role">
+                        <option value="Chairman">Chairman</option>
+                        <option value="Principal">Principal</option>
+                    </select></div>
+                <div class="form-group"><label>Account Status</label><input type="text" id="edit_s_status" readonly>
                 </div>
             </div>
 
-            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
-                <button class="submit-btn" style="background:#95a5a6;"
-                    onclick="closeCustomModal('edit-staff-modal')">Cancel</button>
+            <div class="privilege-editor">
+                <label><i class="fas fa-key"></i> Assign Specific Privileges</label>
+                <div class="privilege-grid">
+                    <label><input type="checkbox" id="priv_attendance"> Attendance</label>
+                    <label><input type="checkbox" id="priv_marks"> Exam Marks</label>
+                    <label><input type="checkbox" id="priv_finance"> Fees & Finance</label>
+                    <label><input type="checkbox" id="priv_notices"> Notices</label>
+                    <label><input type="checkbox" id="priv_admissions"> Admissions</label>
+                    <label><input type="checkbox" id="priv_certs"> Certificates</label>
+                    <label><input type="checkbox" id="priv_exams"> Exams & Schedules</label>
+                    <label><input type="checkbox" id="priv_settings"> School Settings</label>
+                    <label><input type="checkbox" id="priv_view_finance"> Financial Reports</label>
+                    <label><input type="checkbox" id="priv_delete"> Delete Records</label>
+                </div>
+            </div>
+
+            <div class="modal-action-row">
+                <button class="submit-btn btn-muted" onclick="closeCustomModal('edit-staff-modal')">Cancel</button>
                 <button class="submit-btn" id="save_staff_edit_btn" onclick="saveStaffEdits()">Save Updates</button>
             </div>
         </div>
