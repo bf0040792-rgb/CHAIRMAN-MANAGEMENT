@@ -1,4 +1,3 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, doc, getDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
@@ -14,20 +13,6 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-
-const SUPABASE_URL = "https://lxhamuwhsohdrhjwhlfi.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_ySbDycWqKv_ApSIho-ZlHQ_U_u5b5lq";
-const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-    auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-        detectSessionInUrl: false
-    },
-    global: {
-        headers: { "X-Client-Info": "school-erp-admission-portal" }
-    }
-});
-window.supabase = supabase;
 
 // DOM Elements
 const container = document.getElementById("admission-container");
@@ -49,8 +34,8 @@ function showMessage(title, text, type) {
     msgBox.style.display = "block";
     msgTitle.innerText = title;
     msgText.innerText = text;
-
-    if (type === "error") {
+    
+    if(type === "error") {
         msgIcon.className = "fas fa-exclamation-circle error";
     } else if (type === "success") {
         msgIcon.className = "fas fa-check-circle success";
@@ -78,7 +63,7 @@ async function loadSchoolData() {
 
         if (docSnap.exists()) {
             const data = docSnap.data();
-
+            
             // Check if admissions are closed
             if (data.admissionOpen === false) {
                 showMessage("Admissions Closed", "This school is not accepting new admissions at the moment.", "error");
@@ -166,7 +151,7 @@ form.addEventListener("submit", async (e) => {
     try {
         // Upload photo
         const photoUrl = await uploadToCloudinary(photoFile);
-
+        
         if (!photoUrl) {
             throw new Error("Image upload failed");
         }
@@ -190,15 +175,15 @@ form.addEventListener("submit", async (e) => {
 
         // Show Success
         showMessage(
-            "Success!",
-            "Admission Form Submitted Successfully! The school will contact you shortly.",
+            "Success!", 
+            "Admission Form Submitted Successfully! The school will contact you shortly.", 
             "success"
         );
 
     } catch (error) {
         console.error("Submission error:", error);
         alert("An error occurred while submitting your application. Please try again.");
-
+        
         // Reset button
         submitBtn.disabled = false;
         submitBtn.innerHTML = "<i class='fas fa-paper-plane'></i> Submit Application";
