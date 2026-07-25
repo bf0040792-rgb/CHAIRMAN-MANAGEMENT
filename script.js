@@ -58,10 +58,11 @@ window.syncSupabaseSessionWithFirebase = async (user = auth.currentUser) => {
     return getFirebaseAccessToken(true);
 };
 
-const appCheck = initializeAppCheck(app, {
-    provider: new ReCaptchaV3Provider('6LeAT9csAAAAANn9sBk-BPOFASXX9liQLCwwO5_4'),
-    isTokenAutoRefreshEnabled: true
-});
+// TEMPORARILY DISABLED: Firebase App Check/reCAPTCHA while testing Supabase messaging on the GitHub domain.
+// const appCheck = initializeAppCheck(app, {
+//     provider: new ReCaptchaV3Provider('6LeAT9csAAAAANn9sBk-BPOFASXX9liQLCwwO5_4'),
+//     isTokenAutoRefreshEnabled: true
+// });
 
 let currentSchoolId = ""; let currentSchoolName = ""; let currentSignatureUrl = ""; let currentThemeColor = "#1e3c72"; let currentSecondaryColor = "#ffffff"; let currentTemplateStyle = "wave"; let currentIdTemplateUrl = "";
 let currentSchoolNameColor = "#ffffff"; let currentStudentNameColor = "#d32f2f"; let currentDetailsColor = "#333333"; let currentPhotoBgColor = "#ffffff";
