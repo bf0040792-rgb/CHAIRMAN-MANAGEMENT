@@ -25,10 +25,34 @@ const secondaryAuth = getAuth(secondaryApp);
 const SUPABASE_URL = "https://lxhamuwhsohdrhjwhlfi.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_ySbDycWqKv_ApSIho-ZlHQ_U_u5b5lq";
 
+let firebaseAuthInitialized = false;
+const firebaseAuthReady = new Promise(resolve => {
+    const unsubscribe = onAuthStateChanged(auth, user => {
+        firebaseAuthInitialized = true;
+        unsubscribe();
+        resolve(user);
+    });
+});
+
 const getFirebaseAccessToken = async (forceRefresh = false) => {
-    const user = auth.currentUser;
-    if (!user) throw new Error("Firebase authentication is required.");
-    return user.getIdToken(forceRefresh);
+    const user = auth.currentUser || (!firebaseAuthInitialized ? await firebaseAuthReady : null);
+    if (!user || user !== auth.currentUser) {
+        throw new Error("Firebase authentication is required.");
+    }
+
+    const token = await user.getIdToken(forceRefresh);
+    if (!token) throw new Error("Unable to obtain Firebase ID token.");
+    return token;
+};
+
+const getSupabaseAccessToken = async () => {
+    if (!auth.currentUser && firebaseAuthInitialized) return null;
+    try {
+        return await getFirebaseAccessToken();
+    } catch (error) {
+        if (!auth.currentUser) return null;
+        throw error;
+    }
 };
 
 const firebaseAuthenticatedFetch = async (input, init = {}) => {
@@ -40,7 +64,7 @@ const firebaseAuthenticatedFetch = async (input, init = {}) => {
 };
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-    accessToken: () => getFirebaseAccessToken(),
+    accessToken: getSupabaseAccessToken,
     auth: {
         persistSession: false,
         autoRefreshToken: false,
@@ -54,7 +78,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
 window.supabase = supabase;
 
 window.syncSupabaseSessionWithFirebase = async (user = auth.currentUser) => {
-    if (!user) return null;
+    if (!user || user !== auth.currentUser) return null;
     return getFirebaseAccessToken(true);
 };
 
@@ -1627,6 +1651,7 @@ window.sendChairmanMessage = async () => {
     if (!title || !body) return alert("Fill title and body");
     let receiverId = target; let receiverType = target;
     if (target === "specific_staff") { receiverId = document.getElementById("mail_specific_staff").value; receiverType = "staff_member"; if (!receiverId) return alert("Please select a staff member."); }
+    await getFirebaseAccessToken(true);
     const { error } = await supabase.from("direct_messages").insert({ sender_id: auth.currentUser.uid, sender_name: currentSchoolName + " (Chairman)", sender_role: "chairman", school_id: currentSchoolId, receiver_type: receiverType, receiver_id: receiverId, title, body, is_read: false });
     if (error) return alert("Message failed: " + error.message);
     alert("Message Sent!"); document.getElementById("mail_title").value = ""; document.getElementById("mail_body").value = ""; loadSentMail();
@@ -3715,6 +3740,7 @@ window.sendDirectMessage = async () => {
     const body = document.getElementById("dm-message-body").value.trim();
     if (!body) return alert("Please type a message.");
     try {
+        await getFirebaseAccessToken(true);
         const { error } = await supabase.from("direct_messages").insert({
             school_id: currentSchoolId,
             sender_id: auth.currentUser.uid,
@@ -4689,6 +4715,7 @@ window.sendCoreEduMessage = async () => {
     }
 
     try {
+        await getFirebaseAccessToken(true);
         const { error } = await supabase.from("school_communications").insert({
             school_id: currentSchoolId,
             sender_id: auth.currentUser.uid,
