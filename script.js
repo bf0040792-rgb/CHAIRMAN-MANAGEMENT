@@ -24,17 +24,30 @@ const secondaryAuth = getAuth(secondaryApp);
 
 const SUPABASE_URL = "https://lxhamuwhsohdrhjwhlfi.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_ySbDycWqKv_ApSIho-ZlHQ_U_u5b5lq";
+
+const getFirebaseAccessToken = async (forceRefresh = false) => {
+    const user = auth.currentUser;
+    if (!user) throw new Error("Firebase authentication is required.");
+    return user.getIdToken(forceRefresh);
+};
+
+const firebaseAuthenticatedFetch = async (input, init = {}) => {
+    const token = await getFirebaseAccessToken();
+    const headers = new Headers(input instanceof Request ? input.headers : undefined);
+    new Headers(init.headers || {}).forEach((value, key) => headers.set(key, value));
+    headers.set("Authorization", `Bearer ${token}`);
+    return fetch(input, { ...init, headers });
+};
+
 const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-    accessToken: async () => {
-        const user = auth.currentUser;
-        return user ? user.getIdToken() : null;
-    },
+    accessToken: () => getFirebaseAccessToken(),
     auth: {
         persistSession: false,
         autoRefreshToken: false,
         detectSessionInUrl: false
     },
     global: {
+        fetch: firebaseAuthenticatedFetch,
         headers: { "X-Client-Info": "school-erp-firebase-bridge" }
     }
 });
@@ -42,7 +55,7 @@ window.supabase = supabase;
 
 window.syncSupabaseSessionWithFirebase = async (user = auth.currentUser) => {
     if (!user) return null;
-    return user.getIdToken(true);
+    return getFirebaseAccessToken(true);
 };
 
 const appCheck = initializeAppCheck(app, {
