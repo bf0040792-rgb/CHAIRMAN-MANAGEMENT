@@ -176,46 +176,18 @@ async function loginStudent() {
         btn.querySelector('span').innerText = "Verifying...";
     }
     try {
-        const studSnap = await getDocs(query(collection(db, "students"), where("mobile", "==", mobile)));
-        if (studSnap.empty) throw new Error("Invalid mobile number or DOB.");
-        let matchedDoc = null;
-        for (const docSnapshot of studSnap.docs) {
-            const data = docSnapshot.data();
-            if (formatDobForPassword(data.dob) === dobPassword) {
-                matchedDoc = { id: docSnapshot.id, ...data };
-                break;
-            }
-        }
-        if (!matchedDoc) throw new Error("Invalid mobile number or DOB.");
-        if (!matchedDoc.schoolId) throw new Error("Student school mapping is missing. Please contact school administration.");
-
-        currentStudentUser = matchedDoc;
-        currentSchoolId = matchedDoc.schoolId;
-        const schoolSnap = await getDoc(doc(db, "schools", currentSchoolId));
-        if (!schoolSnap.exists()) throw new Error("Linked school record was not found.");
-        currentStudentSchoolDoc = { id: schoolSnap.id, ...schoolSnap.data() };
-        window.currentFeatureSettings = await readSchoolFeatureSettings(currentSchoolId);
-
-        if (window.unsubStudent) window.unsubStudent();
-        if (window.unsubSchool) window.unsubSchool();
-        if (window.unsubStudentFeatureSettings) window.unsubStudentFeatureSettings();
-
-        window.unsubStudent = onSnapshot(doc(db, "students", currentStudentUser.id), snap => {
-            if (!snap.exists()) return;
-            const latest = { id: snap.id, ...snap.data() };
-            if (latest.schoolId !== currentSchoolId) return;
-            currentStudentUser = latest;
-            if ($('student-dashboard-wrapper')?.style.display === 'block') loadStudentDashboard();
+        const response = await fetch('https://school-backend-zlgy.onrender.com/api/student-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mobile, dob: dobPassword })
         });
-        window.unsubSchool = onSnapshot(doc(db, "schools", currentSchoolId), snap => {
-            if (!snap.exists()) return;
-            currentStudentSchoolDoc = { id: snap.id, ...snap.data() };
-            if ($('student-dashboard-wrapper')?.style.display === 'block') loadStudentDashboard();
-        });
-        window.unsubStudentFeatureSettings = onSnapshot(getFeatureSettingsDocRef(currentSchoolId), async snap => {
-            window.currentFeatureSettings = snap.exists() ? hydrateFeatureSettings(snap.data()) : await readSchoolFeatureSettings(currentSchoolId);
-            if ($('student-dashboard-wrapper')?.style.display === 'block') renderStudentFeatureGrid();
-        });
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error(data.error || 'Invalid mobile number or DOB.');
+
+        currentStudentUser = data.student;
+        currentSchoolId = data.student.schoolId;
+        currentStudentSchoolDoc = data.school;
+        window.currentFeatureSettings = hydrateFeatureSettings(data.featureSettings || {});
         loadStudentDashboard();
     } catch (error) {
         console.error("Student login error:", error);
