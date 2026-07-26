@@ -183,6 +183,9 @@ async function loginStudent() {
         });
         const data = await response.json();
         if (!response.ok || !data.success) throw new Error(data.error || 'Invalid mobile number or DOB.');
+        if (!data.student?.schoolId || !data.school?.id || data.student.schoolId !== data.school.id) {
+            throw new Error('School mismatch detected. Login blocked for safety.');
+        }
 
         currentStudentUser = data.student;
         currentSchoolId = data.student.schoolId;
