@@ -32,6 +32,12 @@ window.fetchedStudents = []; window.fetchedStaff = []; let currentEditStaffId = 
 window.selectedStudentIds = new Set();
 window.currentFeatureSettings = {};
 const DEFAULT_FEATURE_SETTINGS = {
+    school: {
+        dashboard: true, students: true, studentTransfer: true, admitCards: true, staff: true, finance: true,
+        feeApprovals: true, academics: true, notices: true, communicationHub: true, qrFee: true,
+        admitCardModule: true, whatsapp: true, transport: true, inventory: true, dailyAttendance: true,
+        studentPortalFeatures: true, settings: true
+    },
     modules: { qrFee: true, admitCard: true, whatsapp: true, transport: true, inventory: true, attendance: true },
     student: {
         profile: true, homework: true, fee: true, datesheet: true, attendance: true, sms: true,
@@ -106,6 +112,11 @@ window.switchTab = (targetId) => {
     if (targetId === 'tab-coreedu-comm') {
         window.switchTab('tab-mailbox');
         if (window.switchCommSubtab) window.switchCommSubtab('sub-chat');
+        return;
+    }
+    if (isSchoolTabRestricted(targetId)) {
+        showCompanyRestrictedAlert();
+        applyFeatureLocks();
         return;
     }
     document.querySelectorAll('#dashboard-wrapper .tab-content').forEach(tab => tab.classList.remove('active'));
@@ -353,8 +364,14 @@ onAuthStateChanged(auth, async (user) => {
                 document.getElementById("staff-welcome-name").innerText = data.name;
                 setRoleBadge('staff-role-badge', data.staffRole || 'Staff');
 
+                listenToTicker();
                 document.querySelectorAll('#staff-dashboard-wrapper .menu-item').forEach(item => {
                     item.addEventListener('click', () => {
+                        if (isSchoolTabRestricted(item.dataset.target)) {
+                            showCompanyRestrictedAlert();
+                            applyFeatureLocks();
+                            return;
+                        }
                         document.querySelectorAll('#staff-dashboard-wrapper .menu-item').forEach(m => m.classList.remove('active'));
                         document.querySelectorAll('#staff-dashboard-wrapper .tab-content').forEach(t => t.classList.remove('active'));
                         item.classList.add('active');
@@ -420,11 +437,18 @@ document.getElementById("deviceModeToggle").addEventListener("change", (e) => { 
 document.querySelectorAll('.menu-item').forEach(item => {
     item.addEventListener('click', (e) => {
         if (item.classList.contains('logout-btn')) return;
+        const targetId = item.dataset.target;
+        if (isSchoolTabRestricted(targetId)) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            showCompanyRestrictedAlert();
+            applyFeatureLocks();
+            return;
+        }
         document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
         document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
         item.classList.add('active');
 
-        const targetId = item.dataset.target;
         const targetEl = document.getElementById(targetId);
         if (targetEl) targetEl.classList.add('active');
 
@@ -1400,6 +1424,43 @@ function isFeatureEnabled(group, key) {
     return window.currentFeatureSettings?.[group]?.[key] !== false;
 }
 
+function showCompanyRestrictedAlert() {
+    alert("Access Restricted: This feature is disabled by the Super Admin. Please contact your Company to enable it.");
+}
+
+function getSchoolFeatureKeyForTab(targetId) {
+    const map = {
+        'tab-dashboard': 'dashboard',
+        'tab-students': 'students',
+        'tab-student-transfer': 'studentTransfer',
+        'tab-admit-cards-module': 'admitCards',
+        'tab-staff': 'staff',
+        'tab-finance': 'finance',
+        'tab-fee-approvals': 'feeApprovals',
+        'tab-academics': 'academics',
+        'tab-notices': 'notices',
+        'tab-mailbox': 'communicationHub',
+        'tab-coreedu-comm': 'communicationHub',
+        'tab-qr-fee': 'qrFee',
+        'tab-admit-card': 'admitCardModule',
+        'tab-whatsapp': 'whatsapp',
+        'tab-transport': 'transport',
+        'tab-inventory': 'inventory',
+        'tab-daily-attendance': 'dailyAttendance',
+        'tab-student-features': 'studentPortalFeatures',
+        'tab-settings': 'settings',
+        'staff-tab-attendance': 'dailyAttendance',
+        'staff-tab-marks': 'academics',
+        'staff-tab-notices': 'notices'
+    };
+    return map[targetId] || null;
+}
+
+function isSchoolTabRestricted(targetId) {
+    const key = getSchoolFeatureKeyForTab(targetId);
+    return !!key && window.currentFeatureSettings?.school && window.currentFeatureSettings.school[key] === false;
+}
+
 function applyFeatureLocks() {
     const moduleMap = {
         qrFee: ['payment_qr_upload', 'upi_id_input', 'save_qr_btn'],
@@ -1418,6 +1479,13 @@ function applyFeatureLocks() {
             if ('disabled' in el) el.disabled = !enabled;
             if (el.classList.contains('tab-content')) el.style.opacity = enabled ? '1' : '0.55';
         });
+    });
+    document.querySelectorAll('.menu-item[data-target]').forEach(item => {
+        const locked = isSchoolTabRestricted(item.dataset.target);
+        item.classList.toggle('company-feature-locked', locked);
+        item.setAttribute('aria-disabled', locked ? 'true' : 'false');
+        if (locked && !item.querySelector('.company-lock-badge')) item.insertAdjacentHTML('beforeend', ' <span class="company-lock-badge"><i class="fas fa-lock"></i> Locked</span>');
+        if (!locked) item.querySelector('.company-lock-badge')?.remove();
     });
     renderStudentFeatureGrid();
 }
@@ -4027,7 +4095,7 @@ window.openStudentView = (targetId) => {
 window.handleStudentFeatureClick = (featureId) => {
     const key = getStudentFeatureToggleKey(featureId);
     if (window.currentFeatureSettings?.student && window.currentFeatureSettings.student[key] === false) {
-        alert("This feature is currently locked by school administration.");
+        showCompanyRestrictedAlert();
         return;
     }
     switch (featureId) {

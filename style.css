@@ -1910,9 +1910,29 @@ body.force-desktop {
     overflow-x: auto;
 }
 
-.locked-row {
-    opacity: 0.6;
+.locked-row,
+.company-feature-locked {
+    opacity: 0.55 !important;
+    cursor: not-allowed !important;
+    filter: grayscale(1);
     background: #ffebeb !important;
+}
+
+.company-feature-locked * {
+    pointer-events: none;
+}
+
+.company-lock-badge {
+    float: right;
+    margin-left: 8px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
 }
 
 /* ================= BRIGHT PREMIUM COMPANY PORTAL OVERRIDE ================= */
