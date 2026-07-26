@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Student Portal</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="student.css" />
+</head>
+
+<body>
+    <div id="student-login-wrapper" class="login-wrapper"
+        style="display:flex; min-height:100vh; align-items:center; justify-content:center; padding:20px;">
+        <div class="glass-card" style="max-width:420px; width:100%; padding:32px;">
+            <h1 style="color:#fff; font-size:24px; font-weight:800; text-align:center; margin-bottom:8px;">Student
+                Portal</h1>
+            <p style="color:rgba(255,255,255,0.65); text-align:center; margin-bottom:26px;">Sign in using your
+                registered mobile number and date of birth.</p>
+            <div class="glass-input-group">
+                <div class="input-wrapper">
+                    <input type="text" id="student-login-username" placeholder="Registered Mobile Number"
+                        autocomplete="off">
+                    <i class="fas fa-mobile-alt pro-input-icon"></i>
+                </div>
+            </div>
+            <div class="glass-input-group">
+                <div class="input-wrapper">
+                    <input type="password" id="student-login-password" placeholder="DOB Password (DDMMYYYY)"
+                        autocomplete="off">
+                    <i class="fas fa-lock pro-input-icon"></i>
+                </div>
+            </div>
+            <button class="glass-login-btn" id="doStudentLoginBtn">
+                <span>Access Portal</span> <i class="fas fa-arrow-right"></i>
+            </button>
+            <p class="error-msg" id="loginErrorMsg"></p>
+        </div>
+    </div>
+
+    <div id="student-dashboard-wrapper" style="display: none; min-height:100vh; background:#f0f4f8;">
+        <div class="top-navbar" style="background: #1E3A8A;">
+            <div class="brand">
+                <img id="student-school-logo" src="" alt=""
+                    style="display:none; width:36px; height:36px; border-radius:50%; object-fit:cover; margin-right:10px;">
+                <span id="student-dash-school-name" class="desktop-name" style="color: white;">School Portal</span>
+            </div>
+            <button class="logout-btn" onclick="logoutStudent()" style="background:#e53e3e;"><i
+                    class="fas fa-power-off"></i> Logout</button>
+        </div>
+
+        <div
+            style="max-width: 900px; margin: 80px auto 0; padding: 0 16px; height: calc(100vh - 80px); overflow-y: auto; padding-bottom: 120px; box-sizing: border-box; scroll-behavior: smooth;">
+            <div id="student-main-grid">
+                <div id="student-id-banner" class="border-[3px] border-black flex items-center justify-between mb-6"
+                    style="border-radius: 12px; padding: 15px;">
+                    <div class="flex-shrink-0 relative w-20 h-20 md:w-24 md:h-24 rounded-full border-[3px] border-black border-dashed flex items-center justify-center overflow-hidden"
+                        id="stu-banner-photo-bg">
+                        <i class="fas fa-user text-gray-400 text-3xl" id="stu-banner-photo-icon"></i>
+                        <img id="stu-banner-photo" src="" class="w-full h-full object-cover hidden" alt="Student Photo">
+                    </div>
+                    <div class="flex-1 px-4 grid grid-cols-1 md:grid-cols-2 gap-x-6">
+                        <div
+                            class="flex justify-between border-b-2 border-dotted border-gray-400/50 pb-1 mb-2 text-sm text-gray-800">
+                            <span class="font-semibold uppercase text-[10px] md:text-xs">Name</span><span
+                                class="font-bold text-[10px] md:text-xs text-right" id="banner-name"></span>
+                        </div>
+                        <div
+                            class="flex justify-between border-b-2 border-dotted border-gray-400/50 pb-1 mb-2 text-sm text-gray-800">
+                            <span class="font-semibold uppercase text-[10px] md:text-xs">Parentage</span><span
+                                class="font-bold text-[10px] md:text-xs text-right" id="banner-parentage"></span>
+                        </div>
+                        <div
+                            class="flex justify-between border-b-2 border-dotted border-gray-400/50 pb-1 mb-2 text-sm text-gray-800">
+                            <span class="font-semibold uppercase text-[10px] md:text-xs">Class</span><span
+                                class="font-bold text-[10px] md:text-xs text-right" id="banner-class"></span>
+                        </div>
+                        <div
+                            class="flex justify-between border-b-2 border-dotted border-gray-400/50 pb-1 mb-2 text-sm text-gray-800">
+                            <span class="font-semibold uppercase text-[10px] md:text-xs">Roll No/Reg No</span><span
+                                class="font-bold text-[10px] md:text-xs text-right" id="banner-reg"></span>
+                        </div>
+                        <div
+                            class="flex justify-between border-b-2 border-dotted border-gray-400/50 pb-1 mb-2 text-sm text-gray-800">
+                            <span class="font-semibold uppercase text-[10px] md:text-xs">DOB</span><span
+                                class="font-bold text-[10px] md:text-xs text-right" id="banner-dob"></span>
+                        </div>
+                        <div
+                            class="flex justify-between border-b-2 border-dotted border-gray-400/50 pb-1 mb-2 text-sm text-gray-800">
+                            <span class="font-semibold uppercase text-[10px] md:text-xs">Contact</span><span
+                                class="font-bold text-[10px] md:text-xs text-right" id="banner-contact"></span>
+                        </div>
+                        <div
+                            class="flex justify-between border-b-2 border-dotted border-gray-400/50 pb-1 mb-2 text-sm text-gray-800">
+                            <span class="font-semibold uppercase text-[10px] md:text-xs">Blood Group</span><span
+                                class="font-bold text-[10px] md:text-xs text-right" id="banner-blood"></span>
+                        </div>
+                        <div
+                            class="flex justify-between border-b-2 border-dotted border-gray-400/50 pb-1 mb-2 text-sm text-gray-800">
+                            <span class="font-semibold uppercase text-[10px] md:text-xs">Emergency No</span><span
+                                class="font-bold text-[10px] md:text-xs text-right" id="banner-emergency"></span>
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0 p-1 bg-white rounded-md border border-gray-300">
+                        <img id="stu-banner-qr" src="" alt="QR" class="w-16 h-16 md:w-20 md:h-20 object-contain">
+                    </div>
+                </div>
+
+                <div style="text-align:center; margin-bottom:20px;">
+                    <h2
+                        style="color:#1E3A8A; font-family:'Inter',sans-serif; font-weight:700; margin-bottom:4px; font-size: 1.1rem;">
+                        Welcome, <span id="stu-display-name">Student</span></h2>
+                    <p style="color:#1E3A8A; font-family:'Inter',sans-serif; font-weight:700; font-size: 1rem;">Quick
+                        Access</p>
+                </div>
+
+                <div id="student-feature-grid" class="bg-[#E3EBF3] rounded-2xl p-6 mb-6"></div>
+
+                <div id="student-due-balance-card" class="card"
+                    style="display: none; text-align: center; padding: 30px 20px; border-radius:16px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.06); margin-bottom:20px;">
+                    <div
+                        style="background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 15px; padding: 25px; margin-bottom: 20px;">
+                        <p style="font-size: 16px; color: #475569; margin-bottom: 8px; font-family:'Inter',sans-serif;">
+                            Total Due Balance</p>
+                        <h2
+                            style="font-size: 42px; color: #e53e3e; margin: 0; font-family:'Inter',sans-serif; font-weight:800;">
+                            ₹ <span id="stu-due-balance">0</span></h2>
+                    </div>
+                    <button id="stu-show-payment-btn" class="submit-btn"
+                        onclick="openStudentView('student-payment-section')"
+                        style="font-size: 16px; padding: 14px 28px; background: #10b981; border-radius:12px;"><i
+                            class="fas fa-qrcode"></i> Pay Now (Zero Commission)</button>
+                </div>
+            </div>
+
+            <div id="student-idcard-section" class="student-view-section" style="display: none;">
+                <button onclick="openStudentView('student-main-grid')"
+                    class="mb-4 flex items-center gap-2 text-slate-600 font-semibold"><i class="fas fa-arrow-left"></i>
+                    Back to Dashboard</button>
+                <div class="card"
+                    style="text-align: center; padding: 25px; border-radius:16px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.06);">
+                    <i class="fas fa-id-badge" style="font-size: 36px; color: #1E3A8A; margin-bottom: 12px;"></i>
+                    <h3 style="color: #1E3A8A; margin-bottom: 8px; font-family:'Inter',sans-serif;">My Digital ID Card
+                    </h3>
+                    <p style="color: #64748b; font-size: 13px; margin-bottom: 16px;">Download your official digital
+                        student ID card.</p>
+                    <button id="stu-btn-download-id" class="action-btn btn-blue"
+                        onclick="window.downloadStudentIDCard()"
+                        style="width: 100%; padding: 12px; font-size: 14px; border-radius:10px;"><i
+                            class="fas fa-download"></i> Print / Save PDF</button>
+                </div>
+            </div>
+
+            <div id="student-admitcard-section" class="student-view-section" style="display: none;">
+                <button onclick="openStudentView('student-main-grid')"
+                    class="mb-4 flex items-center gap-2 text-slate-600 font-semibold"><i class="fas fa-arrow-left"></i>
+                    Back to Dashboard</button>
+                <div class="card"
+                    style="text-align: center; padding: 25px; border-radius:16px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.06);">
+                    <i class="fas fa-calendar-alt" style="font-size: 36px; color: #e67e22; margin-bottom: 12px;"></i>
+                    <h3 style="color: #e67e22; margin-bottom: 8px; font-family:'Inter',sans-serif;">My Exam Admit Card
+                    </h3>
+                    <p style="color: #64748b; font-size: 13px; margin-bottom: 16px;">Download exam schedule & admit
+                        card.</p>
+                    <div><button id="stu-btn-download-admit" class="action-btn btn-yellow"
+                            onclick="window.downloadStudentAdmitCard()"
+                            style="width: 100%; padding: 12px; font-size: 14px; background:#e67e22; color:white; border-radius:10px;"><i
+                                class="fas fa-download"></i> Print / Save PDF</button></div>
+                </div>
+            </div>
+
+            <div id="student-complaint-section" class="student-view-section" style="display: none;">
+                <button onclick="openStudentView('student-main-grid')"
+                    class="mb-4 flex items-center gap-2 text-slate-600 font-semibold"><i class="fas fa-arrow-left"></i>
+                    Back to Dashboard</button>
+                <div class="card p-6 rounded-2xl bg-white shadow-sm border border-gray-100">
+                    <h3 class="text-xl font-bold text-[#1E3A8A] mb-2 flex items-center gap-2"><i
+                            class="fas fa-wrench"></i> Register Complaint</h3>
+                    <p class="text-sm text-gray-500 mb-6">Send your complaints securely. They will be directed to the
+                        appropriate department.</p>
+                    <form id="student-complaint-form" onsubmit="submitStudentComplaint(event)"
+                        class="flex flex-col gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Select Target *</label>
+                            <select id="complaint-target" required
+                                class="w-full p-3 rounded-xl border border-gray-200 bg-gray-50 focus:ring-2 focus:ring-[#1E3A8A] outline-none">
+                                <option value="">-- Select Recipient --</option>
+                                <option value="CoreEduTech">CoreEduTech (System Admin)</option>
+                                <option value="Principal">Principal / Chairman</option>
+                                <option value="Staff">Staff Member / Teacher</option>
+                                <option value="Student">Student Management</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Complaint Subject *</label>
+                            <input type="text" id="complaint-subject" required placeholder="Brief title of issue"
+                                class="w-full p-3 rounded-xl border border-gray-200 bg-gray-50 focus:ring-2 focus:ring-[#1E3A8A] outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Description *</label>
+                            <textarea id="complaint-desc" required rows="4" placeholder="Detail your complaint here..."
+                                class="w-full p-3 rounded-xl border border-gray-200 bg-gray-50 focus:ring-2 focus:ring-[#1E3A8A] outline-none resize-none"></textarea>
+                        </div>
+                        <button type="submit"
+                            class="mt-2 w-full py-3 bg-[#1E3A8A] text-white font-bold rounded-xl shadow-md hover:bg-blue-800 transition-colors flex items-center justify-center gap-2"><i
+                                class="fas fa-paper-plane"></i> Submit Complaint</button>
+                    </form>
+                </div>
+            </div>
+
+            <div id="student-placeholder-section" class="student-view-section" style="display: none;">
+                <button onclick="openStudentView('student-main-grid')"
+                    class="mb-4 flex items-center gap-2 text-slate-600 font-semibold"><i class="fas fa-arrow-left"></i>
+                    Back to Dashboard</button>
+                <div
+                    class="card p-8 rounded-2xl bg-white shadow-sm border border-gray-100 text-center flex flex-col items-center justify-center h-64">
+                    <i id="placeholder-icon" class="fas fa-tools text-5xl text-gray-300 mb-4"></i>
+                    <h3 id="placeholder-title" class="text-xl font-bold text-gray-700 mb-2">Module Under Construction
+                    </h3>
+                    <p class="text-sm text-gray-500">This feature is currently being built and will be available soon.
+                    </p>
+                </div>
+            </div>
+
+            <div id="student-payment-section" class="student-view-section" style="display: none;">
+                <button onclick="openStudentView('student-main-grid')"
+                    class="mb-4 flex items-center gap-2 text-slate-600 font-semibold"><i class="fas fa-arrow-left"></i>
+                    Back to Dashboard</button>
+                <div class="card"
+                    style="text-align: center; padding: 25px; border-radius:16px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.06);">
+                    <h3 style="color: #10b981; margin-bottom: 8px; font-family:'Inter',sans-serif;">Pay Tuition via QR
+                    </h3>
+                    <img id="stu-qr-img" src="" alt="QR" style="max-width:180px; margin: 0 auto 16px; display:block;">
+                    <p class="text-sm text-gray-500 mb-2">UPI ID: <span id="stu-upi-text"></span></p>
+                    <a id="stu-upi-deep-link" href="#" class="action-btn btn-green"
+                        style="display:inline-block; margin-top:12px;">Open in UPI App</a>
+                </div>
+            </div>
+
+            <div id="student-receipt-section" class="student-view-section card"
+                style="display: none; padding: 25px; border-radius:16px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.06); margin-bottom:20px;">
+                <button onclick="openStudentView('student-main-grid')"
+                    class="mb-4 flex items-center gap-2 text-slate-600 font-semibold"><i class="fas fa-arrow-left"></i>
+                    Back to Dashboard</button>
+                <h3 class="text-xl font-bold text-[#1E3A8A] mb-4">Fee Receipts</h3>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stu-receipt-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <script type="module" src="student.js"></script>
+</body>
+
+</html>
