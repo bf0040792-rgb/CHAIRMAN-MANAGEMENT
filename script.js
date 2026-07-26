@@ -2,9 +2,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebas
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs, query, where, deleteDoc, serverTimestamp, deleteField, onSnapshot, orderBy, limit, addDoc, writeBatch, increment } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-// --- ADDED RECAPTCHA V3 IMPORTS ---
-import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app-check.js";
-
 const firebaseConfig = {
     apiKey: "AIzaSyBUAoXX64MTKrhMiRKd9oJPnaT0j60SPdY",
     authDomain: "admin-panel-17e6a.firebaseapp.com",
@@ -20,11 +17,6 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp");
 const secondaryAuth = getAuth(secondaryApp);
-
-const appCheck = initializeAppCheck(app, {
-    provider: new ReCaptchaV3Provider('6LeAT9csAAAAANn9sBk-BPOFASXX9liQLCwwO5_4'),
-    isTokenAutoRefreshEnabled: true
-});
 
 let currentSchoolId = ""; let currentSchoolName = ""; let currentSignatureUrl = ""; let currentThemeColor = "#1e3c72"; let currentSecondaryColor = "#ffffff"; let currentTemplateStyle = "wave"; let currentIdTemplateUrl = "";
 let currentSchoolNameColor = "#ffffff"; let currentStudentNameColor = "#d32f2f"; let currentDetailsColor = "#333333"; let currentPhotoBgColor = "#ffffff";
@@ -4261,109 +4253,50 @@ window.initAdmitCardUI = () => {
 };
 
 // Student Login Handler
-document.getElementById("doStudentLoginBtn").addEventListener("click", async () => {
-    const username = document.getElementById("student-login-username").value.trim();
-    const password = document.getElementById("student-login-password").value.trim();
+const studentLoginBtn = document.getElementById("doStudentLoginBtn");
+if (studentLoginBtn) studentLoginBtn.addEventListener("click", async () => {
+    const username = document.getElementById("student-login-username")?.value.trim();
+    const password = document.getElementById("student-login-password")?.value.trim();
     const errBox = document.getElementById('loginErrorMsg');
 
     if (!username || !password) {
-        errBox.innerText = "Enter Username and Password"; errBox.style.display = 'block';
-        setTimeout(() => errBox.style.display = 'none', 4000); return;
+        if (errBox) {
+            errBox.innerText = "Enter registered mobile number and DOB password.";
+            errBox.style.display = 'block';
+            setTimeout(() => errBox.style.display = 'none', 4000);
+        }
+        return;
     }
 
     const btn = document.getElementById("doStudentLoginBtn");
-    btn.querySelector('span').innerText = "Verifying...";
+    if (btn) btn.querySelector('span').innerText = "Verifying...";
 
     try {
-        // strictly query by mobile only to bypass composite index issues
-        const studQ = query(
-            collection(db, "students"),
-            where("mobile", "==", username)
-        );
-
-        const studSnap = await getDocs(studQ);
-        if (studSnap.empty) {
-            errBox.innerText = "Invalid username and password."; errBox.style.display = 'block';
-            setTimeout(() => errBox.style.display = 'none', 4000);
-            btn.querySelector('span').innerText = "Access Portal"; return;
+        const response = await fetch('https://school-backend-zlgy.onrender.com/api/student-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mobile: username, dob: password })
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) throw new Error(result.error || "Invalid mobile number or DOB.");
+        if (!result.student?.schoolId || !result.school?.id || result.student.schoolId !== result.school.id) {
+            throw new Error("School mismatch detected. Login blocked for safety.");
         }
 
-        let matchFound = false;
-        for (const docSnapshot of studSnap.docs) {
-            const data = docSnapshot.data();
-
-            let dobFormatted = "";
-            if (data.dob) {
-                const parts = data.dob.split("-");
-                if (parts.length === 3) {
-                    const yyyy = parts[0].padStart(4, '0');
-                    const mm = parts[1].padStart(2, '0');
-                    const dd = parts[2].padStart(2, '0');
-                    dobFormatted = `${dd}${mm}${yyyy}`;
-                } else {
-                    dobFormatted = data.dob;
-                }
-            }
-
-            if (dobFormatted === password) {
-                currentStudentUser = { id: docSnapshot.id, ...data };
-                currentSchoolId = data.schoolId;
-
-                // Real-time listener for School Doc (Background, Settings, etc.)
-                if (currentSchoolId) {
-                    // Initial fetch to avoid blank dashboard on slow connections
-                    const schoolSnap = await getDoc(doc(db, "schools", currentSchoolId));
-                    currentStudentSchoolDoc = schoolSnap.exists() ? schoolSnap.data() : {};
-                    window.currentFeatureSettings = await readSchoolFeatureSettings(currentSchoolId);
-
-                    window.unsubSchool = onSnapshot(doc(db, "schools", currentSchoolId), (docSnap) => {
-                        if (docSnap.exists()) {
-                            currentStudentSchoolDoc = docSnap.data();
-                            if (document.getElementById("student-dashboard-wrapper").style.display === "block") {
-                                loadStudentDashboard();
-                            }
-                        }
-                    });
-                    if (window.unsubStudentFeatureSettings) window.unsubStudentFeatureSettings();
-                    window.unsubStudentFeatureSettings = onSnapshot(getFeatureSettingsDocRef(currentSchoolId), async (featureSnap) => {
-                        window.currentFeatureSettings = featureSnap.exists() ? normalizeFeatureSettingsPayload(featureSnap.data()) : await readSchoolFeatureSettings(currentSchoolId);
-                        if (document.getElementById("student-dashboard-wrapper").style.display === "block") {
-                            loadStudentDashboard();
-                        }
-                    });
-                } else {
-                    currentStudentSchoolDoc = {};
-                }
-
-                // Real-time listener for Student Doc (Attendance, SMS, etc.)
-                window.unsubStudent = onSnapshot(doc(db, "students", docSnapshot.id), (docSnap) => {
-                    if (docSnap.exists()) {
-                        currentStudentUser = { id: docSnap.id, ...docSnap.data() };
-                        if (document.getElementById("student-dashboard-wrapper").style.display === "block") {
-                            loadStudentDashboard();
-                        }
-                    }
-                });
-
-                matchFound = true;
-                break;
-            }
-        }
-
-        if (!matchFound) {
-            errBox.innerText = "Invalid username and password."; errBox.style.display = 'block';
-            setTimeout(() => errBox.style.display = 'none', 4000);
-            btn.querySelector('span').innerText = "Access Portal"; return;
-        }
-
+        currentStudentUser = result.student;
+        currentSchoolId = result.student.schoolId;
+        currentStudentSchoolDoc = result.school;
+        window.currentFeatureSettings = normalizeFeatureSettingsPayload(result.featureSettings || {});
         loadStudentDashboard();
-
     } catch (error) {
-        console.error("Login Error:", error.message);
-        errBox.innerText = error.message; errBox.style.display = 'block';
-        setTimeout(() => errBox.style.display = 'none', 8000); // 8 seconds to allow reading the developer link
+        console.error("Student Login Error:", error.message);
+        if (errBox) {
+            errBox.innerText = error.message || "Student login failed.";
+            errBox.style.display = 'block';
+            setTimeout(() => errBox.style.display = 'none', 8000);
+        }
     }
-    btn.querySelector('span').innerText = "Access Portal";
+    if (btn) btn.querySelector('span').innerText = "Access Portal";
 });
 
 async function loadStudentDashboard() {
