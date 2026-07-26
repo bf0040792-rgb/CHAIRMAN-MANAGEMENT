@@ -1467,7 +1467,7 @@ function isFeatureEnabled(group, key) {
 }
 
 function showCompanyRestrictedAlert() {
-    alert("Access Restricted: This feature is disabled by the Super Admin. Please contact your Company to enable it.");
+    alert("Access Restricted: This feature is disabled by the Super Admin. Please contact your Company Administrator to enable it.");
 }
 
 function getSchoolFeatureKeyForTab(targetId) {
@@ -1580,7 +1580,7 @@ async function persistFeatureSettings() {
         renderFeatureToggleSettings();
     } catch (e) {
         console.error("Feature settings save failed", e);
-        alert("Feature settings save nahi ho payi.");
+        alert("Failed to save feature configurations.");
     }
 }
 
@@ -2031,7 +2031,7 @@ window.requestTransactionDeletion = async (id) => {
 window.downloadLedgerPDF = () => {
     try {
         if (!window.jspdf?.jsPDF) {
-            alert("PDF library abhi load nahi hui. Page refresh karke dobara try karein.");
+            alert("The PDF library is not loaded yet. Please refresh the page and try again.");
             return;
         }
         const { jsPDF } = window.jspdf;
@@ -2049,7 +2049,7 @@ window.downloadLedgerPDF = () => {
         if (nameSearch) { filtered = filtered.filter(t => t.personName?.toLowerCase().includes(nameSearch)); }
 
         if (!filtered.length) {
-            alert("Is filter ke liye koi ledger record available nahi hai.");
+            alert("No ledger records are available for the selected filter.");
             return;
         }
 
@@ -2095,7 +2095,7 @@ window.downloadLedgerPDF = () => {
         pdf.save(`Ledger_Report_${new Date().toISOString().slice(0, 10)}.pdf`);
     } catch (e) {
         console.error(e);
-        alert("Ledger PDF generate nahi ho paya. Console mein details available hain.");
+        alert("Ledger PDF generation failed. Check the console for details.");
     }
 };
 
@@ -3001,7 +3001,7 @@ window.downloadGlobalStaffCSV = async (evt = null) => {
             rows.push([s.schoolId || '', s.schoolName || schoolMap[s.schoolId] || currentSchoolName || '', s.name || '', s.staffRole || '', s.email || '', s.plainPassword || '', s.status || 'active']);
         });
         if (rows.length === 1) {
-            alert("Global staff records abhi available nahi hain.");
+            alert("No global staff records are currently available.");
             return;
         }
         const csv = rows.map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
