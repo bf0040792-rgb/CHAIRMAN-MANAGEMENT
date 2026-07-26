@@ -99,6 +99,46 @@ const FEATURE_TOGGLE_META = {
     }
 };
 
+const FEATURE_SETTINGS_COLLECTION = "feature_controls";
+
+function getFeatureSettingsDocRef(schoolId) {
+    return doc(db, "schools", schoolId, FEATURE_SETTINGS_COLLECTION, "settings");
+}
+
+function normalizeFeatureSettingsPayload(payload = {}) {
+    const source = payload.featureSettings || payload;
+    return hydrateFeatureSettings(source, payload.enabledModules || []);
+}
+
+async function readSchoolFeatureSettings(schoolId) {
+    if (!schoolId) return hydrateFeatureSettings();
+    const featureSnap = await getDoc(getFeatureSettingsDocRef(schoolId));
+    if (featureSnap.exists()) return normalizeFeatureSettingsPayload(featureSnap.data());
+    const schoolSnap = await getDoc(doc(db, "schools", schoolId));
+    if (schoolSnap.exists()) return normalizeFeatureSettingsPayload(schoolSnap.data());
+    return hydrateFeatureSettings();
+}
+
+async function syncSchoolFeatureSettings(schoolId) {
+    if (!schoolId) return;
+    window.currentFeatureSettings = await readSchoolFeatureSettings(schoolId);
+    applyFeatureLocks();
+    renderFeatureToggleSettings();
+}
+
+function listenToFeatureSettings() {
+    if (window.unsubFeatureSettings) {
+        window.unsubFeatureSettings();
+        window.unsubFeatureSettings = null;
+    }
+    if (!currentSchoolId) return;
+    window.unsubFeatureSettings = onSnapshot(getFeatureSettingsDocRef(currentSchoolId), async (snap) => {
+        window.currentFeatureSettings = snap.exists() ? normalizeFeatureSettingsPayload(snap.data()) : await readSchoolFeatureSettings(currentSchoolId);
+        applyFeatureLocks();
+        renderFeatureToggleSettings();
+    });
+}
+
 const overlay = document.getElementById('auth-overlay');
 const loginWrapper = document.getElementById('login-wrapper');
 const dashboardWrapper = document.getElementById('dashboard-wrapper');
@@ -280,6 +320,8 @@ onAuthStateChanged(auth, async (user) => {
                 }
 
                 currentSchoolId = data.schoolId; currentSchoolName = data.schoolName;
+                await syncSchoolFeatureSettings(currentSchoolId);
+                listenToFeatureSettings();
 
                 // --- TRIGGER SAAS LICENSE VERIFICATION ---
                 overlay.innerHTML = '<i class="fas fa-fingerprint fa-pulse" style="font-size:3rem; margin-bottom:15px;"></i><div>Verifying License Subscription...</div>';
@@ -351,6 +393,8 @@ onAuthStateChanged(auth, async (user) => {
                     await signOut(auth); showLoginScreen("Account Blocked."); return;
                 }
                 currentSchoolId = data.schoolId; currentSchoolName = data.schoolName;
+                await syncSchoolFeatureSettings(currentSchoolId);
+                listenToFeatureSettings();
 
                 const isLicenseValid = await verifySchoolLicense(currentSchoolId);
                 if (!isLicenseValid) {
@@ -563,10 +607,8 @@ window.listenToTicker = () => {
                 if (waEl && waEl.value === "") waEl.value = data.whatsappGroup;
             }
 
-            // Feature Modules Toggles - visible but locked when disabled
-            window.currentFeatureSettings = hydrateFeatureSettings(data.featureSettings, data.enabledModules || []);
-            applyFeatureLocks();
-            renderFeatureToggleSettings();
+            // Feature controls are isolated in schools/{schoolId}/feature_controls/settings.
+            // Legacy fields on the school document are read only as fallback by listenToFeatureSettings().
 
             // Session Upgrade Status Logic
             const upgradeStatus = data.sessionUpgradeStatus;
@@ -1528,7 +1570,12 @@ function renderFeatureToggleSettings() {
 
 async function persistFeatureSettings() {
     try {
-        await updateDoc(doc(db, "schools", currentSchoolId), { featureSettings: window.currentFeatureSettings });
+        if (!currentSchoolId) throw new Error("School ID missing");
+        await setDoc(getFeatureSettingsDocRef(currentSchoolId), {
+            featureSettings: window.currentFeatureSettings,
+            updatedAt: serverTimestamp(),
+            updatedBy: auth.currentUser?.uid || "school"
+        }, { merge: true });
         applyFeatureLocks();
         renderFeatureToggleSettings();
     } catch (e) {
@@ -4267,6 +4314,7 @@ document.getElementById("doStudentLoginBtn").addEventListener("click", async () 
                     // Initial fetch to avoid blank dashboard on slow connections
                     const schoolSnap = await getDoc(doc(db, "schools", currentSchoolId));
                     currentStudentSchoolDoc = schoolSnap.exists() ? schoolSnap.data() : {};
+                    window.currentFeatureSettings = await readSchoolFeatureSettings(currentSchoolId);
 
                     window.unsubSchool = onSnapshot(doc(db, "schools", currentSchoolId), (docSnap) => {
                         if (docSnap.exists()) {
@@ -4274,6 +4322,13 @@ document.getElementById("doStudentLoginBtn").addEventListener("click", async () 
                             if (document.getElementById("student-dashboard-wrapper").style.display === "block") {
                                 loadStudentDashboard();
                             }
+                        }
+                    });
+                    if (window.unsubStudentFeatureSettings) window.unsubStudentFeatureSettings();
+                    window.unsubStudentFeatureSettings = onSnapshot(getFeatureSettingsDocRef(currentSchoolId), async (featureSnap) => {
+                        window.currentFeatureSettings = featureSnap.exists() ? normalizeFeatureSettingsPayload(featureSnap.data()) : await readSchoolFeatureSettings(currentSchoolId);
+                        if (document.getElementById("student-dashboard-wrapper").style.display === "block") {
+                            loadStudentDashboard();
                         }
                     });
                 } else {
