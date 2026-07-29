@@ -176,9 +176,7 @@
             <div class="pro-icon-container">
                 <i class="fas fa-fingerprint"></i>
             </div>
-            <div class="login-kicker">CoreEdu Command Center</div>
             <h2 class="glass-login-title">secure login</h2>
-            <p class="login-subtitle">Unified premium access for chairman, staff, and students.</p>
 
             <!-- Role Tabs -->
             <div class="role-tabs"
@@ -211,7 +209,7 @@
                         <span class="custom-checkmark"></span>
                         Remember
                     </label>
-                <div class="glass-options" style="justify-content: center; margin-bottom: 15px;">
+                <div id="recaptcha-wrapper" class="glass-options" style="justify-content: center; margin-bottom: 15px;">
                     <div class="g-recaptcha" data-sitekey="6LdA-GstAAAAAABAu0pU-ZkearQVooMW0l-hsf__"></div>
                 </div>
                 <button class="glass-login-btn" id="doLoginBtn">
@@ -282,6 +280,7 @@
             if (tab === 'admin') {
                 adminFields.style.display = 'block';
                 studentFields.style.display = 'none';
+                if (document.getElementById('recaptcha-wrapper')) document.getElementById('recaptcha-wrapper').style.display = 'flex';
                 tabAdmin.style.background = 'rgba(14,246,204,0.15)';
                 tabAdmin.style.color = '#0ef6cc';
                 tabStudent.style.background = 'transparent';
@@ -289,6 +288,7 @@
             } else {
                 adminFields.style.display = 'none';
                 studentFields.style.display = 'block';
+                if (document.getElementById('recaptcha-wrapper')) document.getElementById('recaptcha-wrapper').style.display = 'none';
                 tabStudent.style.background = 'rgba(14,246,204,0.15)';
                 tabStudent.style.color = '#0ef6cc';
                 tabAdmin.style.background = 'transparent';

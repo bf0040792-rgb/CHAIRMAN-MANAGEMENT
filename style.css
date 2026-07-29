@@ -269,33 +269,34 @@ body {
 /* ===== GLASSMORPHISM PANEL ===== */
 .glass-login-box {
     position: relative;
-    background: var(--glass-bg) !important;
-    backdrop-filter: blur(20px) saturate(180%) !important;
-    -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
-    padding: 50px 42px;
-    border-radius: 20px !important;
+    background: linear-gradient(180deg, rgba(13, 20, 36, 0.88), rgba(8, 13, 24, 0.78)) !important;
+    backdrop-filter: blur(24px) saturate(185%) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(185%) !important;
+    padding: 56px 46px;
+    border-radius: 28px !important;
     width: 92%;
-    max-width: 420px;
-    border: 1px solid var(--glass-border) !important;
+    max-width: 440px;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
     box-shadow:
-        0 4px 12px rgba(0, 0, 0, 0.4),
-        0 24px 60px rgba(0, 0, 0, 0.25),
-        inset 0 1px 1px var(--glass-highlight) !important;
+        0 18px 40px rgba(2, 8, 23, 0.42),
+        0 40px 90px rgba(2, 8, 23, 0.28),
+        inset 0 1px 1px rgba(255, 255, 255, 0.08) !important;
     color: #fff !important;
     font-family: 'Plus Jakarta Sans', sans-serif !important;
     z-index: 10;
-    transition: box-shadow 0.5s ease, border-color 0.5s ease;
+    transition: transform 0.35s ease, box-shadow 0.5s ease, border-color 0.5s ease;
     animation: none;
 }
 
 .glass-login-box:hover {
-    border-color: rgba(255, 255, 255, 0.2) !important;
+    transform: translateY(-4px);
+    border-color: rgba(255, 255, 255, 0.24) !important;
     box-shadow:
-        0 4px 12px rgba(0, 0, 0, 0.4),
-        0 24px 60px rgba(0, 0, 0, 0.25),
-        0 0 0 1px rgba(14, 246, 204, 0.06),
-        0 0 40px rgba(14, 246, 204, 0.03),
-        inset 0 1px 1px var(--glass-highlight) !important;
+        0 22px 48px rgba(2, 8, 23, 0.48),
+        0 55px 120px rgba(2, 8, 23, 0.28),
+        0 0 0 1px rgba(14, 246, 204, 0.08),
+        0 0 60px rgba(14, 246, 204, 0.06),
+        inset 0 1px 1px rgba(255, 255, 255, 0.08) !important;
 }
 
 .glass-login-box::before {
@@ -345,30 +346,48 @@ body {
 
 .pro-icon-container {
     text-align: center;
-    margin-bottom: 8px;
+    margin-bottom: 12px;
 }
 
 .pro-icon-container i {
-    font-size: 36px;
-    color: rgba(255, 255, 255, 0.85);
-    filter: drop-shadow(0 0 8px rgba(14, 246, 204, 0.15));
+    font-size: 38px;
+    color: rgba(255, 255, 255, 0.95);
+    filter: drop-shadow(0 0 12px rgba(14, 246, 204, 0.18));
+}
+
+.login-kicker {
+    text-align: center;
+    color: #7dd3fc;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+}
+
+.login-subtitle {
+    text-align: center;
+    color: rgba(226, 232, 240, 0.72);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin: -18px 0 26px;
 }
 
 /* Login Title */
 .glass-login-title {
     text-align: center;
-    font-size: 1.8rem;
-    font-weight: 200;
-    letter-spacing: 10px;
+    font-size: 1.95rem;
+    font-weight: 300;
+    letter-spacing: 8px;
     text-transform: lowercase;
-    color: rgba(255, 255, 255, 0.88);
-    margin-bottom: 36px;
+    color: rgba(255, 255, 255, 0.94);
+    margin-bottom: 24px;
     font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
 /* ===== INPUT FIELDS ===== */
 .glass-input-group {
-    margin-bottom: 28px;
+    margin-bottom: 22px;
     position: relative;
 }
 
