@@ -209,8 +209,9 @@
                         <span class="custom-checkmark"></span>
                         Remember
                     </label>
-                <div id="recaptcha-wrapper" class="glass-options" style="justify-content: center; margin-bottom: 15px;">
-                    <div class="g-recaptcha" data-sitekey="6LdA-GstAAAAAABAu0pU-ZkearQVooMW0l-hsf__"></div>
+                </div>
+                <div id="recaptcha-wrapper" class="flex justify-center w-full overflow-hidden" style="margin-bottom: 15px; display: flex; justify-content: center;">
+                    <div class="g-recaptcha transform scale-90 sm:scale-100 origin-center" data-sitekey="6LdA-GstAAAAAABAu0pU-ZkearQVooMW0l-hsf__"></div>
                 </div>
                 <button class="glass-login-btn" id="doLoginBtn">
                     <span>Authenticate</span> <i class="fas fa-arrow-right"></i>
@@ -280,7 +281,6 @@
             if (tab === 'admin') {
                 adminFields.style.display = 'block';
                 studentFields.style.display = 'none';
-                if (document.getElementById('recaptcha-wrapper')) document.getElementById('recaptcha-wrapper').style.display = 'flex';
                 tabAdmin.style.background = 'rgba(14,246,204,0.15)';
                 tabAdmin.style.color = '#0ef6cc';
                 tabStudent.style.background = 'transparent';
@@ -288,7 +288,6 @@
             } else {
                 adminFields.style.display = 'none';
                 studentFields.style.display = 'block';
-                if (document.getElementById('recaptcha-wrapper')) document.getElementById('recaptcha-wrapper').style.display = 'none';
                 tabStudent.style.background = 'rgba(14,246,204,0.15)';
                 tabStudent.style.color = '#0ef6cc';
                 tabAdmin.style.background = 'transparent';
@@ -372,10 +371,7 @@
         <div class="top-navbar">
             <div class="brand">
                 <img src="" id="top-school-logo" class="school-logo" style="display:none;">
-                <div class="brand-copy">
-                    <span id="top-school-name" class="desktop-name">School Name</span>
-                    <small>Premium School Management Suite</small>
-                </div>
+                <span id="top-school-name" class="desktop-name">School Name</span>
                 <span id="top-school-name-mobile" class="mobile-name" style="display:none;">SN</span>
             </div>
             <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
