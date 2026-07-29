@@ -13,6 +13,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -175,7 +176,9 @@
             <div class="pro-icon-container">
                 <i class="fas fa-fingerprint"></i>
             </div>
-            <h2 class="glass-login-title">login</h2>
+            <div class="login-kicker">CoreEdu Command Center</div>
+            <h2 class="glass-login-title">secure login</h2>
+            <p class="login-subtitle">Unified premium access for chairman, staff, and students.</p>
 
             <!-- Role Tabs -->
             <div class="role-tabs"
@@ -208,6 +211,8 @@
                         <span class="custom-checkmark"></span>
                         Remember
                     </label>
+                <div class="glass-options" style="justify-content: center; margin-bottom: 15px;">
+                    <div class="g-recaptcha" data-sitekey="6LdA-GstAAAAAABAu0pU-ZkearQVooMW0l-hsf__"></div>
                 </div>
                 <button class="glass-login-btn" id="doLoginBtn">
                     <span>Authenticate</span> <i class="fas fa-arrow-right"></i>
@@ -367,7 +372,10 @@
         <div class="top-navbar">
             <div class="brand">
                 <img src="" id="top-school-logo" class="school-logo" style="display:none;">
-                <span id="top-school-name" class="desktop-name">School Name</span>
+                <div class="brand-copy">
+                    <span id="top-school-name" class="desktop-name">School Name</span>
+                    <small>Premium School Management Suite</small>
+                </div>
                 <span id="top-school-name-mobile" class="mobile-name" style="display:none;">SN</span>
             </div>
             <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end;">

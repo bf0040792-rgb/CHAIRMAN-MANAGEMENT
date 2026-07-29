@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs, query, where, deleteDoc, serverTimestamp, deleteField, onSnapshot, orderBy, limit, addDoc, writeBatch, increment } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -114,6 +114,7 @@ async function readSchoolFeatureSettings(schoolId) {
 async function syncSchoolFeatureSettings(schoolId) {
     if (!schoolId) return;
     window.currentFeatureSettings = await readSchoolFeatureSettings(schoolId);
+    window.lastSavedFeatureSettings = hydrateFeatureSettings(window.currentFeatureSettings);
     applyFeatureLocks();
     renderFeatureToggleSettings();
 }
@@ -125,7 +126,14 @@ function listenToFeatureSettings() {
     }
     if (!currentSchoolId) return;
     window.unsubFeatureSettings = onSnapshot(getFeatureSettingsDocRef(currentSchoolId), async (snap) => {
-        window.currentFeatureSettings = snap.exists() ? normalizeFeatureSettingsPayload(snap.data()) : await readSchoolFeatureSettings(currentSchoolId);
+        const nextSettings = snap.exists() ? normalizeFeatureSettingsPayload(snap.data()) : await readSchoolFeatureSettings(currentSchoolId);
+        window.currentFeatureSettings = hydrateFeatureSettings(nextSettings);
+        window.lastSavedFeatureSettings = hydrateFeatureSettings(window.currentFeatureSettings);
+        applyFeatureLocks();
+        renderFeatureToggleSettings();
+    }, (error) => {
+        console.error("Feature settings listener failed", error);
+        window.currentFeatureSettings = hydrateFeatureSettings(window.currentFeatureSettings || {});
         applyFeatureLocks();
         renderFeatureToggleSettings();
     });
@@ -157,7 +165,7 @@ window.switchTab = (targetId) => {
     const targetMenu = document.querySelector(`#dashboard-wrapper .menu-item[data-target="${targetId}"]`);
     if (targetTab) targetTab.classList.add('active');
     if (targetMenu) targetMenu.classList.add('active');
-    sessionStorage.setItem('chairmanActiveTab', targetId);
+    localStorage.setItem('chairmanActiveTab', targetId);
     if (targetId === 'tab-student-transfer') {
         populateTransferStudentOptions();
         window.previewTransferStudent();
@@ -274,7 +282,7 @@ window.unlockChairmanDashboard = () => {
     dashboardWrapper.style.display = "flex";
     initializeChairmanNavigation();
 
-    const savedTab = sessionStorage.getItem('chairmanActiveTab');
+    const savedTab = localStorage.getItem('chairmanActiveTab');
     window.switchTab(savedTab || 'tab-dashboard');
 };
 
@@ -453,9 +461,13 @@ onAuthStateChanged(auth, async (user) => {
 document.getElementById("doLoginBtn").addEventListener("click", async () => {
     const email = document.getElementById("loginId").value.trim(); const pass = document.getElementById("loginPassword").value.trim(); const btn = document.getElementById("doLoginBtn");
     if (!email || !pass) return showLoginScreen("Enter Username and Password");
+    
+    const recaptchaField = document.querySelector('#login-wrapper [name="g-recaptcha-response"]');
+    if (recaptchaField && !recaptchaField.value) return showLoginScreen("Please verify you are not a robot");
+
     btn.innerText = "Verifying...";
     try {
-        await setPersistence(auth, browserSessionPersistence);
+        await setPersistence(auth, browserLocalPersistence);
         await signInWithEmailAndPassword(auth, email, pass);
     } catch (e) {
         btn.innerText = "Login"; showLoginScreen("Invalid Credentials!");
@@ -489,7 +501,7 @@ document.querySelectorAll('.menu-item').forEach(item => {
         if (targetEl) targetEl.classList.add('active');
 
         document.getElementById('tab-title').innerText = item.innerText;
-        sessionStorage.setItem('chairmanActiveTab', targetId);
+        localStorage.setItem('chairmanActiveTab', targetId);
     });
 });
 
@@ -1458,6 +1470,10 @@ function isFeatureEnabled(group, key) {
     return window.currentFeatureSettings?.[group]?.[key] !== false;
 }
 
+function isCompanyLockedFeature(group, key) {
+    return window.currentFeatureSettings?.companyLocked?.[group]?.[key] === true || (group === 'student' && window.currentFeatureSettings?.student?.[key] === false && window.currentFeatureSettings?.school?.studentPortalFeatures === false);
+}
+
 function showCompanyRestrictedAlert() {
     alert("Access Restricted: This feature is disabled by the Super Admin. Please contact your Company Administrator to enable it.");
 }
@@ -1547,12 +1563,13 @@ function renderFeatureToggleSettings() {
             <div class="feature-toggle-grid">
                 ${entries.map(([key, label]) => {
             const enabled = isFeatureEnabled(group, key);
-            return `<label class="feature-toggle-item ${enabled ? 'enabled' : 'locked'}">
+            const companyLocked = window.currentFeatureSettings?.companyLocked?.[group]?.[key] === true || window.currentFeatureSettings?.school?.studentPortalFeatures === false;
+            return `<label class="feature-toggle-item ${enabled ? 'enabled' : 'locked'} ${companyLocked ? 'company-feature-locked' : ''}">
                         <span class="feature-toggle-copy">
                             <strong>${label}</strong>
-                            <small>${enabled ? 'Live & clickable' : 'Visible but locked'}</small>
+                            <small>${companyLocked || !enabled ? 'Locked' : 'Live & clickable'}</small>
                         </span>
-                        <input type="checkbox" onchange="window.toggleSingleFeature('${group}', '${key}', this.checked)" ${enabled ? 'checked' : ''}>
+                        <input type="checkbox" onchange="window.toggleSingleFeature('${group}', '${key}', this.checked)" ${enabled ? 'checked' : ''} ${companyLocked ? 'disabled' : ''}>
                     </label>`;
         }).join('')}
             </div>
@@ -1561,33 +1578,46 @@ function renderFeatureToggleSettings() {
 }
 
 async function persistFeatureSettings() {
+    const previousSettings = hydrateFeatureSettings(window.lastSavedFeatureSettings || window.currentFeatureSettings || {});
     try {
         if (!currentSchoolId) throw new Error("School ID missing");
+        applyFeatureLocks();
+        renderFeatureToggleSettings();
         await setDoc(getFeatureSettingsDocRef(currentSchoolId), {
             featureSettings: window.currentFeatureSettings,
             updatedAt: serverTimestamp(),
             updatedBy: auth.currentUser?.uid || "school"
         }, { merge: true });
+        window.lastSavedFeatureSettings = hydrateFeatureSettings(window.currentFeatureSettings);
+    } catch (e) {
+        window.currentFeatureSettings = previousSettings;
         applyFeatureLocks();
         renderFeatureToggleSettings();
-    } catch (e) {
         console.error("Feature settings save failed", e);
-        alert("Failed to save feature configurations.");
+        alert("Failed to save feature configurations: " + (e.message || "Permission denied"));
     }
 }
 
 window.toggleFeatureGroup = async (group, enabled) => {
     window.currentFeatureSettings[group] = window.currentFeatureSettings[group] || {};
-    Object.keys(FEATURE_TOGGLE_META[group]?.items || DEFAULT_FEATURE_SETTINGS[group] || {}).forEach(key => { window.currentFeatureSettings[group][key] = enabled; });
+    Object.keys(FEATURE_TOGGLE_META[group]?.items || DEFAULT_FEATURE_SETTINGS[group] || {}).forEach(key => {
+        if (!isCompanyLockedFeature(group, key)) window.currentFeatureSettings[group][key] = enabled;
+    });
     await persistFeatureSettings();
 };
 
 window.toggleSingleFeature = async (group, key, enabled) => {
+    if (isCompanyLockedFeature(group, key)) {
+        renderFeatureToggleSettings();
+        alert("This feature is locked by Company and cannot be changed.");
+        return;
+    }
     window.currentFeatureSettings[group] = window.currentFeatureSettings[group] || {};
     window.currentFeatureSettings[group][key] = enabled;
     Object.entries(LEGACY_STUDENT_FEATURE_KEYS).forEach(([legacyKey, currentKey]) => {
         if (group === 'student' && currentKey === key) window.currentFeatureSettings.student[legacyKey] = enabled;
     });
+    renderFeatureToggleSettings();
     await persistFeatureSettings();
 };
 
