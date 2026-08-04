@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs, query, where, deleteDoc, serverTimestamp, deleteField, onSnapshot, orderBy, limit, addDoc, writeBatch, increment } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -114,7 +114,6 @@ async function readSchoolFeatureSettings(schoolId) {
 async function syncSchoolFeatureSettings(schoolId) {
     if (!schoolId) return;
     window.currentFeatureSettings = await readSchoolFeatureSettings(schoolId);
-    window.lastSavedFeatureSettings = hydrateFeatureSettings(window.currentFeatureSettings);
     applyFeatureLocks();
     renderFeatureToggleSettings();
 }
@@ -126,14 +125,7 @@ function listenToFeatureSettings() {
     }
     if (!currentSchoolId) return;
     window.unsubFeatureSettings = onSnapshot(getFeatureSettingsDocRef(currentSchoolId), async (snap) => {
-        const nextSettings = snap.exists() ? normalizeFeatureSettingsPayload(snap.data()) : await readSchoolFeatureSettings(currentSchoolId);
-        window.currentFeatureSettings = hydrateFeatureSettings(nextSettings);
-        window.lastSavedFeatureSettings = hydrateFeatureSettings(window.currentFeatureSettings);
-        applyFeatureLocks();
-        renderFeatureToggleSettings();
-    }, (error) => {
-        console.error("Feature settings listener failed", error);
-        window.currentFeatureSettings = hydrateFeatureSettings(window.currentFeatureSettings || {});
+        window.currentFeatureSettings = snap.exists() ? normalizeFeatureSettingsPayload(snap.data()) : await readSchoolFeatureSettings(currentSchoolId);
         applyFeatureLocks();
         renderFeatureToggleSettings();
     });
@@ -165,7 +157,7 @@ window.switchTab = (targetId) => {
     const targetMenu = document.querySelector(`#dashboard-wrapper .menu-item[data-target="${targetId}"]`);
     if (targetTab) targetTab.classList.add('active');
     if (targetMenu) targetMenu.classList.add('active');
-    localStorage.setItem('chairmanActiveTab', targetId);
+    sessionStorage.setItem('chairmanActiveTab', targetId);
     if (targetId === 'tab-student-transfer') {
         populateTransferStudentOptions();
         window.previewTransferStudent();
@@ -173,6 +165,7 @@ window.switchTab = (targetId) => {
         window.loadStudentTransfers();
     }
     if (targetId === 'tab-daily-attendance' && window.loadDailyAttendanceRoster) window.loadDailyAttendanceRoster();
+    if (targetId === 'tab-export-records') window.renderStudentExportRecords();
     if (targetId === 'tab-staff') loadStaff();
     if (targetId === 'tab-finance') loadTransactions();
     // Refresh inbox/sent when opening the Communication Hub
@@ -282,7 +275,7 @@ window.unlockChairmanDashboard = () => {
     dashboardWrapper.style.display = "flex";
     initializeChairmanNavigation();
 
-    const savedTab = localStorage.getItem('chairmanActiveTab');
+    const savedTab = sessionStorage.getItem('chairmanActiveTab');
     window.switchTab(savedTab || 'tab-dashboard');
 };
 
@@ -461,13 +454,9 @@ onAuthStateChanged(auth, async (user) => {
 document.getElementById("doLoginBtn").addEventListener("click", async () => {
     const email = document.getElementById("loginId").value.trim(); const pass = document.getElementById("loginPassword").value.trim(); const btn = document.getElementById("doLoginBtn");
     if (!email || !pass) return showLoginScreen("Enter Username and Password");
-    
-    const recaptchaField = document.querySelector('#login-wrapper [name="g-recaptcha-response"]');
-    if (recaptchaField && !recaptchaField.value) return showLoginScreen("Please verify you are not a robot");
-
     btn.innerText = "Verifying...";
     try {
-        await setPersistence(auth, browserLocalPersistence);
+        await setPersistence(auth, browserSessionPersistence);
         await signInWithEmailAndPassword(auth, email, pass);
     } catch (e) {
         btn.innerText = "Login"; showLoginScreen("Invalid Credentials!");
@@ -501,7 +490,7 @@ document.querySelectorAll('.menu-item').forEach(item => {
         if (targetEl) targetEl.classList.add('active');
 
         document.getElementById('tab-title').innerText = item.innerText;
-        localStorage.setItem('chairmanActiveTab', targetId);
+        sessionStorage.setItem('chairmanActiveTab', targetId);
     });
 });
 
@@ -1470,10 +1459,6 @@ function isFeatureEnabled(group, key) {
     return window.currentFeatureSettings?.[group]?.[key] !== false;
 }
 
-function isCompanyLockedFeature(group, key) {
-    return window.currentFeatureSettings?.companyLocked?.[group]?.[key] === true || (group === 'student' && window.currentFeatureSettings?.student?.[key] === false && window.currentFeatureSettings?.school?.studentPortalFeatures === false);
-}
-
 function showCompanyRestrictedAlert() {
     alert("Access Restricted: This feature is disabled by the Super Admin. Please contact your Company Administrator to enable it.");
 }
@@ -1563,13 +1548,12 @@ function renderFeatureToggleSettings() {
             <div class="feature-toggle-grid">
                 ${entries.map(([key, label]) => {
             const enabled = isFeatureEnabled(group, key);
-            const companyLocked = window.currentFeatureSettings?.companyLocked?.[group]?.[key] === true || window.currentFeatureSettings?.school?.studentPortalFeatures === false;
-            return `<label class="feature-toggle-item ${enabled ? 'enabled' : 'locked'} ${companyLocked ? 'company-feature-locked' : ''}">
+            return `<label class="feature-toggle-item ${enabled ? 'enabled' : 'locked'}">
                         <span class="feature-toggle-copy">
                             <strong>${label}</strong>
-                            <small>${companyLocked || !enabled ? 'Locked' : 'Live & clickable'}</small>
+                            <small>${enabled ? 'Live & clickable' : 'Visible but locked'}</small>
                         </span>
-                        <input type="checkbox" onchange="window.toggleSingleFeature('${group}', '${key}', this.checked)" ${enabled ? 'checked' : ''} ${companyLocked ? 'disabled' : ''}>
+                        <input type="checkbox" onchange="window.toggleSingleFeature('${group}', '${key}', this.checked)" ${enabled ? 'checked' : ''}>
                     </label>`;
         }).join('')}
             </div>
@@ -1578,46 +1562,33 @@ function renderFeatureToggleSettings() {
 }
 
 async function persistFeatureSettings() {
-    const previousSettings = hydrateFeatureSettings(window.lastSavedFeatureSettings || window.currentFeatureSettings || {});
     try {
         if (!currentSchoolId) throw new Error("School ID missing");
-        applyFeatureLocks();
-        renderFeatureToggleSettings();
         await setDoc(getFeatureSettingsDocRef(currentSchoolId), {
             featureSettings: window.currentFeatureSettings,
             updatedAt: serverTimestamp(),
             updatedBy: auth.currentUser?.uid || "school"
         }, { merge: true });
-        window.lastSavedFeatureSettings = hydrateFeatureSettings(window.currentFeatureSettings);
-    } catch (e) {
-        window.currentFeatureSettings = previousSettings;
         applyFeatureLocks();
         renderFeatureToggleSettings();
+    } catch (e) {
         console.error("Feature settings save failed", e);
-        alert("Failed to save feature configurations: " + (e.message || "Permission denied"));
+        alert("Failed to save feature configurations.");
     }
 }
 
 window.toggleFeatureGroup = async (group, enabled) => {
     window.currentFeatureSettings[group] = window.currentFeatureSettings[group] || {};
-    Object.keys(FEATURE_TOGGLE_META[group]?.items || DEFAULT_FEATURE_SETTINGS[group] || {}).forEach(key => {
-        if (!isCompanyLockedFeature(group, key)) window.currentFeatureSettings[group][key] = enabled;
-    });
+    Object.keys(FEATURE_TOGGLE_META[group]?.items || DEFAULT_FEATURE_SETTINGS[group] || {}).forEach(key => { window.currentFeatureSettings[group][key] = enabled; });
     await persistFeatureSettings();
 };
 
 window.toggleSingleFeature = async (group, key, enabled) => {
-    if (isCompanyLockedFeature(group, key)) {
-        renderFeatureToggleSettings();
-        alert("This feature is locked by Company and cannot be changed.");
-        return;
-    }
     window.currentFeatureSettings[group] = window.currentFeatureSettings[group] || {};
     window.currentFeatureSettings[group][key] = enabled;
     Object.entries(LEGACY_STUDENT_FEATURE_KEYS).forEach(([legacyKey, currentKey]) => {
         if (group === 'student' && currentKey === key) window.currentFeatureSettings.student[legacyKey] = enabled;
     });
-    renderFeatureToggleSettings();
     await persistFeatureSettings();
 };
 
@@ -2229,7 +2200,7 @@ async function loadStudents() {
             }
         }
 
-        renderClassFilters(); renderStudentsTable("All"); populateTransferStudentOptions();
+        renderClassFilters(); renderStudentsTable("All"); populateTransferStudentOptions(); window.renderStudentExportRecords();
     } catch (e) { }
 }
 
@@ -2319,6 +2290,7 @@ function renderStudentsTable(className, searchTerm = null, statusFilter = null) 
 window.toggleStudentSelection = (studentId, checked) => {
     if (checked) window.selectedStudentIds.add(studentId);
     else window.selectedStudentIds.delete(studentId);
+    updateExportSelectionUI();
 };
 
 window.toggleSelectAllStudents = (checked) => {
@@ -2329,63 +2301,137 @@ window.toggleSelectAllStudents = (checked) => {
     });
 };
 
-window.exportSelectedStudentsPDF = async () => {
-    const selected = window.fetchedStudents.filter(s => window.selectedStudentIds.has(s.id));
-    if (selected.length === 0) return alert("Please select at least one student.");
-    const grouped = selected.reduce((acc, st) => {
-        const cls = st.class || 'Unassigned';
-        acc[cls] = acc[cls] || [];
-        acc[cls].push(st);
-        return acc;
-    }, {});
-    const exportDiv = document.createElement('div');
-    exportDiv.style.cssText = 'width:794px; padding:24px; background:#fff; color:#111; font-family:Arial,sans-serif; position:absolute; left:-9999px; top:0;';
-    exportDiv.innerHTML = Object.entries(grouped).map(([cls, students]) => `
-        <section style="page-break-after:always;">
-            <h2 style="text-align:center; margin:0 0 4px; color:${currentThemeColor};">${currentSchoolName || 'School'} - Class ${cls}</h2>
-            <p style="text-align:center; margin:0 0 18px; font-size:12px;">Student ID-card style data export</p>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-                ${students.sort((a, b) => (Number(a.rollNo) || 999999) - (Number(b.rollNo) || 999999)).map(st => `
-                    <div style="border:2px solid ${currentThemeColor}; border-radius:12px; padding:10px; display:flex; gap:10px; min-height:135px; background:#f8fafc;">
-                        <img src="${st.photoUrl || 'https://via.placeholder.com/100'}" style="width:82px; height:100px; object-fit:cover; border:1px solid #cbd5e1; border-radius:8px;">
-                        <div style="font-size:11px; line-height:1.55; flex:1;">
-                            <strong style="font-size:14px; color:${currentThemeColor};">${st.name || 'N/A'}</strong><br>
-                            <b>Class:</b> ${st.class || 'N/A'} &nbsp; <b>Roll:</b> ${st.rollNo || 'N/A'}<br>
-                            <b>Reg:</b> ${st.regNo || 'N/A'}<br>
-                            <b>Parent:</b> ${st.parentage || st.fatherName || 'N/A'}<br>
-                            <b>Mother:</b> ${st.motherName || 'N/A'}<br>
-                            <b>DOB:</b> ${st.dob || 'N/A'}<br>
-                            <b>Mobile:</b> ${st.mobile || 'N/A'}<br>
-                            <b>Status:</b> ${st.status || 'N/A'}
-                        </div>
-                    </div>`).join('')}
-            </div>
-        </section>`).join('');
-    document.body.appendChild(exportDiv);
-    try {
-        const canvas = await html2canvas(exportDiv, { scale: 2, useCORS: true });
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-        let heightLeft = pdfHeight;
-        let position = 0;
-        pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, pdfHeight);
-        heightLeft -= pdf.internal.pageSize.getHeight();
-        while (heightLeft > 0) {
-            position -= pdf.internal.pageSize.getHeight();
-            pdf.addPage();
-            pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, pdfHeight);
-            heightLeft -= pdf.internal.pageSize.getHeight();
-        }
-        pdf.save(`Students_${currentSchoolName || 'School'}_${new Date().toISOString().slice(0, 10)}.pdf`);
-    } catch (e) {
-        console.error(e);
-        alert('Student PDF export failed.');
-    } finally {
-        document.body.removeChild(exportDiv);
+// Dedicated A4 Student Records Export Center. This intentionally uses the same
+// selection set as the student database, while keeping export controls isolated.
+function getExportScopeStudents() {
+    const selectedClass = document.getElementById('export-records-class')?.value || 'ALL';
+    return (window.fetchedStudents || [])
+        .filter(student => selectedClass === 'ALL' || String(student.class || '').toLowerCase() === selectedClass.toLowerCase())
+        .sort((a, b) => (Number(a.rollNo) || 999999) - (Number(b.rollNo) || 999999));
+}
+
+function updateExportSelectionUI(scope = getExportScopeStudents()) {
+    const selectedCount = scope.filter(student => window.selectedStudentIds.has(student.id)).length;
+    const countEl = document.getElementById('export-selected-count');
+    const selectAll = document.getElementById('export-select-all-students');
+    if (countEl) countEl.textContent = selectedCount;
+    if (selectAll) {
+        selectAll.checked = scope.length > 0 && selectedCount === scope.length;
+        selectAll.indeterminate = selectedCount > 0 && selectedCount < scope.length;
     }
+}
+
+window.renderStudentExportRecords = () => {
+    const tbody = document.getElementById('export-student-records-body');
+    if (!tbody) return;
+    const scope = getExportScopeStudents();
+    if (!scope.length) {
+        tbody.innerHTML = '<tr><td colspan="8" class="export-empty-state">No student records found for this class.</td></tr>';
+        updateExportSelectionUI(scope);
+        return;
+    }
+    tbody.innerHTML = scope.map(student => {
+        const id = String(student.id).replace(/'/g, "\\'");
+        const checked = window.selectedStudentIds.has(student.id) ? ' checked' : '';
+        const status = student.status || 'Approved';
+        return `<tr>
+            <td class="export-check-column"><input type="checkbox" value="${id}"${checked}
+                onchange="window.toggleExportStudent('${id}', this.checked)"></td>
+            <td>${student.rollNo || 'N/A'}</td>
+            <td><strong>${student.name || 'N/A'}</strong></td>
+            <td>${student.class || 'Unassigned'}</td>
+            <td>${student.regNo || 'N/A'}</td>
+            <td>${student.parentage || student.fatherName || 'N/A'}</td>
+            <td>${student.mobile || 'N/A'}</td>
+            <td><span class="export-status-pill">${status}</span></td>
+        </tr>`;
+    }).join('');
+    updateExportSelectionUI(scope);
+};
+
+window.toggleExportStudent = (studentId, checked) => {
+    if (checked) window.selectedStudentIds.add(studentId);
+    else window.selectedStudentIds.delete(studentId);
+    updateExportSelectionUI();
+};
+
+window.toggleSelectAllExportStudents = (checked) => {
+    getExportScopeStudents().forEach(student => {
+        if (checked) window.selectedStudentIds.add(student.id);
+        else window.selectedStudentIds.delete(student.id);
+    });
+    window.renderStudentExportRecords();
+};
+
+window.exportSelectedStudentsPDF = async () => {
+    const scope = getExportScopeStudents();
+    const selected = scope.filter(student => window.selectedStudentIds.has(student.id));
+    if (!selected.length) return alert('Please select at least one student record.');
+    if (!window.jspdf?.jsPDF) return alert('The PDF library is not loaded yet. Please refresh the page and try again.');
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 12;
+    const schoolName = currentSchoolName || document.getElementById('top-school-name')?.innerText || 'School Name';
+    const titleClass = document.getElementById('export-records-class')?.value === 'ALL' ? 'All Classes' : document.getElementById('export-records-class').value;
+    const accent = currentThemeColor || '#2563eb';
+    const safeAccent = /^#[0-9a-f]{6}$/i.test(accent) ? accent : '#2563eb';
+    const hexToRgb = hex => [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
+    const [r, g, b] = hexToRgb(safeAccent);
+    const text = value => String(value ?? 'N/A').replace(/[\r\n]+/g, ' ').trim() || 'N/A';
+    const fit = (value, max) => {
+        const valueText = text(value);
+        return pdf.getTextWidth(valueText) <= max ? valueText : `${valueText.slice(0, Math.max(1, Math.floor(max / 2)))}…`;
+    };
+    const drawHeader = pageNumber => {
+        pdf.setFillColor(r, g, b);
+        pdf.rect(0, 0, pageWidth, 25, 'F');
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFont('helvetica', 'bold'); pdf.setFontSize(16);
+        pdf.text(text(schoolName).toUpperCase(), pageWidth / 2, 10, { align: 'center' });
+        pdf.setFontSize(9); pdf.setFont('helvetica', 'normal');
+        pdf.text(`STUDENT RECORDS • ${titleClass}`, pageWidth / 2, 17, { align: 'center' });
+        pdf.text(`Page ${pageNumber}`, pageWidth - margin, 22, { align: 'right' });
+        pdf.setTextColor(30, 41, 59);
+    };
+    const columns = [
+        ['#', 10], ['Student Name', 38], ['Class', 19], ['Roll No.', 17],
+        ['Reg. No.', 25], ['Parent / Guardian', 39], ['Mobile', 28]
+    ];
+    const rowHeight = 17;
+    const headerHeight = 9;
+    let pageNumber = 1;
+    let y = 34;
+    const drawTableHeader = () => {
+        pdf.setFillColor(226, 232, 240); pdf.rect(margin, y, pageWidth - margin * 2, headerHeight, 'F');
+        pdf.setFont('helvetica', 'bold'); pdf.setFontSize(8); pdf.setTextColor(30, 41, 59);
+        let x = margin;
+        columns.forEach(([label, width]) => { pdf.text(label, x + 2, y + 6); x += width; });
+        y += headerHeight;
+    };
+    drawHeader(pageNumber); drawTableHeader();
+    selected.forEach((student, index) => {
+        if (y + rowHeight > pageHeight - 15) {
+            pdf.addPage(); pageNumber++; drawHeader(pageNumber); y = 34; drawTableHeader();
+        }
+        if (index % 2 === 0) { pdf.setFillColor(248, 250, 252); pdf.rect(margin, y, pageWidth - margin * 2, rowHeight, 'F'); }
+        pdf.setDrawColor(203, 213, 225); pdf.rect(margin, y, pageWidth - margin * 2, rowHeight);
+        pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8); pdf.setTextColor(30, 41, 59);
+        const values = [index + 1, student.name, student.class || 'Unassigned', student.rollNo, student.regNo, student.parentage || student.fatherName, student.mobile];
+        let x = margin;
+        values.forEach((value, columnIndex) => {
+            const width = columns[columnIndex][1];
+            pdf.text(fit(value, width - 4), x + 2, y + 7);
+            x += width;
+        });
+        pdf.setFontSize(7); pdf.setTextColor(100, 116, 139); pdf.text(text(student.status || 'Approved'), margin + 2, y + 13);
+        y += rowHeight;
+    });
+    pdf.setFontSize(8); pdf.setTextColor(100, 116, 139);
+    pdf.text(`Generated ${new Date().toLocaleDateString()} • ${selected.length} record(s)`, margin, pageHeight - 8);
+    pdf.save(`Student_Records_${text(schoolName).replace(/[^a-z0-9]+/gi, '_')}_${new Date().toISOString().slice(0, 10)}.pdf`);
 };
 
 window.filterAdmitStudents = (className) => {
