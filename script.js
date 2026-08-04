@@ -1,4 +1,4 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs, query, where, deleteDoc, serverTimestamp, deleteField, onSnapshot, orderBy, limit, addDoc, writeBatch, increment } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
@@ -11,6 +11,8 @@ const firebaseConfig = {
     messagingSenderId: "519315316570",
     appId: "1:519315316570:web:1448a0936e9a102d849d63"
 };
+
+window.portalModuleLoaded = true;
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -301,6 +303,7 @@ window.logoutFromPin = () => signOut(auth);
 
 // ================= AUTH LOGIC (WITH PIN, LICENSE LOCK & SUPER ADMIN BYPASS) =================
 onAuthStateChanged(auth, async (user) => {
+    window.portalAuthStateReceived = true;
     if (user) {
         try {
             const userDoc = await getDoc(doc(db, "users", user.uid));
@@ -2375,9 +2378,11 @@ window.exportSelectedStudentsPDF = async () => {
     const selectedClass = document.getElementById('export-records-class')?.value || 'ALL';
     const classTitle = selectedClass === 'ALL' ? 'All Classes' : `Class ${selectedClass}`;
     const accent = /^#[0-9a-f]{6}$/i.test(currentThemeColor || '') ? currentThemeColor : '#2563eb';
-    const escapeHtml = value => String(value ?? 'N/A').replace(/[&<>'"]/g, char => ({
-        '&': '&', '<': '<', '>': '>', "'": ''', '"': '"'
-    }[char]));
+    const escapeHtml = value => {
+        const span = document.createElement('span');
+        span.textContent = String(value ?? 'N/A');
+        return span.innerHTML;
+    };
     const recordSheets = document.createElement('div');
     recordSheets.className = 'student-record-pdf-root';
     recordSheets.style.cssText = 'position:absolute;left:-10000px;top:0;width:794px;background:#fff;z-index:-1;';

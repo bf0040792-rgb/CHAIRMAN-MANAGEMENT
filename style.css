@@ -17,6 +17,23 @@ body {
     flex-direction: column;
 }
 
+/* Keep portal labels fixed: no accidental blue selection or browsing caret.
+   Form controls remain fully editable through the override below. */
+body,
+body * {
+    -webkit-user-select: none;
+    user-select: none;
+    caret-color: transparent;
+}
+
+input,
+textarea,
+[contenteditable="true"] {
+    -webkit-user-select: text;
+    user-select: text;
+    caret-color: auto;
+}
+
 #auth-overlay {
     position: fixed;
     top: 0;
@@ -2484,6 +2501,7 @@ body.force-desktop {
 }
 
 @media (max-width: 768px) {
+
     .export-records-header,
     .export-records-toolbar {
         align-items: stretch;

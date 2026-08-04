@@ -15,6 +15,20 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <link rel="stylesheet" href="style.css">
+    <script>
+        window.setTimeout(function () {
+            if (window.portalAuthStateReceived) return;
+            var overlay = document.getElementById('auth-overlay');
+            var login = document.getElementById('login-wrapper');
+            if (overlay) overlay.style.display = 'none';
+            if (login) login.style.display = 'flex';
+            var error = document.getElementById('loginErrorMsg');
+            if (error && !window.portalModuleLoaded) {
+                error.textContent = 'Portal files load nahi ho sake. Internet check karke page refresh karein.';
+                error.style.display = 'block';
+            }
+        }, 8000);
+    </script>
 </head>
 
 <body>
