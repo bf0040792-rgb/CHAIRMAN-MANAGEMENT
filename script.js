@@ -2367,71 +2367,83 @@ window.exportSelectedStudentsPDF = async () => {
     const scope = getExportScopeStudents();
     const selected = scope.filter(student => window.selectedStudentIds.has(student.id));
     if (!selected.length) return alert('Please select at least one student record.');
-    if (!window.jspdf?.jsPDF) return alert('The PDF library is not loaded yet. Please refresh the page and try again.');
+    if (!window.jspdf?.jsPDF || typeof html2canvas !== 'function') {
+        return alert('The PDF library is not loaded yet. Please refresh the page and try again.');
+    }
 
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    const margin = 12;
     const schoolName = currentSchoolName || document.getElementById('top-school-name')?.innerText || 'School Name';
-    const titleClass = document.getElementById('export-records-class')?.value === 'ALL' ? 'All Classes' : document.getElementById('export-records-class').value;
-    const accent = currentThemeColor || '#2563eb';
-    const safeAccent = /^#[0-9a-f]{6}$/i.test(accent) ? accent : '#2563eb';
-    const hexToRgb = hex => [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
-    const [r, g, b] = hexToRgb(safeAccent);
-    const text = value => String(value ?? 'N/A').replace(/[\r\n]+/g, ' ').trim() || 'N/A';
-    const fit = (value, max) => {
-        const valueText = text(value);
-        return pdf.getTextWidth(valueText) <= max ? valueText : `${valueText.slice(0, Math.max(1, Math.floor(max / 2)))}…`;
-    };
-    const drawHeader = pageNumber => {
-        pdf.setFillColor(r, g, b);
-        pdf.rect(0, 0, pageWidth, 25, 'F');
-        pdf.setTextColor(255, 255, 255);
-        pdf.setFont('helvetica', 'bold'); pdf.setFontSize(16);
-        pdf.text(text(schoolName).toUpperCase(), pageWidth / 2, 10, { align: 'center' });
-        pdf.setFontSize(9); pdf.setFont('helvetica', 'normal');
-        pdf.text(`STUDENT RECORDS • ${titleClass}`, pageWidth / 2, 17, { align: 'center' });
-        pdf.text(`Page ${pageNumber}`, pageWidth - margin, 22, { align: 'right' });
-        pdf.setTextColor(30, 41, 59);
-    };
-    const columns = [
-        ['#', 10], ['Student Name', 38], ['Class', 19], ['Roll No.', 17],
-        ['Reg. No.', 25], ['Parent / Guardian', 39], ['Mobile', 28]
-    ];
-    const rowHeight = 17;
-    const headerHeight = 9;
-    let pageNumber = 1;
-    let y = 34;
-    const drawTableHeader = () => {
-        pdf.setFillColor(226, 232, 240); pdf.rect(margin, y, pageWidth - margin * 2, headerHeight, 'F');
-        pdf.setFont('helvetica', 'bold'); pdf.setFontSize(8); pdf.setTextColor(30, 41, 59);
-        let x = margin;
-        columns.forEach(([label, width]) => { pdf.text(label, x + 2, y + 6); x += width; });
-        y += headerHeight;
-    };
-    drawHeader(pageNumber); drawTableHeader();
-    selected.forEach((student, index) => {
-        if (y + rowHeight > pageHeight - 15) {
-            pdf.addPage(); pageNumber++; drawHeader(pageNumber); y = 34; drawTableHeader();
+    const selectedClass = document.getElementById('export-records-class')?.value || 'ALL';
+    const classTitle = selectedClass === 'ALL' ? 'All Classes' : `Class ${selectedClass}`;
+    const accent = /^#[0-9a-f]{6}$/i.test(currentThemeColor || '') ? currentThemeColor : '#2563eb';
+    const escapeHtml = value => String(value ?? 'N/A').replace(/[&<>'"]/g, char => ({
+        '&': '&', '<': '<', '>': '>', "'": ''', '"': '"'
+    }[char]));
+    const recordSheets = document.createElement('div');
+    recordSheets.className = 'student-record-pdf-root';
+    recordSheets.style.cssText = 'position:absolute;left:-10000px;top:0;width:794px;background:#fff;z-index:-1;';
+
+    const pages = [];
+    for (let index = 0; index < selected.length; index += 6) pages.push(selected.slice(index, index + 6));
+    recordSheets.innerHTML = pages.map((students, pageIndex) => `
+        <section class="student-record-pdf-page" style="position:relative;width:794px;height:1123px;box-sizing:border-box;padding:34px 38px;background:#fff;color:#172033;font-family:Arial,sans-serif;overflow:hidden;">
+            <header style="border-bottom:4px solid ${accent};padding-bottom:15px;margin-bottom:20px;text-align:center;">
+                <h1 style="margin:0;color:${accent};font-size:25px;line-height:1.2;text-transform:uppercase;">${escapeHtml(schoolName)}</h1>
+                <div style="margin-top:7px;color:#475569;font-size:12px;font-weight:700;letter-spacing:1.4px;">STUDENT RECORD • ${escapeHtml(classTitle.toUpperCase())}</div>
+            </header>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px 16px;">
+                ${students.map(student => `
+                    <article style="height:285px;box-sizing:border-box;border:2px solid ${accent};border-radius:8px;overflow:hidden;background:#f8fafc;">
+                        <div style="height:8px;background:${accent};"></div>
+                        <div style="display:flex;gap:12px;padding:14px 13px 10px;">
+                            <div style="width:92px;flex:0 0 92px;">
+                                <img src="${escapeHtml(student.photoUrl || 'https://via.placeholder.com/120?text=Photo')}" crossorigin="anonymous" style="display:block;width:92px;height:112px;object-fit:cover;border:1px solid #cbd5e1;border-radius:6px;background:#fff;">
+                                <div style="margin-top:7px;padding:5px 3px;border-radius:5px;background:${accent};color:#fff;text-align:center;font-size:10px;font-weight:700;">${escapeHtml(student.status || 'Approved')}</div>
+                            </div>
+                            <div style="min-width:0;flex:1;">
+                                <h2 style="margin:0 0 8px;color:${accent};font-size:16px;line-height:1.25;overflow-wrap:anywhere;">${escapeHtml(student.name || 'N/A')}</h2>
+                                <div style="font-size:11px;line-height:1.75;color:#334155;">
+                                    <div><b>Class:</b> ${escapeHtml(student.class || 'N/A')} &nbsp; <b>Roll:</b> ${escapeHtml(student.rollNo || 'N/A')}</div>
+                                    <div><b>Reg. No:</b> ${escapeHtml(student.regNo || 'N/A')}</div>
+                                    <div><b>Mobile:</b> ${escapeHtml(student.mobile || 'N/A')}</div>
+                                    <div><b>DOB:</b> ${escapeHtml(student.dob || 'N/A')}</div>
+                                    <div><b>Gender:</b> ${escapeHtml(student.gender || 'N/A')}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="margin:0 13px;padding:9px 10px;border-top:1px solid #dbe4ef;background:#fff;font-size:10.5px;line-height:1.65;color:#334155;">
+                            <div><b>Father / Guardian:</b> ${escapeHtml(student.parentage || student.fatherName || 'N/A')}</div>
+                            <div><b>Mother:</b> ${escapeHtml(student.motherName || 'N/A')}</div>
+                            <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><b>Address:</b> ${escapeHtml(student.address || 'N/A')}</div>
+                        </div>
+                    </article>`).join('')}
+            </div>
+            <footer style="position:absolute;left:38px;right:38px;bottom:23px;display:flex;justify-content:space-between;border-top:1px solid #cbd5e1;padding-top:8px;color:#64748b;font-size:10px;">
+                <span>Generated: ${new Date().toLocaleDateString()}</span>
+                <span>Page ${pageIndex + 1} of ${pages.length}</span>
+            </footer>
+        </section>`).join('');
+    document.body.appendChild(recordSheets);
+
+    const button = document.getElementById('export-student-records-btn');
+    if (button) { button.disabled = true; button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing PDF'; }
+    try {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const sheets = recordSheets.querySelectorAll('.student-record-pdf-page');
+        for (let pageIndex = 0; pageIndex < sheets.length; pageIndex++) {
+            const canvas = await html2canvas(sheets[pageIndex], { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false });
+            if (pageIndex > 0) pdf.addPage();
+            pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, 297);
         }
-        if (index % 2 === 0) { pdf.setFillColor(248, 250, 252); pdf.rect(margin, y, pageWidth - margin * 2, rowHeight, 'F'); }
-        pdf.setDrawColor(203, 213, 225); pdf.rect(margin, y, pageWidth - margin * 2, rowHeight);
-        pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8); pdf.setTextColor(30, 41, 59);
-        const values = [index + 1, student.name, student.class || 'Unassigned', student.rollNo, student.regNo, student.parentage || student.fatherName, student.mobile];
-        let x = margin;
-        values.forEach((value, columnIndex) => {
-            const width = columns[columnIndex][1];
-            pdf.text(fit(value, width - 4), x + 2, y + 7);
-            x += width;
-        });
-        pdf.setFontSize(7); pdf.setTextColor(100, 116, 139); pdf.text(text(student.status || 'Approved'), margin + 2, y + 13);
-        y += rowHeight;
-    });
-    pdf.setFontSize(8); pdf.setTextColor(100, 116, 139);
-    pdf.text(`Generated ${new Date().toLocaleDateString()} • ${selected.length} record(s)`, margin, pageHeight - 8);
-    pdf.save(`Student_Records_${text(schoolName).replace(/[^a-z0-9]+/gi, '_')}_${new Date().toISOString().slice(0, 10)}.pdf`);
+        const safeSchoolName = schoolName.replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '') || 'School';
+        pdf.save(`Student_Record_${safeSchoolName}_${new Date().toISOString().slice(0, 10)}.pdf`);
+    } catch (error) {
+        console.error('Student record PDF export failed:', error);
+        alert('Student record PDF export failed. Please check student photos and try again.');
+    } finally {
+        recordSheets.remove();
+        if (button) { button.disabled = false; button.innerHTML = '<i class="fas fa-file-pdf"></i> Export PDF'; }
+    }
 };
 
 window.filterAdmitStudents = (className) => {

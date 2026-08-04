@@ -1598,6 +1598,10 @@ input:checked+.slider:before {
     padding: 11px 12px;
     font-size: 13px;
     font-weight: 600;
+    -webkit-user-select: none;
+    user-select: none;
+    caret-color: transparent;
+    touch-action: manipulation;
 }
 
 #dashboard-wrapper .menu-item i {
@@ -2312,7 +2316,7 @@ body.force-desktop {
     }
 }
 
-/* STUDENT RECORDS EXPORT CENTER */
+/* STUDENT RECORD CENTER */
 .export-records-header {
     display: flex;
     align-items: center;
