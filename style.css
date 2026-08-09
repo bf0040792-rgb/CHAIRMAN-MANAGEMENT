@@ -2532,3 +2532,50 @@ img[src*="signature"],
     mix-blend-mode: multiply !important;
     background-color: transparent !important;
 }
+
+/* Student Portal: responsive real-data module workspace */
+.student-module-shell { max-width:980px; margin:0 auto; padding:4px 0 24px; }
+.student-module-toolbar { display:flex; align-items:flex-start; gap:14px; margin-bottom:18px; }
+.student-module-heading { flex:1; min-width:0; }
+.student-module-heading h2 { margin:2px 0 4px; color:#102a56; font-size:clamp(22px,3vw,30px); font-weight:800; }
+.student-module-heading p { color:#64748b; font-size:13px; margin:0; }
+.student-module-kicker { color:#2563eb; font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+.student-back-btn,.student-icon-btn,.student-text-btn { min-height:42px; border:1px solid #dbe4f0; border-radius:10px; background:#fff; color:#1e3a72; padding:10px 13px; cursor:pointer; font-weight:700; }
+.student-back-btn { display:inline-flex; align-items:center; gap:8px; }
+.student-icon-btn { width:42px; padding:10px; }
+.student-back-btn:hover,.student-icon-btn:hover,.student-text-btn:hover { background:#eff6ff; border-color:#93c5fd; }
+.student-module-content { min-width:0; }
+.student-state { min-height:190px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; border:1px dashed #cbd5e1; border-radius:16px; background:#f8fafc; text-align:center; padding:24px; color:#64748b; }
+.student-state i { font-size:32px; color:#94a3b8; }
+.student-state h3 { margin:0; color:#334155; font-size:16px; }
+.student-state p { margin:0; font-size:13px; }
+.student-state-error i { color:#dc2626; }
+.student-profile-card { display:flex; gap:22px; align-items:flex-start; padding:22px; border-radius:16px; background:#fff; box-shadow:0 8px 25px rgba(15,23,42,.07); }
+.student-profile-photo { width:112px; height:140px; object-fit:cover; border-radius:12px; border:1px solid #dbe4f0; background:#f8fafc; }
+.student-detail-grid { flex:1; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.student-detail-grid div { padding:12px; border:1px solid #edf2f7; border-radius:10px; background:#f8fafc; }
+.student-detail-grid span { display:block; color:#64748b; font-size:11px; margin-bottom:4px; }
+.student-detail-grid strong { display:block; color:#1e293b; font-size:14px; overflow-wrap:anywhere; }
+.student-record-list { display:grid; gap:12px; }
+.student-record-card,.student-history-item { display:flex; align-items:center; gap:14px; justify-content:space-between; padding:16px; background:#fff; border:1px solid #e6edf5; border-radius:14px; box-shadow:0 4px 14px rgba(15,23,42,.04); }
+.student-record-card h3 { margin:0 0 5px; color:#1e3a72; font-size:15px; }
+.student-record-card p,.student-history-item p { margin:0 0 5px; color:#475569; font-size:13px; white-space:pre-wrap; }
+.student-record-card small,.student-history-item small { color:#94a3b8; font-size:11px; }
+.student-action-link { flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; min-height:38px; padding:8px 12px; border:0; border-radius:9px; background:#2563eb; color:#fff; text-decoration:none; cursor:pointer; font-weight:700; font-size:12px; }
+.student-history-block { margin-top:24px; padding-top:20px; border-top:1px solid #e5e7eb; }
+.student-history-heading { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+.student-history-heading h4 { margin:0; color:#1e3a72; }
+.student-history-item { align-items:flex-start; margin-bottom:10px; flex-wrap:wrap; }
+.student-history-item > div { flex:1; min-width:180px; }
+.student-history-item strong { color:#1e3a72; }
+.student-status-badge { border-radius:999px; padding:5px 10px; background:#eff6ff; color:#1d4ed8; font-size:11px; font-weight:800; }
+.student-reply { flex-basis:100%; padding:10px; border-left:3px solid #2563eb; background:#eff6ff; }
+@media (max-width:600px) {
+    .student-module-toolbar { gap:8px; }
+    .student-back-btn span { display:none; }
+    .student-profile-card { flex-direction:column; align-items:stretch; }
+    .student-profile-photo { width:92px; height:116px; }
+    .student-detail-grid { grid-template-columns:1fr; }
+    .student-record-card { align-items:flex-start; flex-direction:column; }
+    .student-action-link { width:100%; }
+}

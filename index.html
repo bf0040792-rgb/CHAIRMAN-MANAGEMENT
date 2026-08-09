@@ -2260,24 +2260,33 @@
                             <i class="fas fa-paper-plane"></i> Submit Complaint
                         </button>
                     </form>
+                    <div class="student-history-block">
+                        <div class="student-history-heading">
+                            <h4><i class="fas fa-clock-rotate-left"></i> Complaint History</h4>
+                            <button type="button" class="student-text-btn" onclick="window.loadStudentComplaintHistory()">Refresh</button>
+                        </div>
+                        <div id="student-complaint-history" aria-live="polite"></div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Generic Placeholder Section for under construction modules -->
-            <div id="student-placeholder-section" class="student-view-section" style="display: none;">
-                <button onclick="openStudentView('student-main-grid')"
-                    class="mb-4 flex items-center gap-2 text-slate-600 font-semibold"><i class="fas fa-arrow-left"></i>
-                    Back to Dashboard</button>
-                <div
-                    class="card p-8 rounded-2xl bg-white shadow-sm border border-gray-100 text-center flex flex-col items-center justify-center h-64">
-                    <i id="placeholder-icon" class="fas fa-tools text-5xl text-gray-300 mb-4"></i>
-                    <h3 id="placeholder-title" class="text-xl font-bold text-gray-700 mb-2">Module Under
-                        Construction
-                    </h3>
-                    <p class="text-sm text-gray-500">This feature is currently being built and will be available
-                        soon.
-                    </p>
+            <!-- Reusable real-data workspace for Student Portal modules -->
+            <div id="student-module-section" class="student-view-section student-module-shell" style="display:none;">
+                <div class="student-module-toolbar">
+                    <button type="button" onclick="openStudentView('student-main-grid')" class="student-back-btn">
+                        <i class="fas fa-arrow-left"></i><span>Dashboard</span>
+                    </button>
+                    <div class="student-module-heading">
+                        <span id="student-module-kicker">Student Portal</span>
+                        <h2 id="student-module-title">Module</h2>
+                        <p id="student-module-subtitle">Your school information, securely scoped to your account.</p>
+                    </div>
+                    <button type="button" id="student-module-refresh" class="student-icon-btn" title="Refresh module" aria-label="Refresh module">
+                        <i class="fas fa-rotate"></i>
+                    </button>
                 </div>
+                <div id="student-module-filters" class="student-module-filters" style="display:none;"></div>
+                <div id="student-module-content" class="student-module-content" aria-live="polite"></div>
             </div>
 
             <!-- Payment Section (hidden by default) -->
@@ -2420,9 +2429,7 @@
                                 <th style="padding: 10px; text-align: center;">Print</th>
                             </tr>
                         </thead>
-                        <tbody id="stu-receipt-table-body">
-                            <!-- Dummy Data populated by JS -->
-                        </tbody>
+                        <tbody id="stu-receipt-table-body"></tbody>
                     </table>
                 </div>
             </div>

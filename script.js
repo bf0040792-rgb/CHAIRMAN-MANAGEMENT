@@ -1,5 +1,5 @@
- import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs, query, where, deleteDoc, serverTimestamp, deleteField, onSnapshot, orderBy, limit, addDoc, writeBatch, increment } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -459,7 +459,7 @@ document.getElementById("doLoginBtn").addEventListener("click", async () => {
     if (!email || !pass) return showLoginScreen("Enter Username and Password");
     btn.innerText = "Verifying...";
     try {
-        await setPersistence(auth, browserSessionPersistence);
+        await setPersistence(auth, browserLocalPersistence);
         await signInWithEmailAndPassword(auth, email, pass);
     } catch (e) {
         btn.innerText = "Login"; showLoginScreen("Invalid Credentials!");
@@ -2388,41 +2388,41 @@ window.exportSelectedStudentsPDF = async () => {
     recordSheets.style.cssText = 'position:absolute;left:-10000px;top:0;width:794px;background:#fff;z-index:-1;';
 
     const pages = [];
-    for (let index = 0; index < selected.length; index += 6) pages.push(selected.slice(index, index + 6));
+    for (let index = 0; index < selected.length; index += 18) pages.push(selected.slice(index, index + 18));
     recordSheets.innerHTML = pages.map((students, pageIndex) => `
-        <section class="student-record-pdf-page" style="position:relative;width:794px;height:1123px;box-sizing:border-box;padding:34px 38px;background:#fff;color:#172033;font-family:Arial,sans-serif;overflow:hidden;">
-            <header style="border-bottom:4px solid ${accent};padding-bottom:15px;margin-bottom:20px;text-align:center;">
-                <h1 style="margin:0;color:${accent};font-size:25px;line-height:1.2;text-transform:uppercase;">${escapeHtml(schoolName)}</h1>
-                <div style="margin-top:7px;color:#475569;font-size:12px;font-weight:700;letter-spacing:1.4px;">STUDENT RECORD • ${escapeHtml(classTitle.toUpperCase())}</div>
+        <section class="student-record-pdf-page" style="position:relative;width:794px;height:1123px;box-sizing:border-box;padding:22px 28px;background:#fff;color:#172033;font-family:Arial,sans-serif;overflow:hidden;">
+            <header style="border-bottom:3px solid ${accent};padding-bottom:8px;margin-bottom:10px;text-align:center;">
+                <h1 style="margin:0;color:${accent};font-size:20px;line-height:1.2;text-transform:uppercase;">${escapeHtml(schoolName)}</h1>
+                <div style="margin-top:4px;color:#475569;font-size:9px;font-weight:700;letter-spacing:1px;">STUDENT RECORD • ${escapeHtml(classTitle.toUpperCase())}</div>
             </header>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px 16px;">
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
                 ${students.map(student => `
-                    <article style="height:285px;box-sizing:border-box;border:2px solid ${accent};border-radius:8px;overflow:hidden;background:#f8fafc;">
-                        <div style="height:8px;background:${accent};"></div>
-                        <div style="display:flex;gap:12px;padding:14px 13px 10px;">
-                            <div style="width:92px;flex:0 0 92px;">
-                                <img src="${escapeHtml(student.photoUrl || 'https://via.placeholder.com/120?text=Photo')}" crossorigin="anonymous" style="display:block;width:92px;height:112px;object-fit:cover;border:1px solid #cbd5e1;border-radius:6px;background:#fff;">
-                                <div style="margin-top:7px;padding:5px 3px;border-radius:5px;background:${accent};color:#fff;text-align:center;font-size:10px;font-weight:700;">${escapeHtml(student.status || 'Approved')}</div>
+                    <article style="height:158px;box-sizing:border-box;border:1.5px solid ${accent};border-radius:5px;overflow:hidden;background:#f8fafc;">
+                        <div style="height:5px;background:${accent};"></div>
+                        <div style="display:flex;gap:7px;padding:7px 7px 4px;">
+                            <div style="width:52px;flex:0 0 52px;">
+                                <img src="${escapeHtml(student.photoUrl || 'https://via.placeholder.com/80?text=Photo')}" crossorigin="anonymous" style="display:block;width:52px;height:64px;object-fit:cover;border:1px solid #cbd5e1;border-radius:3px;background:#fff;">
+                                <div style="margin-top:3px;padding:2px;border-radius:3px;background:${accent};color:#fff;text-align:center;font-size:6.5px;font-weight:700;">${escapeHtml(student.status || 'Approved')}</div>
                             </div>
-                            <div style="min-width:0;flex:1;">
-                                <h2 style="margin:0 0 8px;color:${accent};font-size:16px;line-height:1.25;overflow-wrap:anywhere;">${escapeHtml(student.name || 'N/A')}</h2>
-                                <div style="font-size:11px;line-height:1.75;color:#334155;">
+                            <div style="min-width:0;flex:1;overflow:hidden;">
+                                <h2 style="margin:0 0 3px;color:${accent};font-size:10px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(student.name || 'N/A')}</h2>
+                                <div style="font-size:7px;line-height:1.55;color:#334155;white-space:nowrap;overflow:hidden;">
                                     <div><b>Class:</b> ${escapeHtml(student.class || 'N/A')} &nbsp; <b>Roll:</b> ${escapeHtml(student.rollNo || 'N/A')}</div>
-                                    <div><b>Reg. No:</b> ${escapeHtml(student.regNo || 'N/A')}</div>
+                                    <div style="text-overflow:ellipsis;overflow:hidden;"><b>Reg:</b> ${escapeHtml(student.regNo || 'N/A')}</div>
                                     <div><b>Mobile:</b> ${escapeHtml(student.mobile || 'N/A')}</div>
                                     <div><b>DOB:</b> ${escapeHtml(student.dob || 'N/A')}</div>
                                     <div><b>Gender:</b> ${escapeHtml(student.gender || 'N/A')}</div>
                                 </div>
                             </div>
                         </div>
-                        <div style="margin:0 13px;padding:9px 10px;border-top:1px solid #dbe4ef;background:#fff;font-size:10.5px;line-height:1.65;color:#334155;">
-                            <div><b>Father / Guardian:</b> ${escapeHtml(student.parentage || student.fatherName || 'N/A')}</div>
-                            <div><b>Mother:</b> ${escapeHtml(student.motherName || 'N/A')}</div>
+                        <div style="margin:0 7px;padding:4px 5px;border-top:1px solid #dbe4ef;background:#fff;font-size:6.7px;line-height:1.4;color:#334155;overflow:hidden;">
+                            <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><b>Father:</b> ${escapeHtml(student.parentage || student.fatherName || 'N/A')}</div>
+                            <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><b>Mother:</b> ${escapeHtml(student.motherName || 'N/A')}</div>
                             <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><b>Address:</b> ${escapeHtml(student.address || 'N/A')}</div>
                         </div>
                     </article>`).join('')}
             </div>
-            <footer style="position:absolute;left:38px;right:38px;bottom:23px;display:flex;justify-content:space-between;border-top:1px solid #cbd5e1;padding-top:8px;color:#64748b;font-size:10px;">
+            <footer style="position:absolute;left:28px;right:28px;bottom:12px;display:flex;justify-content:space-between;border-top:1px solid #cbd5e1;padding-top:5px;color:#64748b;font-size:8px;">
                 <span>Generated: ${new Date().toLocaleDateString()}</span>
                 <span>Page ${pageIndex + 1} of ${pages.length}</span>
             </footer>
@@ -4224,31 +4224,129 @@ window.openStudentView = (targetId) => {
     if (targetEl) targetEl.style.display = 'block';
 };
 
+const STUDENT_MODULES = {
+    profile: { title: 'My Profile', subtitle: 'Verified student and school information.', collections: [] },
+    homework: { title: 'Homework', subtitle: 'Homework published for your school and class.', collections: ['homework'] },
+    assignment: { title: 'Assignments', subtitle: 'Assignments and submission status for your account.', collections: ['assignments', 'assignment'] },
+    datesheet: { title: 'DateSheet', subtitle: 'Exam schedules published for your class.', collections: [] },
+    attendance: { title: 'Attendance', subtitle: 'Only your date-wise attendance records are shown.', collections: ['attendance'] },
+    result: { title: 'Result', subtitle: 'Approved academic results for your account.', collections: ['student_marks', 'exam_marks'] },
+    syllabus: { title: 'Syllabus', subtitle: 'Syllabus shared for your school and class.', collections: ['syllabus'] },
+    'study-material': { title: 'Study Material', subtitle: 'Learning resources shared with your class.', collections: ['study_material', 'studyMaterials'] },
+    notifications: { title: 'Notifications', subtitle: 'School announcements and account updates.', collections: ['notifications', 'notices'] },
+    sms: { title: 'SMS History', subtitle: 'Messages addressed to your school account.', collections: ['sms', 'direct_messages'] },
+    circular: { title: 'Circulars', subtitle: 'Official circulars from your school.', collections: ['circulars', 'notices'] },
+    news: { title: 'School News', subtitle: 'News published by your school.', collections: ['news'] },
+    'online-classes': { title: 'Online Classes', subtitle: 'Your class meeting links and instructions.', collections: ['online_classes', 'onlineClasses'] },
+    transport: { title: 'Transport', subtitle: 'Your assigned route and pickup information.', collections: ['student_transport', 'transport_assignments'] },
+    birthday: { title: 'Birthdays', subtitle: 'Upcoming birthdays from your permitted class context.', collections: ['students'] },
+    batchmate: { title: 'Batchmates', subtitle: 'Shareable classmates from your class only.', collections: ['students'] },
+    calendar: { title: 'Calendar Planning', subtitle: 'Relevant academic dates and deadlines.', collections: ['calendar_events', 'events'] },
+    leave: { title: 'Leave Requests', subtitle: 'Apply for leave and track your own requests.', collections: ['leave_requests'] },
+    gatepass: { title: 'Gate Pass', subtitle: 'Submit and track your own gate-pass requests.', collections: ['gate_passes', 'gatepasses'] },
+    complaint: { title: 'Complaints', subtitle: 'Submit and track your own complaints.', collections: ['complaints'] },
+    'social-media': { title: 'Social Media', subtitle: 'Social links configured by your school.', collections: [] }
+};
+
+const studentHtml = value => {
+    const node = document.createElement('span');
+    node.textContent = value == null || value === '' ? 'N/A' : String(value);
+    return node.innerHTML;
+};
+const studentTimestamp = value => {
+    if (!value) return '—';
+    if (typeof value.toDate === 'function') return value.toDate().toLocaleString();
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString();
+};
+const studentId = () => currentStudentUser?.id || currentStudentUser?.regNo || '';
+const studentScope = () => ({ schoolId: currentSchoolId, studentId: studentId(), className: currentStudentUser?.class || '', section: currentStudentUser?.section || '' });
+const studentRecordMatches = (data, scope, personal = false) => {
+    if (!data || data.schoolId !== scope.schoolId) return false;
+    if (!personal) return true;
+    const owner = data.studentId || data.personId || data.studentDocId || data.uid;
+    return owner === scope.studentId || data.mobile === currentStudentUser?.mobile || data.regNo === currentStudentUser?.regNo;
+};
+
+function studentModuleState(message, kind = 'empty') {
+    const icons = { loading: 'fa-spinner fa-spin', error: 'fa-triangle-exclamation', empty: 'fa-folder-open' };
+    return `<div class="student-state student-state-${kind}"><i class="fas ${icons[kind] || icons.empty}"></i><h3>${studentHtml(message)}</h3><p>${kind === 'error' ? 'Please try again after checking your connection.' : 'Published records will appear here when available.'}</p></div>`;
+}
+function renderStudentModuleRows(rows, featureId) {
+    const scope = studentScope();
+    if (featureId === 'profile') {
+        const s = currentStudentUser, school = currentStudentSchoolDoc || {};
+        const fields = [['Student name', s.name], ['Parent / guardian', s.parentage || s.fatherName], ['Class / section', `${s.class || 'N/A'}${s.section ? ` / ${s.section}` : ''}`], ['Roll number', s.rollNo], ['Registration number', s.regNo], ['Date of birth', s.dob], ['Mobile', s.mobile], ['Blood group', s.bloodGroup], ['Emergency contact', s.emergencyNo], ['School', school.schoolName]];
+        return `<div class="student-profile-card">${s.photoUrl ? `<img src="${studentHtml(s.photoUrl)}" alt="Student photo" class="student-profile-photo">` : ''}<div class="student-detail-grid">${fields.map(([label, value]) => `<div><span>${studentHtml(label)}</span><strong>${studentHtml(value)}</strong></div>`).join('')}</div></div>`;
+    }
+    if (featureId === 'birthday' || featureId === 'batchmate') rows = rows.filter(item => item.id !== scope.studentId && item.class === scope.className && (!scope.section || !item.section || item.section === scope.section));
+    if (!rows.length) return studentModuleState('No published records found.');
+    return `<div class="student-record-list">${rows.map(item => {
+        const title = item.title || item.name || item.subject || item.examTerm || item.examName || (featureId === 'attendance' ? `Attendance — ${item.date || 'Date'}` : 'Published record');
+        const detail = item.description || item.body || item.topic || item.routeName || item.status || '';
+        const resultDetail = featureId === 'result' ? `${item.totalObt || 0} / ${item.totalMax || 0} • ${item.examTerm || 'Result'}` : detail;
+        return `<article class="student-record-card"><div><h3>${studentHtml(title)}</h3><p>${studentHtml(resultDetail)}</p><small>${studentHtml(item.subject || item.teacher || item.date || item.createdAt ? `${item.subject || ''} ${item.teacher || ''} ${studentTimestamp(item.date || item.createdAt)}` : '')}</small></div>${item.attachmentUrl || item.fileUrl || item.link || item.meetingLink ? `<a class="student-action-link" href="${studentHtml(item.attachmentUrl || item.fileUrl || item.link || item.meetingLink)}" target="_blank" rel="noopener">Open</a>` : ''}</article>`;
+    }).join('')}</div>`;
+}
+
+async function fetchStudentModuleRecords(featureId) {
+    const scope = studentScope();
+    if (featureId === 'profile' || featureId === 'social-media') return [];
+    if (featureId === 'datesheet') {
+        const snap = await getDoc(doc(db, 'schools', scope.schoolId, 'examSchedules', scope.className));
+        return snap.exists() ? (snap.data().schedule || []).map(item => ({ ...item, schoolId: scope.schoolId })) : [];
+    }
+    // Existing admin schema stores marks in a student-keyed document. Read only that key,
+    // then verify the school through the authenticated student record already returned by login.
+    if (featureId === 'result') {
+        const snap = await getDoc(doc(db, 'student_marks', scope.studentId));
+        if (!snap.exists()) return [];
+        const data = snap.data();
+        if (data.schoolId && data.schoolId !== scope.schoolId) return [];
+        return [{ id: scope.studentId, ...data, schoolId: scope.schoolId }];
+    }
+    // Existing attendance is one school/class/date document with a student-keyed records map.
+    if (featureId === 'attendance') {
+        const snap = await getDocs(query(collection(db, 'attendance'), where('schoolId', '==', scope.schoolId), where('class', '==', scope.className)));
+        return snap.docs.map(d => ({ id: d.id, ...d.data(), status: d.data().records?.[scope.studentId] })).filter(item => item.status);
+    }
+    const module = STUDENT_MODULES[featureId];
+    for (const name of module?.collections || []) {
+        try {
+            const snap = await getDocs(query(collection(db, name), where('schoolId', '==', scope.schoolId)));
+            const records = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            const personal = ['attendance', 'result', 'sms', 'leave', 'gatepass', 'complaint', 'fee-receipt', 'transport', 'assignment'].includes(featureId);
+            const filtered = records.filter(record => studentRecordMatches(record, scope, personal));
+            if (filtered.length || name === module.collections[module.collections.length - 1]) return filtered;
+        } catch (error) { if (name === module.collections[module.collections.length - 1]) throw error; }
+    }
+    return [];
+}
+
+window.openStudentDataModule = async featureId => {
+    const feature = studentFeatures.find(item => item.id === featureId), module = STUDENT_MODULES[featureId];
+    if (!feature || !module) return;
+    window.openStudentView('student-module-section');
+    document.getElementById('student-module-title').textContent = module.title;
+    document.getElementById('student-module-subtitle').textContent = module.subtitle;
+    const content = document.getElementById('student-module-content');
+    content.innerHTML = featureId === 'profile' ? renderStudentModuleRows([], featureId) : studentModuleState('Loading records…', 'loading');
+    const refresh = document.getElementById('student-module-refresh');
+    refresh.onclick = () => window.openStudentDataModule(featureId);
+    try { content.innerHTML = renderStudentModuleRows(await fetchStudentModuleRecords(featureId), featureId); }
+    catch (error) { console.error(`Student ${featureId} module failed`, error); content.innerHTML = studentModuleState('Unable to load this module.', 'error'); }
+};
+
 window.handleStudentFeatureClick = (featureId) => {
     const key = getStudentFeatureToggleKey(featureId);
-    if (window.currentFeatureSettings?.student && window.currentFeatureSettings.student[key] === false) {
-        showCompanyRestrictedAlert();
-        return;
-    }
+    if (window.currentFeatureSettings?.student && window.currentFeatureSettings.student[key] === false) { showCompanyRestrictedAlert(); return; }
     switch (featureId) {
         case 'fee': window.showStudentPaymentSection(); break;
         case 'idcard': window.openStudentView('student-idcard-section'); break;
         case 'admit': window.openStudentView('student-admitcard-section'); break;
         case 'fee-receipt': window.showStudentReceiptsSection(); break;
-        case 'complaint': window.openStudentView('student-complaint-section'); break;
-        default:
-            const feature = studentFeatures.find(f => f.id === featureId);
-            if (feature) {
-                document.getElementById("placeholder-title").innerText = `${feature.title} Module Under Construction`;
-                window.openStudentView('student-placeholder-section');
-            } else {
-                const toast = document.createElement('div');
-                toast.className = 'fixed top-4 right-4 bg-[#1E3A8A] text-white px-5 py-3 rounded-xl shadow-lg z-[9999] text-sm font-medium';
-                toast.style.fontFamily = 'Inter, sans-serif';
-                toast.innerText = '🚀 Coming Soon!';
-                document.body.appendChild(toast);
-                setTimeout(() => toast.remove(), 2000);
-            }
+        case 'complaint': window.openStudentView('student-complaint-section'); window.loadStudentComplaintHistory(); break;
+        default: window.openStudentDataModule(featureId);
     }
 };
 
@@ -4280,6 +4378,7 @@ window.submitStudentComplaint = async (e) => {
 
         alert("Complaint submitted successfully!");
         e.target.reset();
+        await window.loadStudentComplaintHistory();
         window.openStudentView('student-main-grid');
     } catch (err) {
         console.error("Error submitting complaint:", err);
@@ -4290,34 +4389,46 @@ window.submitStudentComplaint = async (e) => {
     }
 };
 
-window.showStudentReceiptsSection = () => {
+window.loadStudentComplaintHistory = async () => {
+    const target = document.getElementById('student-complaint-history');
+    if (!target || !currentStudentUser || !currentSchoolId) return;
+    target.innerHTML = studentModuleState('Loading complaint history…', 'loading');
+    try {
+        const scope = studentScope();
+        const snap = await getDocs(query(collection(db, 'complaints'), where('schoolId', '==', scope.schoolId), where('studentId', '==', scope.studentId)));
+        const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        target.innerHTML = items.length ? items.map(item => `<article class="student-history-item"><div><strong>${studentHtml(item.subject)}</strong><p>${studentHtml(item.description)}</p><small>${studentHtml(studentTimestamp(item.timestamp))}</small></div><span class="student-status-badge">${studentHtml(item.status || 'Pending')}</span>${item.chairmanReply ? `<p class="student-reply"><b>Response:</b> ${studentHtml(item.chairmanReply)}</p>` : ''}</article>`).join('') : studentModuleState('No complaints submitted yet.');
+    } catch (error) {
+        console.error('Complaint history failed', error);
+        target.innerHTML = studentModuleState('Unable to load complaint history.', 'error');
+    }
+};
+
+window.showStudentReceiptsSection = async () => {
     window.openStudentView('student-receipt-section');
-    const tbody = document.getElementById("stu-receipt-table-body");
-
-    // Dummy Data
-    const dummyReceipts = [
-        { recNo: "REC-2026-001", date: "05-Apr-2026", period: "April", mode: "UPI", total: 1000, paid: 1000, due: 0 },
-        { recNo: "REC-2026-054", date: "10-May-2026", period: "May", mode: "Cash", total: 1000, paid: 1000, due: 0 },
-        { recNo: "REC-2026-102", date: "02-Jun-2026", period: "June", mode: "Bank Transfer", total: 1000, paid: 1000, due: 0 }
-    ];
-
-    let html = "";
-    dummyReceipts.forEach(r => {
-        html += `
-        <tr style="border-bottom: 1px solid #f1f5f9;">
-            <td style="padding: 12px; font-weight:bold; color:#1E3A8A;">${r.recNo}</td>
-            <td style="padding: 12px;">${r.date}</td>
-            <td style="padding: 12px;">${r.period}</td>
-            <td style="padding: 12px;">${r.mode}</td>
-            <td style="padding: 12px;">₹${r.total}</td>
-            <td style="padding: 12px; color:#10b981;">₹${r.paid}</td>
-            <td style="padding: 12px; color:#e53e3e;">₹${r.due}</td>
-            <td style="padding: 12px; text-align: center;">
-                <button class="action-btn" style="background:#e2e8f0; color:#3182ce; padding:5px 10px; border-radius:5px;" onclick="alert('Print functionality coming soon!')"><i class="fas fa-print"></i></button>
-            </td>
-        </tr>`;
-    });
-    tbody.innerHTML = html;
+    const tbody = document.getElementById('stu-receipt-table-body');
+    if (!tbody) return;
+    tbody.innerHTML = `<tr><td colspan="8">${studentModuleState('Loading receipts…', 'loading')}</td></tr>`;
+    try {
+        const scope = studentScope();
+        const snap = await getDocs(query(collection(db, 'transactions'), where('schoolId', '==', scope.schoolId), where('type', '==', 'Fee')));
+        const receipts = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(item => studentRecordMatches(item, scope, true));
+        window.studentReceiptCache = receipts;
+        tbody.innerHTML = receipts.length ? receipts.map(r => `<tr>
+            <td>${studentHtml(r.receiptNo || r.recNo || r.id)}</td><td>${studentHtml(r.date || studentTimestamp(r.createdAt))}</td>
+            <td>${studentHtml(r.period || r.feePeriod || '—')}</td><td>${studentHtml(r.mode || '—')}</td>
+            <td>₹${Number(r.total || r.amount || 0).toLocaleString('en-IN')}</td><td>₹${Number(r.paid || r.amount || 0).toLocaleString('en-IN')}</td>
+            <td>₹${Number(r.due || 0).toLocaleString('en-IN')}</td><td><button class="student-action-link" onclick="window.printStudentReceipt('${studentHtml(r.id)}')">Print</button></td>
+        </tr>`).join('') : `<tr><td colspan="8">${studentModuleState('No fee receipts found.')}</td></tr>`;
+    } catch (error) { console.error('Student receipts failed', error); tbody.innerHTML = `<tr><td colspan="8">${studentModuleState('Unable to load fee receipts.', 'error')}</td></tr>`; }
+};
+window.printStudentReceipt = id => {
+    const row = (window.studentReceiptCache || []).find(item => item.id === id);
+    if (!row) return alert('Receipt is no longer available. Refresh and try again.');
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return alert('Please allow pop-ups to print the receipt.');
+    printWindow.document.write(`<html><head><title>Fee Receipt</title></head><body><h1>${studentHtml(currentStudentSchoolDoc?.schoolName || 'School')}</h1><h2>Fee Receipt</h2><p>Receipt: ${studentHtml(row.receiptNo || row.recNo || row.id)}</p><p>Student: ${studentHtml(currentStudentUser?.name)}</p><p>Amount: ₹${Number(row.amount || row.paid || 0).toLocaleString('en-IN')}</p><p>Date: ${studentHtml(row.date || studentTimestamp(row.createdAt))}</p><script>window.onload=()=>window.print();</script></body></html>`);
+    printWindow.document.close();
 };
 
 window.initAdmitCardUI = () => {
