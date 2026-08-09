@@ -160,6 +160,21 @@ window.handleStudentFeatureClick = (featureId) => {
     if (featureId === 'admit') return window.openStudentView('student-admitcard-section');
     if (featureId === 'fee-receipt') return window.showStudentReceiptsSection();
     if (featureId === 'complaint') return window.openStudentView('student-complaint-section');
+    
+    // Dispatch to implementation functions
+    if (featureId === 'homework') return window.loadStudentHomework();
+    if (featureId === 'attendance') return window.loadStudentAttendance();
+    if (featureId === 'result') return window.loadStudentResult();
+    if (featureId === 'datesheet') return window.loadStudentDateSheet();
+    if (featureId === 'notifications' || featureId === 'circular' || featureId === 'news') return window.loadStudentNotifications();
+    if (featureId === 'transport') return window.loadStudentTransport();
+    if (featureId === 'leave') return window.loadStudentLeave();
+    if (featureId === 'gatepass') return window.loadStudentGatepass();
+    if (featureId === 'assignment') return window.loadStudentAssignments();
+    if (featureId === 'syllabus') return window.loadStudentSyllabus();
+    if (featureId === 'study-material') return window.loadStudentStudyMaterial();
+    if (featureId === 'online-classes') return window.loadStudentOnlineClasses();
+
     const feature = studentFeatures.find(f => f.id === featureId);
     const title = $('placeholder-title');
     if (title && feature) title.innerText = `${feature.title} Module Under Construction`;
@@ -249,11 +264,38 @@ window.showStudentPaymentSection = () => {
     $('stu-upi-deep-link') && ($('stu-upi-deep-link').href = upiLink);
 };
 
-window.showStudentReceiptsSection = () => {
+window.showStudentReceiptsSection = async () => {
     window.openStudentView('student-receipt-section');
     const tbody = $('stu-receipt-table-body');
     if (!tbody) return;
-    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:16px;">No receipts available.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:16px;">Loading receipts...</td></tr>`;
+    
+    try {
+        const q = query(
+            collection(db, "transactions"), 
+            where("schoolId", "==", currentSchoolId),
+            where("type", "==", "Fee"),
+            where("personId", "==", currentStudentUser.id)
+        );
+        const snap = await getDocs(q);
+        if (snap.empty) {
+            tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:16px; color:#64748b;">No receipts available.</td></tr>`;
+            return;
+        }
+        let html = '';
+        snap.forEach(doc => {
+            const data = doc.data();
+            html += `<tr style="border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 12px;">${data.date || 'N/A'}</td>
+                <td style="padding: 12px; font-weight: bold; color: #10b981;">₹${data.amount || 0}</td>
+                <td style="padding: 12px;"><span style="background: #dcfce7; color: #166534; padding: 4px 8px; border-radius: 6px; font-size: 12px;">Paid (${data.mode || 'Auto'})</span></td>
+            </tr>`;
+        });
+        tbody.innerHTML = html;
+    } catch (err) {
+        console.error("Error fetching receipts:", err);
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:16px; color:#ef4444;">Error loading receipts.</td></tr>`;
+    }
 };
 
 window.submitStudentComplaint = async (event) => {
@@ -275,6 +317,394 @@ window.submitStudentComplaint = async (event) => {
     alert("Complaint submitted successfully.");
     event.target.reset();
     window.openStudentView('student-main-grid');
+};
+
+window.logoutStudent = () => {
+    if (window.unsubStudent) window.unsubStudent();
+    if (window.unsubSchool) window.unsubSchool();
+    if (window.unsubStudentFeatureSettings) window.unsubStudentFeatureSettings();
+    
+    // Fully clear sensitive student state
+    currentStudentUser = null;
+    currentStudentSchoolDoc = null;
+    currentSchoolId = "";
+    window.currentFeatureSettings = {};
+    
+    // Reset all DOM containers to empty strings to prevent data leakage between sessions
+    const containers = [
+        'stu-homework-container', 'stu-attendance-container', 'stu-result-container',
+        'stu-datesheet-container', 'stu-notifications-container', 'stu-transport-container',
+        'stu-leave-container', 'stu-gatepass-container', 'stu-assignment-container',
+        'stu-syllabus-container', 'stu-studymaterial-container', 'stu-onlineclasses-container',
+        'stu-receipt-table-body'
+    ];
+    containers.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = '';
+    });
+
+    $('student-dashboard-wrapper') && ($('student-dashboard-wrapper').style.display = 'none');
+    $('student-login-wrapper') && ($('student-login-wrapper').style.display = 'flex');
+    $('student-login-password') && ($('student-login-password').value = '');
+};
+
+// --- DATA FETCHING & UI RENDERING FUNCTIONS --- //
+
+// Helper for UI loading/empty/error states
+function setContainerState(containerId, state, message = '') {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    if (state === 'loading') {
+        el.innerHTML = `<div class="p-8 text-center text-slate-500"><i class="fas fa-spinner fa-spin text-2xl mb-2"></i><p>Loading data...</p></div>`;
+    } else if (state === 'empty') {
+        el.innerHTML = `<div class="p-8 text-center text-slate-500 bg-slate-50 rounded-xl border border-slate-100"><i class="fas fa-folder-open text-3xl mb-3 text-slate-300"></i><p>${message || 'No records found.'}</p></div>`;
+    } else if (state === 'error') {
+        el.innerHTML = `<div class="p-8 text-center text-red-500 bg-red-50 rounded-xl border border-red-100"><i class="fas fa-exclamation-triangle text-3xl mb-3 opacity-70"></i><p>${message || 'Failed to load data.'}</p></div>`;
+    }
+}
+
+// Helper query function ensuring schoolId isolation
+async function fetchScopedData(colName, additionalWheres = []) {
+    if (!currentSchoolId) throw new Error("Unauthenticated request blocked.");
+    const conditions = [where("schoolId", "==", currentSchoolId), ...additionalWheres];
+    const q = query(collection(db, colName), ...conditions);
+    const snap = await getDocs(q);
+    const results = [];
+    snap.forEach(doc => results.push({ id: doc.id, ...doc.data() }));
+    return results;
+}
+
+window.loadStudentHomework = async () => {
+    window.openStudentView('student-homework-section');
+    setContainerState('stu-homework-container', 'loading');
+    try {
+        const data = await fetchScopedData('homework', [where('class', '==', currentStudentUser.class)]);
+        if (data.length === 0) return setContainerState('stu-homework-container', 'empty', 'There is no homework assigned for you right now.');
+        
+        let html = '';
+        data.forEach(hw => {
+            html += `<div class="p-4 border border-gray-200 rounded-xl bg-gray-50 flex flex-col gap-2">
+                <div class="flex justify-between items-start">
+                    <span class="font-bold text-[#1E3A8A] text-lg">${hw.subject || 'Subject'}</span>
+                    <span class="text-xs font-semibold text-gray-500 bg-gray-200 px-2 py-1 rounded">Due: ${hw.dueDate || 'N/A'}</span>
+                </div>
+                <h4 class="font-semibold text-gray-800">${hw.title || 'Untitled Homework'}</h4>
+                <p class="text-sm text-gray-600">${hw.description || 'No description provided.'}</p>
+                <div class="text-xs text-gray-500 mt-2">Assigned by: ${hw.teacherName || 'Teacher'}</div>
+            </div>`;
+        });
+        document.getElementById('stu-homework-container').innerHTML = html;
+    } catch (e) {
+        setContainerState('stu-homework-container', 'error');
+    }
+};
+
+window.loadStudentAttendance = async () => {
+    window.openStudentView('student-attendance-section');
+    setContainerState('stu-attendance-container', 'loading');
+    try {
+        const data = await fetchScopedData('attendance', [where('class', '==', currentStudentUser.class)]);
+        // Strictly filter on client for studentId if array, or specific id
+        const studentRecords = data.filter(d => d.studentId === currentStudentUser.id || (d.students && d.students.includes(currentStudentUser.id)));
+        
+        if (studentRecords.length === 0) return setContainerState('stu-attendance-container', 'empty', 'No attendance records found.');
+        
+        let html = `<div class="p-4 bg-green-50 border border-green-200 rounded-xl mb-4 text-center">
+            <h4 class="text-green-800 font-bold text-lg mb-1">Attendance Records Found</h4>
+            <p class="text-sm text-green-600">Showing recent attendance dates.</p>
+        </div><div class="grid grid-cols-2 md:grid-cols-4 gap-3">`;
+        
+        studentRecords.forEach(att => {
+            html += `<div class="p-3 border border-gray-200 rounded-lg text-center bg-white shadow-sm">
+                <div class="font-bold text-gray-800 text-sm mb-1">${att.date || 'Unknown Date'}</div>
+                <div class="text-xs font-semibold px-2 py-1 rounded inline-block bg-green-100 text-green-700">Present</div>
+            </div>`;
+        });
+        html += `</div>`;
+        document.getElementById('stu-attendance-container').innerHTML = html;
+    } catch (e) {
+        setContainerState('stu-attendance-container', 'error');
+    }
+};
+
+window.loadStudentResult = async () => {
+    window.openStudentView('student-result-section');
+    setContainerState('stu-result-container', 'loading');
+    try {
+        const data = await fetchScopedData('exam_marks', [where('studentId', '==', currentStudentUser.id)]);
+        if (data.length === 0) return setContainerState('stu-result-container', 'empty', 'No result records found for you.');
+        
+        let html = '';
+        data.forEach(res => {
+            html += `<div class="p-4 border border-blue-100 rounded-xl bg-blue-50/30 flex justify-between items-center">
+                <div>
+                    <h4 class="font-bold text-blue-900">${res.examName || 'Exam'}</h4>
+                    <p class="text-sm text-slate-600">Subject: ${res.subject || 'All Subjects'}</p>
+                </div>
+                <div class="text-right">
+                    <div class="text-2xl font-black text-[#1E3A8A]">${res.marksObtained || 0}/${res.totalMarks || 100}</div>
+                    <div class="text-xs font-semibold text-green-600">Status: ${res.status || 'Published'}</div>
+                </div>
+            </div>`;
+        });
+        document.getElementById('stu-result-container').innerHTML = html;
+    } catch (e) {
+        setContainerState('stu-result-container', 'error');
+    }
+};
+
+window.loadStudentDateSheet = async () => {
+    window.openStudentView('student-datesheet-section');
+    setContainerState('stu-datesheet-container', 'loading');
+    try {
+        const data = await fetchScopedData('datesheets', [where('class', '==', currentStudentUser.class)]);
+        if (data.length === 0) return setContainerState('stu-datesheet-container', 'empty', 'No datesheet currently published for your class.');
+        
+        let html = '';
+        data.forEach(ds => {
+            html += `<div class="p-4 border border-gray-200 rounded-xl flex justify-between items-center shadow-sm">
+                <div>
+                    <h4 class="font-bold text-gray-800">${ds.examName || 'Upcoming Exam'}</h4>
+                    <p class="text-sm text-gray-500">Date: ${ds.date || 'TBA'} | Time: ${ds.time || 'TBA'}</p>
+                </div>
+                <div class="font-bold text-[#1E3A8A]">${ds.subject || ''}</div>
+            </div>`;
+        });
+        document.getElementById('stu-datesheet-container').innerHTML = html;
+    } catch (e) {
+        setContainerState('stu-datesheet-container', 'error');
+    }
+};
+
+window.loadStudentNotifications = async () => {
+    window.openStudentView('student-notifications-section');
+    setContainerState('stu-notifications-container', 'loading');
+    try {
+        const data = await fetchScopedData('notices');
+        // Only show notices targeted at 'All', 'Students', or specific class
+        const validNotices = data.filter(n => !n.target || n.target === 'All' || n.target === 'Students' || n.target === currentStudentUser.class);
+        if (validNotices.length === 0) return setContainerState('stu-notifications-container', 'empty', 'No new notifications or circulars.');
+        
+        let html = '';
+        validNotices.forEach(n => {
+            html += `<div class="p-4 border-l-4 border-[#1E3A8A] bg-gray-50 rounded-r-xl shadow-sm">
+                <div class="flex justify-between items-start mb-2">
+                    <h4 class="font-bold text-gray-800">${n.title || 'Notification'}</h4>
+                    <span class="text-xs text-gray-500">${n.date || new Date(n.createdAt?.toDate?.() || Date.now()).toLocaleDateString()}</span>
+                </div>
+                <p class="text-sm text-gray-600 whitespace-pre-wrap">${n.body || n.description || ''}</p>
+            </div>`;
+        });
+        document.getElementById('stu-notifications-container').innerHTML = html;
+    } catch (e) {
+        setContainerState('stu-notifications-container', 'error');
+    }
+};
+
+window.loadStudentTransport = async () => {
+    window.openStudentView('student-transport-section');
+    setContainerState('stu-transport-container', 'loading');
+    try {
+        const data = await fetchScopedData('bus_routes');
+        // If there's a mapped route for this student
+        const route = data.find(r => r.students && r.students.includes(currentStudentUser.id)) || data[0]; // fallback to showing school routes if none explicitly mapped
+        
+        if (!data || data.length === 0) return setContainerState('stu-transport-container', 'empty', 'No transport data mapped to your profile.');
+        
+        const html = `<div class="p-6 bg-yellow-50 border border-yellow-200 rounded-2xl shadow-sm text-center">
+            <i class="fas fa-bus text-4xl text-yellow-500 mb-3"></i>
+            <h4 class="font-bold text-yellow-800 text-xl mb-1">${route?.routeName || 'School Bus Route'}</h4>
+            <p class="text-sm text-yellow-700 mb-4">Vehicle Number: ${route?.vehicleNo || 'TBA'}</p>
+            <div class="grid grid-cols-2 gap-4 text-left">
+                <div class="bg-white p-3 rounded-lg border border-yellow-100">
+                    <div class="text-xs text-gray-500 font-semibold uppercase">Driver Name</div>
+                    <div class="font-bold text-gray-800">${route?.driverName || 'TBA'}</div>
+                </div>
+                <div class="bg-white p-3 rounded-lg border border-yellow-100">
+                    <div class="text-xs text-gray-500 font-semibold uppercase">Driver Contact</div>
+                    <div class="font-bold text-gray-800">${route?.driverContact || 'TBA'}</div>
+                </div>
+            </div>
+        </div>`;
+        document.getElementById('stu-transport-container').innerHTML = html;
+    } catch (e) {
+        setContainerState('stu-transport-container', 'error');
+    }
+};
+
+window.loadStudentLeave = async () => {
+    window.openStudentView('student-leave-section');
+    setContainerState('stu-leave-container', 'loading');
+    try {
+        const data = await fetchScopedData('leave_requests', [where('studentId', '==', currentStudentUser.id)]);
+        if (data.length === 0) return setContainerState('stu-leave-container', 'empty', 'You have not submitted any leave requests yet.');
+        
+        let html = '';
+        data.forEach(req => {
+            const statusColor = req.status === 'Approved' ? 'text-green-600 bg-green-100' : (req.status === 'Rejected' ? 'text-red-600 bg-red-100' : 'text-orange-600 bg-orange-100');
+            html += `<div class="p-3 border border-gray-200 rounded-xl bg-white shadow-sm flex justify-between items-center">
+                <div>
+                    <div class="font-bold text-gray-800 text-sm">${req.startDate} to ${req.endDate}</div>
+                    <div class="text-xs text-gray-500 mt-1">${req.reason}</div>
+                </div>
+                <div class="px-3 py-1 rounded-full text-xs font-bold ${statusColor}">${req.status || 'Pending'}</div>
+            </div>`;
+        });
+        document.getElementById('stu-leave-container').innerHTML = html;
+    } catch (e) {
+        setContainerState('stu-leave-container', 'error');
+    }
+};
+
+window.submitStudentLeave = async (e) => {
+    e.preventDefault();
+    if (!currentStudentUser || !currentSchoolId) return alert("Session expired.");
+    const start = $('leave-start').value;
+    const end = $('leave-end').value;
+    const reason = $('leave-reason').value.trim();
+    if (!start || !end || !reason) return alert("Fill all fields.");
+    try {
+        await addDoc(collection(db, "leave_requests"), {
+            schoolId: currentSchoolId,
+            studentId: currentStudentUser.id,
+            studentName: currentStudentUser.name,
+            class: currentStudentUser.class,
+            startDate: start, endDate: end, reason,
+            status: "Pending", createdAt: serverTimestamp()
+        });
+        alert("Leave request submitted successfully.");
+        e.target.reset();
+        loadStudentLeave();
+    } catch (err) {
+        alert("Failed to submit request.");
+    }
+};
+
+window.loadStudentGatepass = async () => {
+    window.openStudentView('student-gatepass-section');
+    setContainerState('stu-gatepass-container', 'loading');
+    try {
+        const data = await fetchScopedData('gate_passes', [where('studentId', '==', currentStudentUser.id)]);
+        if (data.length === 0) return setContainerState('stu-gatepass-container', 'empty', 'No gate passes requested.');
+        
+        let html = '';
+        data.forEach(req => {
+            const statusColor = req.status === 'Approved' ? 'text-green-600 bg-green-100' : (req.status === 'Rejected' ? 'text-red-600 bg-red-100' : 'text-gray-600 bg-gray-100');
+            html += `<div class="p-3 border border-gray-200 rounded-xl bg-white shadow-sm flex justify-between items-center">
+                <div>
+                    <div class="font-bold text-gray-800 text-sm">${new Date(req.dateTime).toLocaleString()}</div>
+                    <div class="text-xs text-gray-500 mt-1">Reason: ${req.reason}</div>
+                </div>
+                <div class="px-3 py-1 rounded-full text-xs font-bold ${statusColor}">${req.status || 'Pending'}</div>
+            </div>`;
+        });
+        document.getElementById('stu-gatepass-container').innerHTML = html;
+    } catch (e) {
+        setContainerState('stu-gatepass-container', 'error');
+    }
+};
+
+window.submitStudentGatepass = async (e) => {
+    e.preventDefault();
+    if (!currentStudentUser || !currentSchoolId) return alert("Session expired.");
+    const time = $('gatepass-time').value;
+    const reason = $('gatepass-reason').value.trim();
+    if (!time || !reason) return alert("Fill all fields.");
+    try {
+        await addDoc(collection(db, "gate_passes"), {
+            schoolId: currentSchoolId,
+            studentId: currentStudentUser.id,
+            studentName: currentStudentUser.name,
+            class: currentStudentUser.class,
+            dateTime: time, reason,
+            status: "Pending", createdAt: serverTimestamp()
+        });
+        alert("Gate pass request submitted successfully.");
+        e.target.reset();
+        loadStudentGatepass();
+    } catch (err) {
+        alert("Failed to submit gate pass.");
+    }
+};
+
+window.loadStudentAssignments = async () => {
+    window.openStudentView('student-assignment-section');
+    setContainerState('stu-assignment-container', 'loading');
+    try {
+        const data = await fetchScopedData('assignments', [where('class', '==', currentStudentUser.class)]);
+        if (data.length === 0) return setContainerState('stu-assignment-container', 'empty', 'No assignments published for your class.');
+        let html = '';
+        data.forEach(a => {
+            html += `<div class="p-4 border border-purple-200 bg-purple-50 rounded-xl shadow-sm">
+                <div class="flex justify-between font-bold text-purple-900 mb-1"><span>${a.subject || 'Subject'}</span> <span class="text-xs bg-white px-2 py-1 rounded text-purple-700">Deadline: ${a.deadline || 'N/A'}</span></div>
+                <h4 class="font-semibold text-gray-800 text-sm">${a.title || 'Assignment'}</h4>
+                <p class="text-xs text-gray-600 mt-2">${a.description || 'No description provided.'}</p>
+            </div>`;
+        });
+        document.getElementById('stu-assignment-container').innerHTML = html;
+    } catch (e) {
+        setContainerState('stu-assignment-container', 'error');
+    }
+};
+
+window.loadStudentSyllabus = async () => {
+    window.openStudentView('student-syllabus-section');
+    setContainerState('stu-syllabus-container', 'loading');
+    try {
+        const data = await fetchScopedData('syllabus', [where('class', '==', currentStudentUser.class)]);
+        if (data.length === 0) return setContainerState('stu-syllabus-container', 'empty', 'Syllabus not available yet.');
+        let html = '';
+        data.forEach(s => {
+            html += `<div class="p-4 border border-gray-200 rounded-xl shadow-sm flex items-center justify-between">
+                <div><h4 class="font-bold text-gray-800">${s.subject}</h4><p class="text-xs text-gray-500">Class ${s.class}</p></div>
+                ${s.fileUrl ? `<a href="${s.fileUrl}" target="_blank" class="px-3 py-1 bg-blue-600 text-white rounded font-semibold text-xs"><i class="fas fa-download"></i> View</a>` : ''}
+            </div>`;
+        });
+        document.getElementById('stu-syllabus-container').innerHTML = html;
+    } catch (e) {
+        setContainerState('stu-syllabus-container', 'error');
+    }
+};
+
+window.loadStudentStudyMaterial = async () => {
+    window.openStudentView('student-studymaterial-section');
+    setContainerState('stu-studymaterial-container', 'loading');
+    try {
+        const data = await fetchScopedData('study_materials', [where('class', '==', currentStudentUser.class)]);
+        if (data.length === 0) return setContainerState('stu-studymaterial-container', 'empty', 'No study materials available.');
+        let html = '';
+        data.forEach(s => {
+            html += `<div class="p-4 border border-gray-200 rounded-xl shadow-sm">
+                <h4 class="font-bold text-gray-800">${s.title}</h4>
+                <p class="text-xs text-gray-500 mb-2">${s.subject || ''}</p>
+                ${s.link ? `<a href="${s.link}" target="_blank" class="text-blue-600 text-sm font-semibold underline">Open Material <i class="fas fa-external-link-alt ml-1"></i></a>` : ''}
+            </div>`;
+        });
+        document.getElementById('stu-studymaterial-container').innerHTML = html;
+    } catch (e) {
+        setContainerState('stu-studymaterial-container', 'error');
+    }
+};
+
+window.loadStudentOnlineClasses = async () => {
+    window.openStudentView('student-onlineclasses-section');
+    setContainerState('stu-onlineclasses-container', 'loading');
+    try {
+        const data = await fetchScopedData('online_classes', [where('class', '==', currentStudentUser.class)]);
+        if (data.length === 0) return setContainerState('stu-onlineclasses-container', 'empty', 'No online classes scheduled for today.');
+        let html = '';
+        data.forEach(c => {
+            html += `<div class="p-4 border border-teal-200 bg-teal-50 rounded-xl shadow-sm text-center">
+                <i class="fas fa-video text-3xl text-teal-600 mb-2"></i>
+                <h4 class="font-bold text-teal-900">${c.subject || 'Live Class'}</h4>
+                <p class="text-sm text-teal-700 mb-3">Time: ${c.time || 'Scheduled'}</p>
+                ${c.link ? `<a href="${c.link}" target="_blank" class="inline-block px-4 py-2 bg-teal-600 text-white rounded-lg font-bold text-sm hover:bg-teal-700"><i class="fas fa-play mr-1"></i> Join Class</a>` : ''}
+            </div>`;
+        });
+        document.getElementById('stu-onlineclasses-container').innerHTML = html;
+    } catch (e) {
+        setContainerState('stu-onlineclasses-container', 'error');
+    }
 };
 
 window.logoutStudent = () => {
