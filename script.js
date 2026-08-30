@@ -1,24 +1,11 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs, query, where, deleteDoc, serverTimestamp, deleteField, onSnapshot, orderBy, limit, addDoc, writeBatch, increment } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+﻿import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence, getFirestore, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc, collection, query, where, orderBy, limit, onSnapshot, writeBatch, serverTimestamp, deleteField, increment, initializeApp } from "./supabase-adapter.js";
 
-const firebaseConfig = {
-    apiKey: "AIzaSyBUAoXX64MTKrhMiRKd9oJPnaT0j60SPdY",
-    authDomain: "admin-panel-17e6a.firebaseapp.com",
-    databaseURL: "https://admin-panel-17e6a-default-rtdb.firebaseio.com",
-    projectId: "admin-panel-17e6a",
-    storageBucket: "admin-panel-17e6a.firebasestorage.app",
-    messagingSenderId: "519315316570",
-    appId: "1:519315316570:web:1448a0936e9a102d849d63"
-};
+const auth = getAuth();
+const db = getFirestore();
+const secondaryAuth = getAuth();
+
 
 window.portalModuleLoaded = true;
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp");
-const secondaryAuth = getAuth(secondaryApp);
 
 let currentSchoolId = ""; let currentSchoolName = ""; let currentSignatureUrl = ""; let currentThemeColor = "#1e3c72"; let currentSecondaryColor = "#ffffff"; let currentTemplateStyle = "wave"; let currentIdTemplateUrl = "";
 let currentSchoolNameColor = "#ffffff"; let currentStudentNameColor = "#d32f2f"; let currentDetailsColor = "#333333"; let currentPhotoBgColor = "#ffffff";
@@ -266,7 +253,7 @@ if (urlParams.get('impersonate') === 'true') {
 if (urlParams.get('isGhost') === 'true') {
     window.isGhost = true;
     sessionStorage.setItem("isGhost", "true");
-    console.log("👻 GHOST MODE ACTIVE: Database audit logging bypassed.");
+    console.log("ðŸ‘» GHOST MODE ACTIVE: Database audit logging bypassed.");
 } else {
     window.isGhost = sessionStorage.getItem("isGhost") === "true";
 }
@@ -1125,7 +1112,7 @@ window.downloadTransferReceipt = (transferId) => {
             ["To School", tr.toSchoolName || "N/A"],
             ["Transfer Date", tr.transferDate || "N/A"],
             ["Reason", tr.reason || "N/A"],
-            ["Remarks", tr.remarks || "—"],
+            ["Remarks", tr.remarks || "â€”"],
             ["Status", tr.status || "N/A"]
         ];
         pdf.setFontSize(11);
@@ -1232,7 +1219,7 @@ window.initDashboardChart = () => {
     });
 
     if (document.getElementById("count-revenue")) {
-        document.getElementById("count-revenue").innerText = "₹ " + (totalIncome - totalExpenses);
+        document.getElementById("count-revenue").innerText = "â‚¹ " + (totalIncome - totalExpenses);
     }
 
     const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 400);
@@ -1244,7 +1231,7 @@ window.initDashboardChart = () => {
         data: {
             labels: ['Total Income', 'Total Expenses'],
             datasets: [{
-                label: 'Financial Analytics (₹)',
+                label: 'Financial Analytics (â‚¹)',
                 data: [totalIncome, totalExpenses],
                 backgroundColor: gradient,
                 borderColor: '#00F0FF',
@@ -1720,7 +1707,7 @@ async function loadInbox() {
                         <div class="gmail-avatar">${initial}</div>
                         <div class="gmail-content">
                             <div class="gmail-header">
-                                <div class="gmail-sender">${sender} ${isUnread ? '<span style="color:red;">●</span>' : ''}</div>
+                                <div class="gmail-sender">${sender} ${isUnread ? '<span style="color:red;">â—</span>' : ''}</div>
                                 <div class="gmail-date">${ts}</div>
                             </div>
                             <div class="gmail-subject">${msg.title || 'No Subject'}</div>
@@ -1755,7 +1742,7 @@ async function loadSentMail() {
                         <div class="gmail-avatar" style="background:#8e44ad;">${initial}</div>
                         <div class="gmail-content">
                             <div class="gmail-header">
-                                <div class="gmail-sender">To: ${toWho} ${isUnreadReply ? '<span style="color:red;">●</span>' : ''}</div>
+                                <div class="gmail-sender">To: ${toWho} ${isUnreadReply ? '<span style="color:red;">â—</span>' : ''}</div>
                                 <div class="gmail-date">${ts}</div>
                             </div>
                             <div class="gmail-subject">${msg.title || 'No Subject'}</div>
@@ -1919,9 +1906,9 @@ async function loadTransactions() {
             if (t.type === "Expense") totalExpenses += Number(t.amount);
         });
 
-        document.getElementById("summary-fees").innerText = "₹ " + totalFees;
-        document.getElementById("summary-salaries").innerText = "₹ " + totalSalaries;
-        document.getElementById("summary-balance").innerText = "₹ " + (totalFees - (totalSalaries + totalExpenses));
+        document.getElementById("summary-fees").innerText = "â‚¹ " + totalFees;
+        document.getElementById("summary-salaries").innerText = "â‚¹ " + totalSalaries;
+        document.getElementById("summary-balance").innerText = "â‚¹ " + (totalFees - (totalSalaries + totalExpenses));
 
         if (window.initDashboardChart) window.initDashboardChart();
         window.renderTransactionsTable();
@@ -2393,7 +2380,7 @@ window.exportSelectedStudentsPDF = async () => {
         <section class="student-record-pdf-page" style="position:relative;width:794px;height:1123px;box-sizing:border-box;padding:22px 28px;background:#fff;color:#172033;font-family:Arial,sans-serif;overflow:hidden;">
             <header style="border-bottom:3px solid ${accent};padding-bottom:8px;margin-bottom:10px;text-align:center;">
                 <h1 style="margin:0;color:${accent};font-size:20px;line-height:1.2;text-transform:uppercase;">${escapeHtml(schoolName)}</h1>
-                <div style="margin-top:4px;color:#475569;font-size:9px;font-weight:700;letter-spacing:1px;">STUDENT RECORD • ${escapeHtml(classTitle.toUpperCase())}</div>
+                <div style="margin-top:4px;color:#475569;font-size:9px;font-weight:700;letter-spacing:1px;">STUDENT RECORD â€¢ ${escapeHtml(classTitle.toUpperCase())}</div>
             </header>
             <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
                 ${students.map(student => `
@@ -2501,7 +2488,7 @@ function renderAdmitCardStudentsTable(className = "ALL", searchTerm = null, stat
             <td><img src="${dt.photoUrl || 'https://via.placeholder.com/100'}" class="img-circle"></td>
             <td><strong style="display:block; font-size:13px;">${dt.name || 'N/A'} ${locked ? '<i class="fas fa-lock" style="color:#e53e3e"></i>' : ''}</strong><span style="font-size:12px; display:block;"><b>P:</b> ${(dt.parentage || dt.fatherName) || 'N/A'}</span></td>
             <td><span style="background:#eaf4ff; color:#2c7be5; padding:3px 8px; border-radius:12px; font-size:12px; font-weight:bold;">Class: ${dt.class || 'N/A'} (Roll: ${dt.rollNo || 'N/A'})</span></td>
-            <td><span style="font-size:13px; font-weight:bold; color:#e53e3e;">₹${dt.feeDue || 0}</span></td>
+            <td><span style="font-size:13px; font-weight:bold; color:#e53e3e;">â‚¹${dt.feeDue || 0}</span></td>
             <td style="text-align: center;">${toggleHtml}</td>
             <td><div class="action-btn-group">${actionBtns}</div></td>
         </tr>`;
@@ -4027,7 +4014,7 @@ window.loadTransportRoutes = async () => {
                 <td><strong>${dt.routeName}</strong></td>
                 <td>${dt.driverName}</td>
                 <td>${dt.contact}</td>
-                <td>₹ ${dt.fee}</td>
+                <td>â‚¹ ${dt.fee}</td>
                 <td><button class="action-btn" style="background:#e53e3e; padding:5px 10px;" onclick="deleteBusRoute('${d.id}')"><i class="fas fa-trash"></i></button></td>
             </tr>`;
         });
@@ -4254,7 +4241,7 @@ const studentHtml = value => {
     return node.innerHTML;
 };
 const studentTimestamp = value => {
-    if (!value) return '—';
+    if (!value) return 'â€”';
     if (typeof value.toDate === 'function') return value.toDate().toLocaleString();
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString();
@@ -4282,9 +4269,9 @@ function renderStudentModuleRows(rows, featureId) {
     if (featureId === 'birthday' || featureId === 'batchmate') rows = rows.filter(item => item.id !== scope.studentId && item.class === scope.className && (!scope.section || !item.section || item.section === scope.section));
     if (!rows.length) return studentModuleState('No published records found.');
     return `<div class="student-record-list">${rows.map(item => {
-        const title = item.title || item.name || item.subject || item.examTerm || item.examName || (featureId === 'attendance' ? `Attendance — ${item.date || 'Date'}` : 'Published record');
+        const title = item.title || item.name || item.subject || item.examTerm || item.examName || (featureId === 'attendance' ? `Attendance â€” ${item.date || 'Date'}` : 'Published record');
         const detail = item.description || item.body || item.topic || item.routeName || item.status || '';
-        const resultDetail = featureId === 'result' ? `${item.totalObt || 0} / ${item.totalMax || 0} • ${item.examTerm || 'Result'}` : detail;
+        const resultDetail = featureId === 'result' ? `${item.totalObt || 0} / ${item.totalMax || 0} â€¢ ${item.examTerm || 'Result'}` : detail;
         return `<article class="student-record-card"><div><h3>${studentHtml(title)}</h3><p>${studentHtml(resultDetail)}</p><small>${studentHtml(item.subject || item.teacher || item.date || item.createdAt ? `${item.subject || ''} ${item.teacher || ''} ${studentTimestamp(item.date || item.createdAt)}` : '')}</small></div>${item.attachmentUrl || item.fileUrl || item.link || item.meetingLink ? `<a class="student-action-link" href="${studentHtml(item.attachmentUrl || item.fileUrl || item.link || item.meetingLink)}" target="_blank" rel="noopener">Open</a>` : ''}</article>`;
     }).join('')}</div>`;
 }
@@ -4330,7 +4317,7 @@ window.openStudentDataModule = async featureId => {
     document.getElementById('student-module-title').textContent = module.title;
     document.getElementById('student-module-subtitle').textContent = module.subtitle;
     const content = document.getElementById('student-module-content');
-    content.innerHTML = featureId === 'profile' ? renderStudentModuleRows([], featureId) : studentModuleState('Loading records…', 'loading');
+    content.innerHTML = featureId === 'profile' ? renderStudentModuleRows([], featureId) : studentModuleState('Loading recordsâ€¦', 'loading');
     const refresh = document.getElementById('student-module-refresh');
     refresh.onclick = () => window.openStudentDataModule(featureId);
     try { content.innerHTML = renderStudentModuleRows(await fetchStudentModuleRecords(featureId), featureId); }
@@ -4392,7 +4379,7 @@ window.submitStudentComplaint = async (e) => {
 window.loadStudentComplaintHistory = async () => {
     const target = document.getElementById('student-complaint-history');
     if (!target || !currentStudentUser || !currentSchoolId) return;
-    target.innerHTML = studentModuleState('Loading complaint history…', 'loading');
+    target.innerHTML = studentModuleState('Loading complaint historyâ€¦', 'loading');
     try {
         const scope = studentScope();
         const snap = await getDocs(query(collection(db, 'complaints'), where('schoolId', '==', scope.schoolId), where('studentId', '==', scope.studentId)));
@@ -4408,7 +4395,7 @@ window.showStudentReceiptsSection = async () => {
     window.openStudentView('student-receipt-section');
     const tbody = document.getElementById('stu-receipt-table-body');
     if (!tbody) return;
-    tbody.innerHTML = `<tr><td colspan="8">${studentModuleState('Loading receipts…', 'loading')}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8">${studentModuleState('Loading receiptsâ€¦', 'loading')}</td></tr>`;
     try {
         const scope = studentScope();
         const snap = await getDocs(query(collection(db, 'transactions'), where('schoolId', '==', scope.schoolId), where('type', '==', 'Fee')));
@@ -4416,9 +4403,9 @@ window.showStudentReceiptsSection = async () => {
         window.studentReceiptCache = receipts;
         tbody.innerHTML = receipts.length ? receipts.map(r => `<tr>
             <td>${studentHtml(r.receiptNo || r.recNo || r.id)}</td><td>${studentHtml(r.date || studentTimestamp(r.createdAt))}</td>
-            <td>${studentHtml(r.period || r.feePeriod || '—')}</td><td>${studentHtml(r.mode || '—')}</td>
-            <td>₹${Number(r.total || r.amount || 0).toLocaleString('en-IN')}</td><td>₹${Number(r.paid || r.amount || 0).toLocaleString('en-IN')}</td>
-            <td>₹${Number(r.due || 0).toLocaleString('en-IN')}</td><td><button class="student-action-link" onclick="window.printStudentReceipt('${studentHtml(r.id)}')">Print</button></td>
+            <td>${studentHtml(r.period || r.feePeriod || 'â€”')}</td><td>${studentHtml(r.mode || 'â€”')}</td>
+            <td>â‚¹${Number(r.total || r.amount || 0).toLocaleString('en-IN')}</td><td>â‚¹${Number(r.paid || r.amount || 0).toLocaleString('en-IN')}</td>
+            <td>â‚¹${Number(r.due || 0).toLocaleString('en-IN')}</td><td><button class="student-action-link" onclick="window.printStudentReceipt('${studentHtml(r.id)}')">Print</button></td>
         </tr>`).join('') : `<tr><td colspan="8">${studentModuleState('No fee receipts found.')}</td></tr>`;
     } catch (error) { console.error('Student receipts failed', error); tbody.innerHTML = `<tr><td colspan="8">${studentModuleState('Unable to load fee receipts.', 'error')}</td></tr>`; }
 };
@@ -4427,7 +4414,7 @@ window.printStudentReceipt = id => {
     if (!row) return alert('Receipt is no longer available. Refresh and try again.');
     const printWindow = window.open('', '_blank');
     if (!printWindow) return alert('Please allow pop-ups to print the receipt.');
-    printWindow.document.write(`<html><head><title>Fee Receipt</title></head><body><h1>${studentHtml(currentStudentSchoolDoc?.schoolName || 'School')}</h1><h2>Fee Receipt</h2><p>Receipt: ${studentHtml(row.receiptNo || row.recNo || row.id)}</p><p>Student: ${studentHtml(currentStudentUser?.name)}</p><p>Amount: ₹${Number(row.amount || row.paid || 0).toLocaleString('en-IN')}</p><p>Date: ${studentHtml(row.date || studentTimestamp(row.createdAt))}</p><script>window.onload=()=>window.print();</script></body></html>`);
+    printWindow.document.write(`<html><head><title>Fee Receipt</title></head><body><h1>${studentHtml(currentStudentSchoolDoc?.schoolName || 'School')}</h1><h2>Fee Receipt</h2><p>Receipt: ${studentHtml(row.receiptNo || row.recNo || row.id)}</p><p>Student: ${studentHtml(currentStudentUser?.name)}</p><p>Amount: â‚¹${Number(row.amount || row.paid || 0).toLocaleString('en-IN')}</p><p>Date: ${studentHtml(row.date || studentTimestamp(row.createdAt))}</p><script>window.onload=()=>window.print();</script></body></html>`);
     printWindow.document.close();
 };
 
@@ -4612,9 +4599,9 @@ window.showStudentPaymentSection = () => {
     const totalAmount = Number(currentStudentUser.totalFee || (dueAmount > 0 ? dueAmount + 12000 : 12000));
     const paidAmount = Number(currentStudentUser.paidAmount || (totalAmount - dueAmount));
 
-    document.getElementById("stu-total-fee").innerText = `₹${totalAmount}`;
-    document.getElementById("stu-paid-fee").innerText = `₹${paidAmount}`;
-    document.getElementById("stu-due-fee").innerText = `₹${dueAmount}`;
+    document.getElementById("stu-total-fee").innerText = `â‚¹${totalAmount}`;
+    document.getElementById("stu-paid-fee").innerText = `â‚¹${paidAmount}`;
+    document.getElementById("stu-due-fee").innerText = `â‚¹${dueAmount}`;
 
     // Pie Chart Logic
     const percentagePaid = totalAmount > 0 ? Math.round((paidAmount / totalAmount) * 100) : 0;
@@ -4639,9 +4626,9 @@ window.showStudentPaymentSection = () => {
             html += `
             <tr style="border-bottom: 1px solid #f1f5f9;">
                 <td style="padding: 12px; font-weight:bold;">${month}</td>
-                <td style="padding: 12px;">₹${amt}</td>
-                <td style="padding: 12px; color:#10b981;">₹${paid}</td>
-                <td style="padding: 12px; color:#e53e3e; font-weight:bold;">₹${due}</td>
+                <td style="padding: 12px;">â‚¹${amt}</td>
+                <td style="padding: 12px; color:#10b981;">â‚¹${paid}</td>
+                <td style="padding: 12px; color:#e53e3e; font-weight:bold;">â‚¹${due}</td>
                 <td style="padding: 12px; text-align: center;">${statusIcon}</td>
                 <td style="padding: 12px; text-align: center;">${actionBtn}</td>
             </tr>`;

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -394,7 +394,7 @@
                 <span id="dashboard-role-badge"
                     style="display:none; background:rgba(255,255,255,0.12); color:#fff; border:1px solid rgba(255,255,255,0.18); padding:6px 12px; border-radius:999px; font-size:12px; font-weight:600;">Role:
                     Chairman</span>
-                <label class="device-toggle"><input type="checkbox" id="deviceModeToggle"> 💻 PC Mode</label>
+                <label class="device-toggle"><input type="checkbox" id="deviceModeToggle"> ðŸ’» PC Mode</label>
             </div>
         </div>
 
@@ -500,7 +500,7 @@
                             style="border-bottom-color: #27ae60; cursor: pointer;"
                             onclick="window.openDashboardDetail('finance')">
                             <h3>Total Revenue</h3>
-                            <h2 id="count-revenue" style="color:#27ae60">₹ 0</h2>
+                            <h2 id="count-revenue" style="color:#27ae60">â‚¹ 0</h2>
                             <small>Click to open ledger</small>
                         </div>
                     </div>
@@ -615,7 +615,7 @@
                                         class="fas fa-file-invoice"></i> Generate Marksheets</button>
                                 <button class="action-btn btn-dark"
                                     style="background:#e67e22; padding:5px 10px; font-size:12px;"
-                                    onclick="window.openBulkActionModal('bonafide')">🎓 Generate Bonafide</button>
+                                    onclick="window.openBulkActionModal('bonafide')">ðŸŽ“ Generate Bonafide</button>
                                 <button class="action-btn btn-dark" style="padding:5px 10px; font-size:12px;"
                                     onclick="runDefaulterLockdown()"><i class="fas fa-lock"></i> Auto-Lock
                                     Defaulters</button>
@@ -916,11 +916,11 @@
                                     <option value="12th">12th</option>
                                 </select>
                             </div>
-                            <div class="form-group"><label>Tuition Fee (₹)</label><input type="number"
+                            <div class="form-group"><label>Tuition Fee (â‚¹)</label><input type="number"
                                     id="master_tuition" placeholder="e.g. 1500"></div>
-                            <div class="form-group"><label>Bus Fee (₹)</label><input type="number" id="master_bus"
+                            <div class="form-group"><label>Bus Fee (â‚¹)</label><input type="number" id="master_bus"
                                     placeholder="e.g. 500"></div>
-                            <div class="form-group"><label>Library/Other (₹)</label><input type="number"
+                            <div class="form-group"><label>Library/Other (â‚¹)</label><input type="number"
                                     id="master_other" placeholder="e.g. 200"></div>
                         </div>
                         <button class="submit-btn btn-purple" onclick="saveFeeStructure()"><i class="fas fa-save"></i>
@@ -940,7 +940,7 @@
                                 </select></div>
                             <div class="form-group"><label>Mobile No.</label><input type="text" id="fee_mobile" readonly
                                     style="background:#f4f4f4;"></div>
-                            <div class="form-group"><label>Amount Received (₹)</label><input type="number"
+                            <div class="form-group"><label>Amount Received (â‚¹)</label><input type="number"
                                     id="fee_amount" placeholder="Enter fee amount"></div>
                             <div class="form-group"><label>Payment Mode</label><select id="fee_mode">
                                     <option>Cash</option>
@@ -958,7 +958,7 @@
                             <div class="form-group"><label>Select Staff Member</label><select id="salary_staff">
                                     <option value="">-- Loading Staff --</option>
                                 </select></div>
-                            <div class="form-group"><label>Amount (₹)</label><input type="number" id="salary_amount"
+                            <div class="form-group"><label>Amount (â‚¹)</label><input type="number" id="salary_amount"
                                     placeholder="Enter salary amount"></div>
                             <div class="form-group"><label>Payment Mode</label><select id="salary_mode">
                                     <option>Cash</option>
@@ -975,7 +975,7 @@
                         <div class="form-row">
                             <div class="form-group"><label>Expense Title / Bill</label><input type="text" id="exp_title"
                                     placeholder="e.g. Electricity Bill"></div>
-                            <div class="form-group"><label>Amount Spent (₹)</label><input type="number" id="exp_amount"
+                            <div class="form-group"><label>Amount Spent (â‚¹)</label><input type="number" id="exp_amount"
                                     placeholder="Enter amount"></div>
                             <div class="form-group"><label>Date</label><input type="date" id="exp_date"></div>
                         </div>
@@ -997,17 +997,17 @@
                             <div
                                 style="background:#eaf4ff; padding:15px; border-radius:8px; border-left:4px solid #3b82f6; flex:1; min-width:200px;">
                                 <small style="color:#64748b; font-weight:bold;">Total Collected Fees</small>
-                                <h2 style="margin:5px 0 0 0; color:#1e3c72;" id="summary-fees">₹ 0</h2>
+                                <h2 style="margin:5px 0 0 0; color:#1e3c72;" id="summary-fees">â‚¹ 0</h2>
                             </div>
                             <div
                                 style="background:#fef2f2; padding:15px; border-radius:8px; border-left:4px solid #ef4444; flex:1; min-width:200px;">
                                 <small style="color:#64748b; font-weight:bold;">Total Paid Salaries</small>
-                                <h2 style="margin:5px 0 0 0; color:#b91c1c;" id="summary-salaries">₹ 0</h2>
+                                <h2 style="margin:5px 0 0 0; color:#b91c1c;" id="summary-salaries">â‚¹ 0</h2>
                             </div>
                             <div
                                 style="background:#ecfdf5; padding:15px; border-radius:8px; border-left:4px solid #10b981; flex:1; min-width:200px;">
                                 <small style="color:#64748b; font-weight:bold;">Net Balance</small>
-                                <h2 style="margin:5px 0 0 0; color:#047857;" id="summary-balance">₹ 0</h2>
+                                <h2 style="margin:5px 0 0 0; color:#047857;" id="summary-balance">â‚¹ 0</h2>
                             </div>
                         </div>
 
@@ -1811,7 +1811,7 @@
                             <input type="text" id="transportDriverContact" class="input-premium"
                                 placeholder="Driver Contact No." style="margin-bottom: 10px;">
                             <input type="number" id="transportBusFee" class="input-premium"
-                                placeholder="Monthly Bus Fee (₹)" style="margin-bottom: 10px;">
+                                placeholder="Monthly Bus Fee (â‚¹)" style="margin-bottom: 10px;">
                             <button class="submit-btn" onclick="saveBusRoute()"><i class="fas fa-save"></i> Save
                                 Route</button>
                         </div>
@@ -1824,7 +1824,7 @@
                                             <th>Route</th>
                                             <th>Driver Name</th>
                                             <th>Contact</th>
-                                            <th>Fee (₹)</th>
+                                            <th>Fee (â‚¹)</th>
                                             <th>Action</th>
                                         </tr>
                                     </thead>
@@ -2036,7 +2036,7 @@
                                     Generate Admit Cards</button>
                                 <button id="exam-scheduler-btn" class="action-btn"
                                     style="background:#d97706; padding:5px 10px; font-size:12px;"
-                                    onclick="window.openExamScheduler()">📅 Routine Scheduler</button>
+                                    onclick="window.openExamScheduler()">ðŸ“… Routine Scheduler</button>
                             </div>
                         </div>
 
@@ -2066,7 +2066,7 @@
         <div id="role-footer">System Access: CHAIRMAN AUTHORITY</div>
     </div>
     <!-- ========================================== -->
-    <!-- 🧑‍🏫 STAFF / TEACHER DASHBOARD WRAPPER -->
+    <!-- ðŸ§‘â€ðŸ« STAFF / TEACHER DASHBOARD WRAPPER -->
     <!-- ========================================== -->
     <!-- ========== STUDENT DASHBOARD ========== -->
     <div id="student-dashboard-wrapper" style="display: none; min-height:100vh; background:#f0f4f8;">
@@ -2168,7 +2168,7 @@
                             Total Due Balance</p>
                         <h2
                             style="font-size: 42px; color: #e53e3e; margin: 0; font-family:'Inter',sans-serif; font-weight:800;">
-                            ₹ <span id="stu-due-balance">0</span></h2>
+                            â‚¹ <span id="stu-due-balance">0</span></h2>
                     </div>
                     <button id="stu-show-payment-btn" class="submit-btn"
                         onclick="openStudentView('student-payment-section')"
@@ -2299,13 +2299,13 @@
                     style="display: flex; align-items: center; justify-content: space-between; padding: 25px; border-radius: 16px; background: linear-gradient(135deg, #1E3A8A, #3182ce); color: white; box-shadow: 0 10px 25px rgba(30,58,138,0.2); margin-bottom: 20px;">
                     <div>
                         <p style="margin: 0; font-size: 14px; opacity: 0.9;">Total Fee</p>
-                        <h2 style="margin: 0 0 10px 0; font-size: 28px;" id="stu-total-fee">₹0</h2>
+                        <h2 style="margin: 0 0 10px 0; font-size: 28px;" id="stu-total-fee">â‚¹0</h2>
                         <p style="margin: 0; font-size: 13px; color: #10b981;"><i class="fas fa-check-circle"></i>
                             Paid:
-                            <span id="stu-paid-fee">₹0</span>
+                            <span id="stu-paid-fee">â‚¹0</span>
                         </p>
                         <p style="margin: 5px 0 0 0; font-size: 13px; color: #fecaca;"><i
-                                class="fas fa-exclamation-circle"></i> Due: <span id="stu-due-fee">₹0</span></p>
+                                class="fas fa-exclamation-circle"></i> Due: <span id="stu-due-fee">â‚¹0</span></p>
                     </div>
                     <div style="position: relative; width: 100px; height: 100px;">
                         <div id="stu-fee-pie-chart"
@@ -2376,7 +2376,7 @@
 
                     <form id="student-verification-form" style="max-width: 400px; margin: 0 auto; text-align: left;">
                         <div class="form-group">
-                            <label>Amount Paid (₹)</label>
+                            <label>Amount Paid (â‚¹)</label>
                             <input type="number" id="stu-pay-amount" class="input-premium" required>
                         </div>
                         <div class="form-group">

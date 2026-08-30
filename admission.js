@@ -1,18 +1,9 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, doc, getDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+﻿import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence, getFirestore, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc, collection, query, where, orderBy, limit, onSnapshot, writeBatch, serverTimestamp, deleteField, increment, initializeApp } from "./supabase-adapter.js";
 
-const firebaseConfig = {
-    apiKey: "AIzaSyBUAoXX64MTKrhMiRKd9oJPnaT0j60SPdY",
-    authDomain: "admin-panel-17e6a.firebaseapp.com",
-    databaseURL: "https://admin-panel-17e6a-default-rtdb.firebaseio.com",
-    projectId: "admin-panel-17e6a",
-    storageBucket: "admin-panel-17e6a.firebasestorage.app",
-    messagingSenderId: "519315316570",
-    appId: "1:519315316570:web:1448a0936e9a102d849d63"
-};
+const auth = getAuth();
+const db = getFirestore();
+const secondaryAuth = getAuth();
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
 
 // DOM Elements
 const container = document.getElementById("admission-container");

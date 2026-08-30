@@ -1,18 +1,10 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, doc, getDoc, collection, getDocs, query, where, onSnapshot, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+﻿import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence, getFirestore, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc, collection, query, where, orderBy, limit, onSnapshot, writeBatch, serverTimestamp, deleteField, increment, initializeApp } from "./supabase-adapter.js";
 
-const firebaseConfig = {
-    apiKey: "AIzaSyBUAoXX64MTKrhMiRKd9oJPnaT0j60SPdY",
-    authDomain: "admin-panel-17e6a.firebaseapp.com",
-    databaseURL: "https://admin-panel-17e6a-default-rtdb.firebaseio.com",
-    projectId: "admin-panel-17e6a",
-    storageBucket: "admin-panel-17e6a.firebasestorage.app",
-    messagingSenderId: "519315316570",
-    appId: "1:519315316570:web:1448a0936e9a102d849d63"
-};
+const auth = getAuth();
+const db = getFirestore();
+const secondaryAuth = getAuth();
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+
 const FEATURE_SETTINGS_COLLECTION = "feature_controls";
 
 let currentSchoolId = "";
@@ -287,7 +279,7 @@ window.showStudentReceiptsSection = async () => {
             const data = doc.data();
             html += `<tr style="border-bottom: 1px solid #e2e8f0;">
                 <td style="padding: 12px;">${data.date || 'N/A'}</td>
-                <td style="padding: 12px; font-weight: bold; color: #10b981;">₹${data.amount || 0}</td>
+                <td style="padding: 12px; font-weight: bold; color: #10b981;">â‚¹${data.amount || 0}</td>
                 <td style="padding: 12px;"><span style="background: #dcfce7; color: #166534; padding: 4px 8px; border-radius: 6px; font-size: 12px;">Paid (${data.mode || 'Auto'})</span></td>
             </tr>`;
         });
@@ -727,3 +719,4 @@ document.addEventListener('DOMContentLoaded', () => {
         if (event.key === 'Enter') loginStudent();
     });
 });
+
