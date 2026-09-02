@@ -123,7 +123,7 @@ const writeBatch = () => {
 const onSnapshot = (ref, callback) => {
     if (ref._isDoc) {
         getDoc(ref).then(callback);
-        const channel = supabaseClient.channel('public:' + ref.col + ':' + ref.id)
+        const channel = supabaseClient.channel('public:' + ref.col + ':' + ref.id + ':' + crypto.randomUUID())
             .on('postgres_changes', { event: '*', schema: 'public', table: ref.col, filter: 'id=eq.' + ref.id }, async () => {
                 const snap = await getDoc(ref);
                 callback(snap);
@@ -131,7 +131,7 @@ const onSnapshot = (ref, callback) => {
         return () => supabaseClient.removeChannel(channel);
     } else {
         getDocs(ref).then(callback);
-        const channel = supabaseClient.channel('public:' + ref.col)
+        const channel = supabaseClient.channel('public:' + ref.col + ':' + crypto.randomUUID())
             .on('postgres_changes', { event: '*', schema: 'public', table: ref.col }, async () => {
                 const snap = await getDocs(ref);
                 callback(snap);
