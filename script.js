@@ -561,7 +561,7 @@ onAuthStateChanged(auth, async (user) => {
             }
         } catch (e) {
             document.getElementById('auth-overlay').style.display = 'none';
-            showLoginScreen("Database error.");
+            showLoginScreen("DB Err: " + e.message); console.error("DB ERROR DETAILS:", e);
         }
     } else {
         if (sessionStorage.getItem("is_impersonating") === "true" && sessionStorage.getItem("imp_e")) {
