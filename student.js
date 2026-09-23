@@ -1,6 +1,6 @@
-﻿const supabaseUrl = 'https://ynlcbpxcsnfxqrogizns.supabase.co';
+const supabaseUrl = 'https://ynlcbpxcsnfxqrogizns.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlubGNicHhjc25meHFyb2dpem5zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5MDMxNjMsImV4cCI6MjEwMzQ3OTE2M30.sx5iFeugOuLBt4pqt0-8_4VOGz1yWa7HQWl4NyGCWkE';
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+let supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 const getAuth = () => supabase.auth;
 const onAuthStateChanged = (auth, callback) => {
@@ -339,6 +339,13 @@ async function loginStudent() {
             throw new Error('School mismatch detected. Login blocked for safety.');
         }
 
+        if (data.token) {
+            supabase = window.supabase.createClient(supabaseUrl, supabaseKey, {
+                global: { headers: { Authorization: `Bearer ${data.token}` } }
+            });
+            sessionStorage.setItem('studentToken', data.token);
+        }
+
         currentStudentUser = data.student;
         currentSchoolId = data.student.schoolId;
         currentStudentSchoolDoc = data.school;
@@ -462,6 +469,8 @@ window.logoutStudent = () => {
     if (window.unsubStudentFeatureSettings) window.unsubStudentFeatureSettings();
     
     // Fully clear sensitive student state
+    sessionStorage.removeItem('studentToken');
+    supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
     currentStudentUser = null;
     currentStudentSchoolDoc = null;
     currentSchoolId = "";
