@@ -2306,9 +2306,32 @@ window.generatePayslip = async (id) => {
 async function loadStudents() {
     try {
         const snap = await getDocs(query(collection(db, "students"), where("schoolId", "==", currentSchoolId)));
-        window.fetchedStudents = []; let pendingCount = 0; let totalPresent = 0;
-        snap.forEach(d => { let dt = d.data(); dt.id = d.id; if (dt.status === "Pending") pendingCount++; window.fetchedStudents.push(dt); });
-        document.getElementById("count-students").innerText = snap.size; document.getElementById("count-pending").innerText = pendingCount;
+        let pendingCount = 0; let totalPresent = 0;
+        
+        // --- SECURE BATCH 2 READ PATH FOR ADMISSIONS ---
+        const admissionSnap = await getDocs(query(collection(db, "admission_applications"), where("schoolId", "==", currentSchoolId)));
+        
+        window.fetchedStudents = []; 
+        
+        // Push actual students
+        snap.forEach(d => { 
+            let dt = d.data(); dt.id = d.id; 
+            // Legacy pendings (should be 0)
+            if (dt.status === "Pending") pendingCount++; 
+            window.fetchedStudents.push(dt); 
+        });
+
+        // Push new secure admission applications
+        admissionSnap.forEach(d => {
+            let dt = d.data();
+            // Flatten JSONB payload to match legacy format
+            let flatDt = { id: d.id, ...dt, ...dt.data, _isNewAdmission: true };
+            if (flatDt.status === "Pending") pendingCount++;
+            window.fetchedStudents.push(flatDt);
+        });
+
+        document.getElementById("count-students").innerText = snap.size; 
+        document.getElementById("count-pending").innerText = pendingCount;
 
         if (snap.size > 0) {
             try {
@@ -2396,7 +2419,9 @@ function renderStudentsTable(className, searchTerm = null, statusFilter = null) 
         const lockBtn = locked ? `<button class="action-btn btn-green" onclick="toggleStudentLock('${safeId}', false)" title="Unlock Account"><i class="fas fa-unlock"></i></button>` : `<button class="action-btn btn-dark" onclick="toggleStudentLock('${safeId}', true)" title="Lock Account"><i class="fas fa-lock"></i></button>`;
 
         const actionBtns = dt.status === "Pending"
-            ? `<button class="action-btn btn-green" onclick="updateStudentStatus('${safeId}')"><i class="fas fa-check"></i> Approve</button>`
+            ? (dt._isNewAdmission 
+                ? `<button class="action-btn btn-green" onclick="updateStudentStatus('${safeId}', true)"><i class="fas fa-check"></i> Approve</button>`
+                : `<button class="action-btn btn-green" onclick="updateStudentStatus('${safeId}', false)"><i class="fas fa-check"></i> Approve (Legacy)</button>`)
             : `
             <button class="action-btn btn-blue" onclick="showIDCard('${safeId}')"><i class="fas fa-id-card"></i> ID</button>
             <button class="action-btn" style="background:#3b82f6; color:white;" onclick="window.openDirectMessageModal('${safeId}', '${dt.name.replace(/'/g, "\\'")}')"><i class="fas fa-comment-dots"></i> Message</button>
@@ -2881,7 +2906,16 @@ window.generateBulkMarksheets = async (students) => {
     }
 };
 
-window.updateStudentStatus = async (id) => { if (confirm("Approve admission?")) { await updateDoc(doc(db, "students", id), { status: "Approved" }); loadStudents(); } };
+window.updateStudentStatus = async (id, isNewAdmission) => { 
+    if (isNewAdmission) {
+        alert('Approval functionality has been securely deferred to the next phase (Server-side conversion required to prevent security bypasses).');
+        return;
+    }
+    if (confirm("Approve legacy admission?")) { 
+        await updateDoc(doc(db, "students", id), { status: "Approved" }); 
+        loadStudents(); 
+    } 
+};
 window.deleteStudent = async (id) => { if (confirm("Delete this student permanently?")) { await deleteDoc(doc(db, "students", id)); loadStudents(); } };
 
 window.toggleStudentLock = async (id, state) => {

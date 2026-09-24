@@ -292,11 +292,8 @@ form.addEventListener("submit", async (e) => {
             throw new Error("Image upload failed");
         }
 
-        // Save to Firestore
-        await addDoc(collection(db, "students"), {
-            schoolId: currentSchoolId,
-            status: "Pending",
-            lockedOut: false,
+        // Use secure RPC for admission submission
+        const payload = {
             name: name,
             dob: dob,
             rollNo: rollNo,
@@ -305,9 +302,21 @@ form.addEventListener("submit", async (e) => {
             motherName: motherName,
             mobile: mobile,
             address: address,
-            photoUrl: photoUrl,
-            createdAt: serverTimestamp()
+            photoUrl: photoUrl
+        };
+
+        const { data: result, error: rpcError } = await supabase.rpc('submit_admission', {
+            p_school_id: currentSchoolId,
+            p_payload: payload
         });
+
+        if (rpcError) {
+            console.error("RPC Error:", rpcError);
+            if (rpcError.message && rpcError.message.includes('closed')) {
+                throw new Error("Admissions are currently closed for this school.");
+            }
+            throw new Error(rpcError.message || "Failed to submit admission form");
+        }
 
         // Show Success
         showMessage(
