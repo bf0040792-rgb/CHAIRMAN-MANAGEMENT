@@ -2413,29 +2413,41 @@ function renderStudentsTable(className, searchTerm = null, statusFilter = null) 
     filtered.sort((a, b) => (Number(a.rollNo) || 999999) - (Number(b.rollNo) || 999999));
 
     filtered.forEach(dt => {
-        const safeId = dt.id.replace(/'/g, "\\'"); const locked = dt.lockedOut;
-        const statusColor = dt.status === 'Approved' ? '#27ae60' : (dt.status === 'Pending' ? '#e67e22' : '#e53e3e'); const statusIcon = dt.status === 'Approved' ? '<i class="fas fa-check"></i>' : '<i class="fas fa-clock"></i>';
+        const safeId = studentHtml(dt.id).replace(/'/g, "\\'"); const locked = dt.lockedOut;
+        const safeName = studentHtml(dt.name);
+        const safeMobile = studentHtml(dt.mobile);
+        const safeRollNo = studentHtml(dt.rollNo);
+        const safeClass = studentHtml(dt.class);
+        const safeParentage = studentHtml(dt.parentage || dt.fatherName);
+        const safeMother = studentHtml(dt.motherName);
+        const safeStatus = studentHtml(dt.status);
+        
+        let safePhoto = dt.photoUrl ? studentHtml(dt.photoUrl) : 'https://via.placeholder.com/100';
+        if(safePhoto.toLowerCase().includes('javascript:') || safePhoto.toLowerCase().includes('data:')) safePhoto = 'https://via.placeholder.com/100';
+
+        const statusColor = safeStatus === 'Approved' ? '#27ae60' : (safeStatus === 'Pending' ? '#e67e22' : '#e53e3e'); 
+        const statusIcon = safeStatus === 'Approved' ? '<i class="fas fa-check"></i>' : '<i class="fas fa-clock"></i>';
 
         const lockBtn = locked ? `<button class="action-btn btn-green" onclick="toggleStudentLock('${safeId}', false)" title="Unlock Account"><i class="fas fa-unlock"></i></button>` : `<button class="action-btn btn-dark" onclick="toggleStudentLock('${safeId}', true)" title="Lock Account"><i class="fas fa-lock"></i></button>`;
 
-        const actionBtns = dt.status === "Pending"
+        const actionBtns = safeStatus === "Pending"
             ? (dt._isNewAdmission 
                 ? `<button class="action-btn btn-green" onclick="updateStudentStatus('${safeId}', true)"><i class="fas fa-check"></i> Approve</button>`
                 : `<button class="action-btn btn-green" onclick="updateStudentStatus('${safeId}', false)"><i class="fas fa-check"></i> Approve (Legacy)</button>`)
             : `
             <button class="action-btn btn-blue" onclick="showIDCard('${safeId}')"><i class="fas fa-id-card"></i> ID</button>
-            <button class="action-btn" style="background:#3b82f6; color:white;" onclick="window.openDirectMessageModal('${safeId}', '${dt.name.replace(/'/g, "\\'")}')"><i class="fas fa-comment-dots"></i> Message</button>
+            <button class="action-btn" style="background:#3b82f6; color:white;" onclick="window.openDirectMessageModal('${safeId}', '${safeName.replace(/'/g, "\\'")}')"><i class="fas fa-comment-dots"></i> Message</button>
             <button class="action-btn btn-purple" onclick="openStudentModal('${safeId}')"><i class="fas fa-edit"></i> Edit</button>
             ${lockBtn}`;
 
         html += `<tr class="${locked ? 'locked-row' : ''}">
             <td style="text-align:center;"><input type="checkbox" class="student-select-checkbox" value="${safeId}" onchange="window.toggleStudentSelection('${safeId}', this.checked)" ${window.selectedStudentIds.has(dt.id) ? 'checked' : ''}></td>
-            <td><img src="${dt.photoUrl || 'https://via.placeholder.com/100'}" class="img-circle"></td>
-            <td><strong style="display:block; font-size:13px;">${dt.name || 'N/A'} ${locked ? '<i class="fas fa-lock" style="color:#e53e3e"></i>' : ''}</strong><small style="color:#7f8c8d;">${dt.mobile || 'No Mobile'}</small></td>
-            <td><span style="font-weight:bold; font-size:13px; color:#333;">${dt.rollNo || 'N/A'}</span></td>
-            <td><span style="background:#eaf4ff; color:#2c7be5; padding:3px 8px; border-radius:12px; font-size:12px; font-weight:bold;">Class: ${dt.class || 'N/A'}</span></td>
-            <td><span style="font-size:12px; display:block;"><b>P:</b> ${(dt.parentage || dt.fatherName) || 'N/A'}</span><span style="font-size:12px; display:block;"><b>M:</b> ${dt.motherName || 'N/A'}</span></td>
-            <td><div style="font-size:11px; font-weight:bold; padding:2px 6px; border-radius:4px; display:inline-block; border:1px solid ${statusColor}; color:${statusColor};">${statusIcon} ${dt.status}</div><br><span style="font-size:11px; color:#7f8c8d;">Due: ?${dt.feeDue || 0}</span></td>
+            <td><img src="${safePhoto}" class="img-circle"></td>
+            <td><strong style="display:block; font-size:13px;">${safeName} ${locked ? '<i class="fas fa-lock" style="color:#e53e3e"></i>' : ''}</strong><small style="color:#7f8c8d;">${safeMobile === 'N/A' ? 'No Mobile' : safeMobile}</small></td>
+            <td><span style="font-weight:bold; font-size:13px; color:#333;">${safeRollNo}</span></td>
+            <td><span style="background:#eaf4ff; color:#2c7be5; padding:3px 8px; border-radius:12px; font-size:12px; font-weight:bold;">Class: ${safeClass}</span></td>
+            <td><span style="font-size:12px; display:block;"><b>P:</b> ${safeParentage}</span><span style="font-size:12px; display:block;"><b>M:</b> ${safeMother}</span></td>
+            <td><div style="font-size:11px; font-weight:bold; padding:2px 6px; border-radius:4px; display:inline-block; border:1px solid ${statusColor}; color:${statusColor};">${statusIcon} ${safeStatus}</div><br><span style="font-size:11px; color:#7f8c8d;">Due: ₹${dt.feeDue || 0}</span></td>
             <td><div class="action-btn-group">${actionBtns} <button class="action-btn btn-red" onclick="deleteStudent('${safeId}')"><i class="fas fa-trash"></i></button></div></td>
         </tr>`;
     });
