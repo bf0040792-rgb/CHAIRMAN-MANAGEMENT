@@ -3005,15 +3005,19 @@ window.saveStudentModal = async () => {
     try {
         const checkValues = [];
         if (data.mobile) checkValues.push(data.mobile);
-        if (document.getElementById("modal-student-email") && document.getElementById("modal-student-email").value) checkValues.push(document.getElementById("modal-student-email").value);
-        if (checkValues.length > 0) {
-            const blacklistSnap = await getDocs(query(collection(db, "global_blacklist"), where("value", "in", checkValues)));
-            if (!blacklistSnap.empty) {
+        const emailEl = document.getElementById("modal-student-email");
+        if (emailEl && emailEl.value) checkValues.push(emailEl.value);
+        
+        for (const val of checkValues) {
+            const { data: isBlocked, error } = await supabaseClient.rpc('is_blacklisted', { check_value: val });
+            if (error) throw error;
+            if (isBlocked) {
                 return alert("Flagged in Global Blacklist. Action rejected.");
             }
         }
     } catch (err) {
-        console.warn("Blacklist check skipped or error:", err.message);
+        console.warn("Blacklist check failed:", err.message);
+        return alert("Security check failed. Please try again later.");
     }
 
     try {
@@ -3152,12 +3156,14 @@ window.saveStaff = async () => {
 
     // Global Blacklist Pre-Check
     try {
-        const blacklistSnap = await getDocs(query(collection(db, "global_blacklist"), where("value", "==", email)));
-        if (!blacklistSnap.empty) {
+        const { data: isBlocked, error } = await supabaseClient.rpc('is_blacklisted', { check_value: email });
+        if (error) throw error;
+        if (isBlocked) {
             return alert("Flagged in Global Blacklist. Action rejected.");
         }
     } catch (err) {
-        console.warn("Blacklist check skipped or error:", err.message);
+        console.warn("Blacklist check failed:", err.message);
+        return alert("Security check failed. Please try again later.");
     }
 
     let photoUrl = await uploadToCloudinary("s_photo", "s_btn", "<i class='fas fa-save'></i> Add Staff Member"); if (!photoUrl) photoUrl = "https://via.placeholder.com/100";
@@ -3205,7 +3211,7 @@ window.downloadGlobalStaffCSV = async (evt = null) => {
         if (triggerBtn) { triggerBtn.disabled = true; triggerBtn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Preparing CSV..."; }
         const [staffSnap, schoolsSnap] = await Promise.all([
             getDocs(query(collection(db, "users"), where("role", "==", "staff"))),
-            getDocs(collection(db, "schools")).catch(() => null)
+            getDocs(collection(db, "vw_public_schools")).catch(() => null)
         ]);
         const schoolMap = {};
         schoolsSnap?.forEach(d => {
@@ -5068,7 +5074,7 @@ window.sendCoreEduMessage = async () => {
 window.allSchoolsCache = [];
 window.loadAllSchools = async () => {
     try {
-        const snap = await getDocs(collection(db, "schools"));
+        const snap = await getDocs(collection(db, "vw_public_schools"));
         let html = "<option value=''>-- Select School --</option>";
         window.allSchoolsCache = [];
         snap.forEach(d => {

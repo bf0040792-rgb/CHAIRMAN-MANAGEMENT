@@ -1,4 +1,4 @@
-﻿const supabaseUrl = 'https://ynlcbpxcsnfxqrogizns.supabase.co';
+const supabaseUrl = 'https://ynlcbpxcsnfxqrogizns.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlubGNicHhjc25meHFyb2dpem5zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5MDMxNjMsImV4cCI6MjEwMzQ3OTE2M30.sx5iFeugOuLBt4pqt0-8_4VOGz1yWa7HQWl4NyGCWkE';
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
@@ -194,7 +194,7 @@ if (!schoolIdParam) {
 // 2. Dynamic Branding
 async function loadSchoolData() {
     try {
-        const docRef = doc(db, "schools", currentSchoolId);
+        const docRef = doc(db, "vw_public_schools", currentSchoolId);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
