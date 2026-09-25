@@ -2925,7 +2925,16 @@ window.generateBulkMarksheets = async (students) => {
 
 window.updateStudentStatus = async (id, isNewAdmission) => { 
     if (isNewAdmission) {
-        alert('Approval functionality has been securely deferred to the next phase (Server-side conversion required to prevent security bypasses).');
+        if (!confirm("Approve this new admission and create student record?")) return;
+        try {
+            const { data, error } = await supabase.rpc('approve_admission', { p_application_id: id });
+            if (error) throw error;
+            alert('Admission approved successfully! Student record created.');
+            loadStudents();
+        } catch (err) {
+            console.error('Approval failed:', err);
+            alert('Error approving admission: ' + (err.message || 'Unknown error'));
+        }
         return;
     }
     if (confirm("Approve legacy admission?")) { 
