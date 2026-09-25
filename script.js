@@ -3085,15 +3085,18 @@ window.saveStudentModal = async () => {
             await updateDoc(doc(db, "students", id), data);
             alert("Student details updated successfully!");
         } else {
-            data.status = "Approved"; // Auto-approve manual additions
-            data.createdAt = serverTimestamp();
-            await addDoc(collection(db, "students"), data);
+            // Use Secure Server-Side Student Creation RPC
+            const { data: newStudentId, error: rpcError } = await supabase.rpc('create_student', { p_payload: data });
+            if (rpcError) {
+                console.error("RPC Error:", rpcError);
+                throw new Error(rpcError.message || "Failed to create student securely.");
+            }
             alert("New student added successfully!");
         }
         document.getElementById("student-modal").style.display = "none";
         loadStudents();
     } catch (e) {
-        alert("Error saving student.");
+        alert("Error saving student: " + (e.message || "Unknown error"));
     }
 };
 
