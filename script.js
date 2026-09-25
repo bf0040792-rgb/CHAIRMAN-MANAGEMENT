@@ -2413,7 +2413,9 @@ function renderStudentsTable(className, searchTerm = null, statusFilter = null) 
     filtered.sort((a, b) => (Number(a.rollNo) || 999999) - (Number(b.rollNo) || 999999));
 
     filtered.forEach(dt => {
-        const safeId = studentHtml(dt.id).replace(/'/g, "\\'"); const locked = dt.lockedOut;
+        const safeId = studentHtml(dt.id).replace(/"/g, '&quot;');
+        const locked = dt.lockedOut;
+        const safeNameAttr = studentHtml(dt.name).replace(/"/g, '&quot;');
         const safeName = studentHtml(dt.name);
         const safeMobile = studentHtml(dt.mobile);
         const safeRollNo = studentHtml(dt.rollNo);
@@ -2421,34 +2423,37 @@ function renderStudentsTable(className, searchTerm = null, statusFilter = null) 
         const safeParentage = studentHtml(dt.parentage || dt.fatherName);
         const safeMother = studentHtml(dt.motherName);
         const safeStatus = studentHtml(dt.status);
+        const feeDueNum = Number(dt.feeDue) || 0;
         
         let safePhoto = dt.photoUrl ? studentHtml(dt.photoUrl) : 'https://via.placeholder.com/100';
-        if(safePhoto.toLowerCase().includes('javascript:') || safePhoto.toLowerCase().includes('data:')) safePhoto = 'https://via.placeholder.com/100';
+        if (!isSafeStudentPhotoUrl(safePhoto)) {
+            safePhoto = 'https://via.placeholder.com/100';
+        }
 
         const statusColor = safeStatus === 'Approved' ? '#27ae60' : (safeStatus === 'Pending' ? '#e67e22' : '#e53e3e'); 
         const statusIcon = safeStatus === 'Approved' ? '<i class="fas fa-check"></i>' : '<i class="fas fa-clock"></i>';
 
-        const lockBtn = locked ? `<button class="action-btn btn-green" onclick="toggleStudentLock('${safeId}', false)" title="Unlock Account"><i class="fas fa-unlock"></i></button>` : `<button class="action-btn btn-dark" onclick="toggleStudentLock('${safeId}', true)" title="Lock Account"><i class="fas fa-lock"></i></button>`;
+        const lockBtn = locked ? `<button class="action-btn btn-green" data-id="${safeId}" onclick="toggleStudentLock(this.dataset.id, false)" title="Unlock Account"><i class="fas fa-unlock"></i></button>` : `<button class="action-btn btn-dark" data-id="${safeId}" onclick="toggleStudentLock(this.dataset.id, true)" title="Lock Account"><i class="fas fa-lock"></i></button>`;
 
         const actionBtns = safeStatus === "Pending"
             ? (dt._isNewAdmission 
-                ? `<button class="action-btn btn-green" onclick="updateStudentStatus('${safeId}', true)"><i class="fas fa-check"></i> Approve</button>`
-                : `<button class="action-btn btn-green" onclick="updateStudentStatus('${safeId}', false)"><i class="fas fa-check"></i> Approve (Legacy)</button>`)
+                ? `<button class="action-btn btn-green" data-id="${safeId}" onclick="updateStudentStatus(this.dataset.id, true)"><i class="fas fa-check"></i> Approve</button>`
+                : `<button class="action-btn btn-green" data-id="${safeId}" onclick="updateStudentStatus(this.dataset.id, false)"><i class="fas fa-check"></i> Approve (Legacy)</button>`)
             : `
-            <button class="action-btn btn-blue" onclick="showIDCard('${safeId}')"><i class="fas fa-id-card"></i> ID</button>
-            <button class="action-btn" style="background:#3b82f6; color:white;" onclick="window.openDirectMessageModal('${safeId}', '${safeName.replace(/'/g, "\\'")}')"><i class="fas fa-comment-dots"></i> Message</button>
-            <button class="action-btn btn-purple" onclick="openStudentModal('${safeId}')"><i class="fas fa-edit"></i> Edit</button>
+            <button class="action-btn btn-blue" data-id="${safeId}" onclick="showIDCard(this.dataset.id)"><i class="fas fa-id-card"></i> ID</button>
+            <button class="action-btn" style="background:#3b82f6; color:white;" data-id="${safeId}" data-name="${safeNameAttr}" onclick="window.openDirectMessageModal(this.dataset.id, this.dataset.name)"><i class="fas fa-comment-dots"></i> Message</button>
+            <button class="action-btn btn-purple" data-id="${safeId}" onclick="openStudentModal(this.dataset.id)"><i class="fas fa-edit"></i> Edit</button>
             ${lockBtn}`;
 
         html += `<tr class="${locked ? 'locked-row' : ''}">
-            <td style="text-align:center;"><input type="checkbox" class="student-select-checkbox" value="${safeId}" onchange="window.toggleStudentSelection('${safeId}', this.checked)" ${window.selectedStudentIds.has(dt.id) ? 'checked' : ''}></td>
+            <td style="text-align:center;"><input type="checkbox" class="student-select-checkbox" data-id="${safeId}" onchange="window.toggleStudentSelection(this.dataset.id, this.checked)" ${window.selectedStudentIds.has(dt.id) ? 'checked' : ''}></td>
             <td><img src="${safePhoto}" class="img-circle"></td>
             <td><strong style="display:block; font-size:13px;">${safeName} ${locked ? '<i class="fas fa-lock" style="color:#e53e3e"></i>' : ''}</strong><small style="color:#7f8c8d;">${safeMobile === 'N/A' ? 'No Mobile' : safeMobile}</small></td>
             <td><span style="font-weight:bold; font-size:13px; color:#333;">${safeRollNo}</span></td>
             <td><span style="background:#eaf4ff; color:#2c7be5; padding:3px 8px; border-radius:12px; font-size:12px; font-weight:bold;">Class: ${safeClass}</span></td>
             <td><span style="font-size:12px; display:block;"><b>P:</b> ${safeParentage}</span><span style="font-size:12px; display:block;"><b>M:</b> ${safeMother}</span></td>
-            <td><div style="font-size:11px; font-weight:bold; padding:2px 6px; border-radius:4px; display:inline-block; border:1px solid ${statusColor}; color:${statusColor};">${statusIcon} ${safeStatus}</div><br><span style="font-size:11px; color:#7f8c8d;">Due: ₹${dt.feeDue || 0}</span></td>
-            <td><div class="action-btn-group">${actionBtns} <button class="action-btn btn-red" onclick="deleteStudent('${safeId}')"><i class="fas fa-trash"></i></button></div></td>
+            <td><div style="font-size:11px; font-weight:bold; padding:2px 6px; border-radius:4px; display:inline-block; border:1px solid ${statusColor}; color:${statusColor};">${statusIcon} ${safeStatus}</div><br><span style="font-size:11px; color:#7f8c8d;">Due: ₹${feeDueNum.toLocaleString('en-IN')}</span></td>
+            <td><div class="action-btn-group">${actionBtns} <button class="action-btn btn-red" data-id="${safeId}" onclick="deleteStudent(this.dataset.id)"><i class="fas fa-trash"></i></button></div></td>
         </tr>`;
     });
     tbody.innerHTML = html || "<tr><td colspan='8' style='text-align:center; padding:30px; color:#999;'>No Students Found.</td></tr>";
@@ -4437,6 +4442,19 @@ const studentHtml = value => {
     node.textContent = value == null || value === '' ? 'N/A' : String(value);
     return node.innerHTML;
 };
+
+const isSafeStudentPhotoUrl = url => {
+    if (!url) return false;
+    try {
+        const parsed = new URL(url);
+        if (parsed.protocol !== 'https:') return false;
+        if (parsed.hostname !== 'res.cloudinary.com' && parsed.hostname !== 'api.cloudinary.com') return false;
+        return true;
+    } catch (e) {
+        return false;
+    }
+};
+
 const studentTimestamp = value => {
     if (!value) return '—';
     if (typeof value.toDate === 'function') return value.toDate().toLocaleString();
