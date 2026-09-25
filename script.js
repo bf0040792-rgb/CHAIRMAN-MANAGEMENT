@@ -2685,7 +2685,8 @@ function renderAdmitCardStudentsTable(className = "ALL", searchTerm = null, stat
 
 window.toggleAdmitCardVisibility = async (studentId, isPublished) => {
     try {
-        await updateDoc(doc(db, "students", studentId), { admitCardPublished: isPublished });
+        const { error: rpcError } = await supabase.rpc('update_student', { p_student_id: studentId, p_payload: { admitCardPublished: isPublished } });
+        if (rpcError) throw new Error(rpcError.message);
         // Optionally update the local fetched array so it persists on re-filter
         const idx = window.fetchedStudents.findIndex(s => s.id === studentId);
         if (idx !== -1) window.fetchedStudents[idx].admitCardPublished = isPublished;
@@ -2938,15 +2939,27 @@ window.updateStudentStatus = async (id, isNewAdmission) => {
         return;
     }
     if (confirm("Approve legacy admission?")) { 
-        await updateDoc(doc(db, "students", id), { status: "Approved" }); 
-        loadStudents(); 
+        try {
+            const { error: rpcError } = await supabase.rpc('update_student', { p_student_id: id, p_payload: { status: "Approved" } });
+            if (rpcError) throw new Error(rpcError.message);
+            alert("Status updated successfully.");
+            loadStudents(); 
+        } catch (e) {
+            alert("Error updating status: " + e.message);
+        }
     } 
 };
 window.deleteStudent = async (id) => { if (confirm("Delete this student permanently?")) { await deleteDoc(doc(db, "students", id)); loadStudents(); } };
 
 window.toggleStudentLock = async (id, state) => {
     if (confirm(state ? "Lock this student's account?" : "Unlock this student's account?")) {
-        await updateDoc(doc(db, "students", id), { lockedOut: state }); loadStudents();
+        try {
+            const { error: rpcError } = await supabase.rpc('update_student', { p_student_id: id, p_payload: { lockedOut: state } });
+            if (rpcError) throw new Error(rpcError.message);
+            loadStudents();
+        } catch (e) {
+            alert("Error locking/unlocking student: " + e.message);
+        }
     }
 };
 
@@ -3082,7 +3095,8 @@ window.saveStudentModal = async () => {
 
     try {
         if (id) {
-            await updateDoc(doc(db, "students", id), data);
+            const { error: rpcError } = await supabase.rpc('update_student', { p_student_id: id, p_payload: data });
+            if (rpcError) throw new Error(rpcError.message);
             alert("Student details updated successfully!");
         } else {
             // Use Secure Server-Side Student Creation RPC
