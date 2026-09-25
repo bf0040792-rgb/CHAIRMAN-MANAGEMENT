@@ -2949,7 +2949,17 @@ window.updateStudentStatus = async (id, isNewAdmission) => {
         }
     } 
 };
-window.deleteStudent = async (id) => { if (confirm("Delete this student permanently?")) { await deleteDoc(doc(db, "students", id)); loadStudents(); } };
+window.deleteStudent = async (id) => { 
+    if (confirm("Delete this student permanently?")) { 
+        try {
+            const { error: rpcError } = await supabase.rpc('delete_student', { p_student_id: id });
+            if (rpcError) throw new Error(rpcError.message);
+            loadStudents(); 
+        } catch (err) {
+            alert("Error deleting student: " + (err.message || "Unknown error"));
+        }
+    } 
+};
 
 window.toggleStudentLock = async (id, state) => {
     if (confirm(state ? "Lock this student's account?" : "Unlock this student's account?")) {
