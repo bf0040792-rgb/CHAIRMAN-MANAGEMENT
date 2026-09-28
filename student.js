@@ -1,156 +1,40 @@
+// ============================================================================
+// STUDENT PORTAL - NATIVE SUPABASE SDK v2 (@supabase/supabase-js)
+// ----------------------------------------------------------------------------
+// The legacy Firebase / Firestore adapter layer has been removed. Every query
+// below is a native PostgREST call (select / insert / update / delete) made
+// with the Supabase client that is created right here.
+// The SDK itself is loaded from the CDN in student.html (window.supabase).
+// ============================================================================
 const supabaseUrl = 'https://ynlcbpxcsnfxqrogizns.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlubGNicHhjc25meHFyb2dpem5zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5MDMxNjMsImV4cCI6MjEwMzQ3OTE2M30.sx5iFeugOuLBt4pqt0-8_4VOGz1yWa7HQWl4NyGCWkE';
-let supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-const getAuth = () => supabase.auth;
-const onAuthStateChanged = (auth, callback) => {
-    supabase.auth.onAuthStateChange(async (event, session) => {
-        if (session?.user) {
-            callback({ uid: session.user.id, email: session.user.email });
-        } else {
-            callback(null);
-        }
-    });
-    supabase.auth.getSession().then(({ data }) => {
-        if (data.session?.user) {
-            callback({ uid: data.session.user.id, email: data.session.user.email });
-        } else {
-            callback(null);
-        }
-    });
-};
-const signInWithEmailAndPassword = async (auth, email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-    return { user: { uid: data.user.id, email: data.user.email } };
-};
-const createUserWithEmailAndPassword = async (auth, email, password) => {
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) throw error;
-    return { user: { uid: data.user.id, email: data.user.email } };
-};
-const signOut = async (auth) => await supabase.auth.signOut();
-const setPersistence = async () => {};
-const browserLocalPersistence = {};
-
-const getFirestore = () => supabase;
-const doc = (db, col, id, ...path) => {
-    if (path.length > 0) {
-        if (path[0] === 'feature_controls') {
-           return { _isDoc: true, col: 'feature_controls', id: path[1], extraFilter: { field: 'schoolId', val: id } };
-        }
+// Single native Supabase client for this portal.
+// (`let` because the student login API hands out a school-scoped JWT: Supabase
+// clients are immutable, so the client is rebuilt with that token on login and
+// rebuilt again from the anon key on logout.)
+let supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey, {
+    auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
     }
-    return { _isDoc: true, col, id };
-};
-const collection = (db, col) => ({ _isCol: true, col });
-const query = (colRef, ...constraints) => ({ ...colRef, constraints });
-const where = (field, op, val) => ({ type: 'where', field, op, val });
-const orderBy = (field, dir) => ({ type: 'orderBy', field, dir });
-const limit = (num) => ({ type: 'limit', num });
-const serverTimestamp = () => new Date().toISOString();
-const deleteField = () => null;
+});
 
-const getDoc = async (docRef) => {
-    let q = supabase.from(docRef.col).select('*').eq('id', docRef.id);
-    if (docRef.extraFilter) q = q.eq(docRef.extraFilter.field, docRef.extraFilter.val);
-    const { data, error } = await q.single();
-    if (error || !data) return { exists: () => false, data: () => undefined, id: docRef.id };
-    return { exists: () => true, data: () => data, id: docRef.id };
-};
-
-const getDocs = async (queryRef) => {
-    let q = supabase.from(queryRef.col).select('*');
-    if (queryRef.constraints) {
-        for (const c of queryRef.constraints) {
-            if (c.type === 'where') {
-                if (c.op === '==') q = q.eq(c.field, c.val);
-                else if (c.op === '!=') q = q.neq(c.field, c.val);
-                else if (c.op === 'in') q = q.in(c.field, c.val);
-            } else if (c.type === 'orderBy') {
-                q = q.order(c.field, { ascending: c.dir !== 'desc' });
-            } else if (c.type === 'limit') {
-                q = q.limit(c.num);
-            }
-        }
-    }
-    const { data, error } = await q;
-    if (error) throw error;
-    const docs = (data || []).map(d => ({ id: d.id, data: () => d, exists: () => true }));
-    return { empty: docs.length === 0, size: docs.length, docs, forEach: (cb) => docs.forEach(cb) };
-};
-
-const setDoc = async (docRef, data, options = {}) => {
-    const payload = { id: docRef.id, ...data };
-    if (docRef.extraFilter) payload[docRef.extraFilter.field] = docRef.extraFilter.val;
-    const { error } = await supabase.from(docRef.col).upsert(payload);
-    if (error) throw error;
-};
-
-const updateDoc = async (docRef, data) => {
-    let q = supabase.from(docRef.col).update(data).eq('id', docRef.id);
-    if (docRef.extraFilter) q = q.eq(docRef.extraFilter.field, docRef.extraFilter.val);
-    const { error } = await q;
-    if (error) throw error;
-};
-
-const deleteDoc = async (docRef) => {
-    const { error } = await supabase.from(docRef.col).delete().eq('id', docRef.id);
-    if (error) throw error;
-};
-
-const addDoc = async (colRef, data) => {
-    const { data: res, error } = await supabase.from(colRef.col).insert(data).select().single();
-    if (error) throw error;
-    return { id: res.id };
-};
-
-const writeBatch = () => {
-    const operations = [];
-    return {
-        set: (docRef, data) => operations.push({ type: 'set', ref: docRef, data }),
-        update: (docRef, data) => operations.push({ type: 'update', ref: docRef, data }),
-        delete: (docRef) => operations.push({ type: 'delete', ref: docRef }),
-        commit: async () => {
-            for (const op of operations) {
-                if (op.type === 'set') await setDoc(op.ref, op.data);
-                if (op.type === 'update') await updateDoc(op.ref, op.data);
-                if (op.type === 'delete') await deleteDoc(op.ref);
-            }
+function rebuildSupabaseClient(accessToken) {
+    const options = {
+        auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true
         }
     };
-};
+    if (accessToken) options.global = { headers: { Authorization: `Bearer ${accessToken}` } };
+    return window.supabase.createClient(supabaseUrl, supabaseKey, options);
+}
 
-const onSnapshot = (ref, callback) => {
-    if (ref._isDoc) {
-        getDoc(ref).then(callback);
-        const channel = supabase.channel('public:' + ref.col + ':' + ref.id)
-            .on('postgres_changes', { event: '*', schema: 'public', table: ref.col, filter: 'id=eq.' + ref.id }, async () => {
-                const snap = await getDoc(ref);
-                callback(snap);
-            }).subscribe();
-        return () => supabase.removeChannel(channel);
-    } else {
-        getDocs(ref).then(callback);
-        const channel = supabase.channel('public:' + ref.col)
-            .on('postgres_changes', { event: '*', schema: 'public', table: ref.col }, async () => {
-                const snap = await getDocs(ref);
-                callback(snap);
-            }).subscribe();
-        return () => supabase.removeChannel(channel);
-    }
-};
-
-const increment = (num) => num;
-const initializeApp = () => supabase;
-
-// --- END ADAPTER ---
-
-const auth = getAuth();
-const db = getFirestore();
-const secondaryAuth = getAuth();
-
-
-const FEATURE_SETTINGS_COLLECTION = "feature_controls";
+// Dedicated Supabase table holding one feature-control row per school.
+const FEATURE_SETTINGS_TABLE = "feature_controls";
 
 let currentSchoolId = "";
 let currentStudentUser = null;
@@ -204,10 +88,6 @@ const studentFeatures = [
 
 function $(id) { return document.getElementById(id); }
 
-function getFeatureSettingsDocRef(schoolId) {
-    return doc(db, "schools", schoolId, FEATURE_SETTINGS_COLLECTION, "settings");
-}
-
 function hydrateFeatureSettings(payload = {}) {
     const settings = JSON.parse(JSON.stringify(DEFAULT_FEATURE_SETTINGS));
     const source = payload.featureSettings || payload || {};
@@ -222,10 +102,22 @@ function hydrateFeatureSettings(payload = {}) {
 
 async function readSchoolFeatureSettings(schoolId) {
     if (!schoolId) return hydrateFeatureSettings();
-    const featureSnap = await getDoc(getFeatureSettingsDocRef(schoolId));
-    if (featureSnap.exists()) return hydrateFeatureSettings(featureSnap.data());
-    const schoolSnap = await getDoc(doc(db, "schools", schoolId));
-    return schoolSnap.exists() ? hydrateFeatureSettings(schoolSnap.data()) : hydrateFeatureSettings();
+
+    const { data: featureRow, error: featureError } = await supabaseClient
+        .from(FEATURE_SETTINGS_TABLE)
+        .select("*")
+        .eq("schoolId", schoolId)
+        .maybeSingle();
+    if (featureError) console.error("Feature control lookup failed:", featureError);
+    if (featureRow) return hydrateFeatureSettings(featureRow);
+
+    const { data: schoolRow, error: schoolError } = await supabaseClient
+        .from("schools")
+        .select("*")
+        .eq("id", schoolId)
+        .maybeSingle();
+    if (schoolError) console.error("School lookup failed:", schoolError);
+    return schoolRow ? hydrateFeatureSettings(schoolRow) : hydrateFeatureSettings();
 }
 
 function getStudentFeatureToggleKey(featureId) {
@@ -340,9 +232,7 @@ async function loginStudent() {
         }
 
         if (data.token) {
-            supabase = window.supabase.createClient(supabaseUrl, supabaseKey, {
-                global: { headers: { Authorization: `Bearer ${data.token}` } }
-            });
+            supabaseClient = rebuildSupabaseClient(data.token);
             sessionStorage.setItem('studentToken', data.token);
         }
 
@@ -415,20 +305,19 @@ window.showStudentReceiptsSection = async () => {
     tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:16px;">Loading receipts...</td></tr>`;
     
     try {
-        const q = query(
-            collection(db, "transactions"), 
-            where("schoolId", "==", currentSchoolId),
-            where("type", "==", "Fee"),
-            where("personId", "==", currentStudentUser.id)
-        );
-        const snap = await getDocs(q);
-        if (snap.empty) {
+        const { data: receipts, error } = await supabaseClient
+            .from("transactions")
+            .select("*")
+            .eq("schoolId", currentSchoolId)
+            .eq("type", "Fee")
+            .eq("personId", currentStudentUser.id);
+        if (error) throw error;
+        if (!receipts || receipts.length === 0) {
             tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:16px; color:#64748b;">No receipts available.</td></tr>`;
             return;
         }
         let html = '';
-        snap.forEach(doc => {
-            const data = doc.data();
+        receipts.forEach(data => {
             html += `<tr style="border-bottom: 1px solid #e2e8f0;">
                 <td style="padding: 12px;">${data.date || 'N/A'}</td>
                 <td style="padding: 12px; font-weight: bold; color: #10b981;">â‚¹${data.amount || 0}</td>
@@ -449,15 +338,16 @@ window.submitStudentComplaint = async (event) => {
     const subject = $('complaint-subject')?.value.trim();
     const description = $('complaint-desc')?.value.trim();
     if (!target || !subject || !description) return alert("Please fill all complaint fields.");
-    await addDoc(collection(db, "complaints"), {
+    const { error } = await supabaseClient.from("complaints").insert({
         schoolId: currentSchoolId,
         studentId: currentStudentUser.id,
         studentName: currentStudentUser.name || "Student",
         studentMobile: currentStudentUser.mobile || "",
         target, subject, description,
-        timestamp: serverTimestamp(),
+        timestamp: new Date().toISOString(),
         status: "Pending"
     });
+    if (error) throw error;
     alert("Complaint submitted successfully.");
     event.target.reset();
     window.openStudentView('student-main-grid');
@@ -470,7 +360,7 @@ window.logoutStudent = () => {
     
     // Fully clear sensitive student state
     sessionStorage.removeItem('studentToken');
-    supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+    supabaseClient = rebuildSupabaseClient();
     currentStudentUser = null;
     currentStudentSchoolDoc = null;
     currentSchoolId = "";
@@ -510,21 +400,20 @@ function setContainerState(containerId, state, message = '') {
 }
 
 // Helper query function ensuring schoolId isolation
-async function fetchScopedData(colName, additionalWheres = []) {
+async function fetchScopedData(tableName, additionalFilters = {}) {
     if (!currentSchoolId) throw new Error("Unauthenticated request blocked.");
-    const conditions = [where("schoolId", "==", currentSchoolId), ...additionalWheres];
-    const q = query(collection(db, colName), ...conditions);
-    const snap = await getDocs(q);
-    const results = [];
-    snap.forEach(doc => results.push({ id: doc.id, ...doc.data() }));
-    return results;
+    let request = supabaseClient.from(tableName).select("*").eq("schoolId", currentSchoolId);
+    Object.entries(additionalFilters).forEach(([field, value]) => { request = request.eq(field, value); });
+    const { data, error } = await request;
+    if (error) throw error;
+    return data || [];
 }
 
 window.loadStudentHomework = async () => {
     window.openStudentView('student-homework-section');
     setContainerState('stu-homework-container', 'loading');
     try {
-        const data = await fetchScopedData('homework', [where('class', '==', currentStudentUser.class)]);
+        const data = await fetchScopedData('homework', { class: currentStudentUser.class });
         if (data.length === 0) return setContainerState('stu-homework-container', 'empty', 'There is no homework assigned for you right now.');
         
         let html = '';
@@ -549,7 +438,7 @@ window.loadStudentAttendance = async () => {
     window.openStudentView('student-attendance-section');
     setContainerState('stu-attendance-container', 'loading');
     try {
-        const data = await fetchScopedData('attendance', [where('class', '==', currentStudentUser.class)]);
+        const data = await fetchScopedData('attendance', { class: currentStudentUser.class });
         // Strictly filter on client for studentId if array, or specific id
         const studentRecords = data.filter(d => d.studentId === currentStudentUser.id || (d.students && d.students.includes(currentStudentUser.id)));
         
@@ -577,7 +466,7 @@ window.loadStudentResult = async () => {
     window.openStudentView('student-result-section');
     setContainerState('stu-result-container', 'loading');
     try {
-        const data = await fetchScopedData('exam_marks', [where('studentId', '==', currentStudentUser.id)]);
+        const data = await fetchScopedData('exam_marks', { studentId: currentStudentUser.id });
         if (data.length === 0) return setContainerState('stu-result-container', 'empty', 'No result records found for you.');
         
         let html = '';
@@ -603,7 +492,7 @@ window.loadStudentDateSheet = async () => {
     window.openStudentView('student-datesheet-section');
     setContainerState('stu-datesheet-container', 'loading');
     try {
-        const data = await fetchScopedData('datesheets', [where('class', '==', currentStudentUser.class)]);
+        const data = await fetchScopedData('datesheets', { class: currentStudentUser.class });
         if (data.length === 0) return setContainerState('stu-datesheet-container', 'empty', 'No datesheet currently published for your class.');
         
         let html = '';
@@ -682,7 +571,7 @@ window.loadStudentLeave = async () => {
     window.openStudentView('student-leave-section');
     setContainerState('stu-leave-container', 'loading');
     try {
-        const data = await fetchScopedData('leave_requests', [where('studentId', '==', currentStudentUser.id)]);
+        const data = await fetchScopedData('leave_requests', { studentId: currentStudentUser.id });
         if (data.length === 0) return setContainerState('stu-leave-container', 'empty', 'You have not submitted any leave requests yet.');
         
         let html = '';
@@ -710,14 +599,15 @@ window.submitStudentLeave = async (e) => {
     const reason = $('leave-reason').value.trim();
     if (!start || !end || !reason) return alert("Fill all fields.");
     try {
-        await addDoc(collection(db, "leave_requests"), {
+        const { error } = await supabaseClient.from("leave_requests").insert({
             schoolId: currentSchoolId,
             studentId: currentStudentUser.id,
             studentName: currentStudentUser.name,
             class: currentStudentUser.class,
             startDate: start, endDate: end, reason,
-            status: "Pending", createdAt: serverTimestamp()
+            status: "Pending", createdAt: new Date().toISOString()
         });
+        if (error) throw error;
         alert("Leave request submitted successfully.");
         e.target.reset();
         loadStudentLeave();
@@ -730,7 +620,7 @@ window.loadStudentGatepass = async () => {
     window.openStudentView('student-gatepass-section');
     setContainerState('stu-gatepass-container', 'loading');
     try {
-        const data = await fetchScopedData('gate_passes', [where('studentId', '==', currentStudentUser.id)]);
+        const data = await fetchScopedData('gate_passes', { studentId: currentStudentUser.id });
         if (data.length === 0) return setContainerState('stu-gatepass-container', 'empty', 'No gate passes requested.');
         
         let html = '';
@@ -757,14 +647,15 @@ window.submitStudentGatepass = async (e) => {
     const reason = $('gatepass-reason').value.trim();
     if (!time || !reason) return alert("Fill all fields.");
     try {
-        await addDoc(collection(db, "gate_passes"), {
+        const { error } = await supabaseClient.from("gate_passes").insert({
             schoolId: currentSchoolId,
             studentId: currentStudentUser.id,
             studentName: currentStudentUser.name,
             class: currentStudentUser.class,
             dateTime: time, reason,
-            status: "Pending", createdAt: serverTimestamp()
+            status: "Pending", createdAt: new Date().toISOString()
         });
+        if (error) throw error;
         alert("Gate pass request submitted successfully.");
         e.target.reset();
         loadStudentGatepass();
@@ -777,7 +668,7 @@ window.loadStudentAssignments = async () => {
     window.openStudentView('student-assignment-section');
     setContainerState('stu-assignment-container', 'loading');
     try {
-        const data = await fetchScopedData('assignments', [where('class', '==', currentStudentUser.class)]);
+        const data = await fetchScopedData('assignments', { class: currentStudentUser.class });
         if (data.length === 0) return setContainerState('stu-assignment-container', 'empty', 'No assignments published for your class.');
         let html = '';
         data.forEach(a => {
@@ -797,7 +688,7 @@ window.loadStudentSyllabus = async () => {
     window.openStudentView('student-syllabus-section');
     setContainerState('stu-syllabus-container', 'loading');
     try {
-        const data = await fetchScopedData('syllabus', [where('class', '==', currentStudentUser.class)]);
+        const data = await fetchScopedData('syllabus', { class: currentStudentUser.class });
         if (data.length === 0) return setContainerState('stu-syllabus-container', 'empty', 'Syllabus not available yet.');
         let html = '';
         data.forEach(s => {
@@ -816,7 +707,7 @@ window.loadStudentStudyMaterial = async () => {
     window.openStudentView('student-studymaterial-section');
     setContainerState('stu-studymaterial-container', 'loading');
     try {
-        const data = await fetchScopedData('study_materials', [where('class', '==', currentStudentUser.class)]);
+        const data = await fetchScopedData('study_materials', { class: currentStudentUser.class });
         if (data.length === 0) return setContainerState('stu-studymaterial-container', 'empty', 'No study materials available.');
         let html = '';
         data.forEach(s => {
@@ -836,7 +727,7 @@ window.loadStudentOnlineClasses = async () => {
     window.openStudentView('student-onlineclasses-section');
     setContainerState('stu-onlineclasses-container', 'loading');
     try {
-        const data = await fetchScopedData('online_classes', [where('class', '==', currentStudentUser.class)]);
+        const data = await fetchScopedData('online_classes', { class: currentStudentUser.class });
         if (data.length === 0) return setContainerState('stu-onlineclasses-container', 'empty', 'No online classes scheduled for today.');
         let html = '';
         data.forEach(c => {

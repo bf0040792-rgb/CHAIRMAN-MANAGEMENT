@@ -1,154 +1,46 @@
+// ============================================================================
+// CHAIRMAN SCHOOL PORTAL - NATIVE SUPABASE SDK v2 (@supabase/supabase-js)
+// ----------------------------------------------------------------------------
+// The legacy Firebase / Firestore adapter layer is gone. Everything below talks
+// to Supabase directly:
+//   * data      -> PostgREST builders (.from().select()/.insert()/.upsert()
+//                  /.update()/.delete())
+//   * live sync -> Supabase Realtime channels (.channel().on('postgres_changes'))
+//   * login     -> GoTrue (supabaseClient.auth.signInWithPassword / signOut /
+//                  onAuthStateChange)
+// The SDK bundle itself is loaded from the CDN in index.html (window.supabase).
+// ============================================================================
 const supabaseUrl = 'https://ynlcbpxcsnfxqrogizns.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlubGNicHhjc25meHFyb2dpem5zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5MDMxNjMsImV4cCI6MjEwMzQ3OTE2M30.sx5iFeugOuLBt4pqt0-8_4VOGz1yWa7HQWl4NyGCWkE';
-const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-const getAuth = () => supabaseClient.auth;
-const onAuthStateChanged = (auth, callback) => {
-    supabaseClient.auth.onAuthStateChange(async (event, session) => {
-        if (session?.user) {
-            callback({ uid: session.user.id, email: session.user.email });
-        } else {
-            callback(null);
-        }
-    });
-    supabaseClient.auth.getSession().then(({ data }) => {
-        if (data.session?.user) {
-            callback({ uid: data.session.user.id, email: data.session.user.email });
-        } else {
-            callback(null);
-        }
-    });
-};
-const signInWithEmailAndPassword = async (auth, email, password) => {
-    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-    return { user: { uid: data.user.id, email: data.user.email } };
-};
-const createUserWithEmailAndPassword = async (auth, email, password) => {
-    const { data, error } = await supabaseClient.auth.signUp({ email, password });
-    if (error) throw error;
-    return { user: { uid: data.user.id, email: data.user.email } };
-};
-const signOut = async (auth) => await supabaseClient.auth.signOut();
-const setPersistence = async () => {};
-const browserLocalPersistence = {};
-
-const getFirestore = () => supabase;
-const doc = (db, col, id, ...path) => {
-    if (path.length > 0) {
-        if (path[0] === 'feature_controls') {
-           return { _isDoc: true, col: 'feature_controls', id: path[1], extraFilter: { field: 'schoolId', val: id } };
-        }
+const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey, {
+    auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
     }
-    return { _isDoc: true, col, id };
-};
-const collection = (db, col) => ({ _isCol: true, col });
-const query = (colRef, ...constraints) => ({ ...colRef, constraints });
-const where = (field, op, val) => ({ type: 'where', field, op, val });
-const orderBy = (field, dir) => ({ type: 'orderBy', field, dir });
-const limit = (num) => ({ type: 'limit', num });
-const serverTimestamp = () => new Date().toISOString();
-const deleteField = () => null;
+});
 
-const getDoc = async (docRef) => {
-    let q = supabaseClient.from(docRef.col).select('*').eq('id', docRef.id);
-    if (docRef.extraFilter) q = q.eq(docRef.extraFilter.field, docRef.extraFilter.val);
-    const { data, error } = await q.single();
-    if (error || !data) return { exists: () => false, data: () => undefined, id: docRef.id };
-    return { exists: () => true, data: () => data, id: docRef.id };
-};
-
-const getDocs = async (queryRef) => {
-    let q = supabaseClient.from(queryRef.col).select('*');
-    if (queryRef.constraints) {
-        for (const c of queryRef.constraints) {
-            if (c.type === 'where') {
-                if (c.op === '==') q = q.eq(c.field, c.val);
-                else if (c.op === '!=') q = q.neq(c.field, c.val);
-                else if (c.op === 'in') q = q.in(c.field, c.val);
-            } else if (c.type === 'orderBy') {
-                q = q.order(c.field, { ascending: c.dir !== 'desc' });
-            } else if (c.type === 'limit') {
-                q = q.limit(c.num);
-            }
-        }
+// Provisioning a login for a new staff member must never replace or sign out the
+// chairman's own session, so sign-up runs on a second, non-persisting Supabase client.
+const staffAuthClient = window.supabase.createClient(supabaseUrl, supabaseKey, {
+    auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false
     }
-    const { data, error } = await q;
-    if (error) throw error;
-    const docs = (data || []).map(d => ({ id: d.id, data: () => d, exists: () => true }));
-    return { empty: docs.length === 0, size: docs.length, docs, forEach: (cb) => docs.forEach(cb) };
-};
+});
 
-const setDoc = async (docRef, data, options = {}) => {
-    const payload = { id: docRef.id, ...data };
-    if (docRef.extraFilter) payload[docRef.extraFilter.field] = docRef.extraFilter.val;
-    const { error } = await supabaseClient.from(docRef.col).upsert(payload);
-    if (error) throw error;
-};
+// Supabase has no `auth.currentUser`: the signed-in user id is tracked from the
+// auth session so the audit columns (createdBy / updatedBy / resolvedBy ...) keep working.
+let currentUserId = null;
 
-const updateDoc = async (docRef, data) => {
-    let q = supabaseClient.from(docRef.col).update(data).eq('id', docRef.id);
-    if (docRef.extraFilter) q = q.eq(docRef.extraFilter.field, docRef.extraFilter.val);
-    const { error } = await q;
-    if (error) throw error;
-};
-
-const deleteDoc = async (docRef) => {
-    const { error } = await supabaseClient.from(docRef.col).delete().eq('id', docRef.id);
-    if (error) throw error;
-};
-
-const addDoc = async (colRef, data) => {
-    const { data: res, error } = await supabaseClient.from(colRef.col).insert(data).select().single();
-    if (error) throw error;
-    return { id: res.id };
-};
-
-const writeBatch = () => {
-    const operations = [];
-    return {
-        set: (docRef, data) => operations.push({ type: 'set', ref: docRef, data }),
-        update: (docRef, data) => operations.push({ type: 'update', ref: docRef, data }),
-        delete: (docRef) => operations.push({ type: 'delete', ref: docRef }),
-        commit: async () => {
-            for (const op of operations) {
-                if (op.type === 'set') await setDoc(op.ref, op.data);
-                if (op.type === 'update') await updateDoc(op.ref, op.data);
-                if (op.type === 'delete') await deleteDoc(op.ref);
-            }
-        }
-    };
-};
-
-const onSnapshot = (ref, callback) => {
-    if (ref._isDoc) {
-        getDoc(ref).then(callback);
-        const channel = supabaseClient.channel('public:' + ref.col + ':' + ref.id + ':' + crypto.randomUUID())
-            .on('postgres_changes', { event: '*', schema: 'public', table: ref.col, filter: 'id=eq.' + ref.id }, async () => {
-                const snap = await getDoc(ref);
-                callback(snap);
-            }).subscribe();
-        return () => supabaseClient.removeChannel(channel);
-    } else {
-        getDocs(ref).then(callback);
-        const channel = supabaseClient.channel('public:' + ref.col + ':' + crypto.randomUUID())
-            .on('postgres_changes', { event: '*', schema: 'public', table: ref.col }, async () => {
-                const snap = await getDocs(ref);
-                callback(snap);
-            }).subscribe();
-        return () => supabaseClient.removeChannel(channel);
-    }
-};
-
-const increment = (num) => num;
-const initializeApp = () => supabase;
-
-// --- END ADAPTER ---
-
-const auth = getAuth();
-const db = getFirestore();
-const secondaryAuth = getAuth();
-
+// PostgREST returns plain ISO timestamps, so ordering/formatting parses them as dates.
+function toEpochMillis(value) {
+    if (!value) return 0;
+    const time = new Date(value).getTime();
+    return Number.isNaN(time) ? 0 : time;
+}
 
 window.portalModuleLoaded = true;
 
@@ -225,11 +117,9 @@ const FEATURE_TOGGLE_META = {
     }
 };
 
-const FEATURE_SETTINGS_COLLECTION = "feature_controls";
-
-function getFeatureSettingsDocRef(schoolId) {
-    return doc(db, "schools", schoolId, FEATURE_SETTINGS_COLLECTION, "settings");
-}
+// Feature toggles live in their own Supabase table now (one row per school),
+// instead of the old Firestore sub-collection schools/{id}/feature_controls/settings.
+const FEATURE_SETTINGS_TABLE = "feature_controls";
 
 function normalizeFeatureSettingsPayload(payload = {}) {
     const source = payload.featureSettings || payload;
@@ -238,10 +128,23 @@ function normalizeFeatureSettingsPayload(payload = {}) {
 
 async function readSchoolFeatureSettings(schoolId) {
     if (!schoolId) return hydrateFeatureSettings();
-    const featureSnap = await getDoc(getFeatureSettingsDocRef(schoolId));
-    if (featureSnap.exists()) return normalizeFeatureSettingsPayload(featureSnap.data());
-    const schoolSnap = await getDoc(doc(db, "schools", schoolId));
-    if (schoolSnap.exists()) return normalizeFeatureSettingsPayload(schoolSnap.data());
+
+    const { data: featureRow, error: featureError } = await supabaseClient
+        .from(FEATURE_SETTINGS_TABLE)
+        .select("*")
+        .eq("schoolId", schoolId)
+        .maybeSingle();
+    if (featureError) console.error("Feature control lookup failed:", featureError);
+    if (featureRow) return normalizeFeatureSettingsPayload(featureRow);
+
+    // Fallback: legacy toggle fields stored directly on the school row.
+    const { data: schoolRow, error: schoolError } = await supabaseClient
+        .from("schools")
+        .select("*")
+        .eq("id", schoolId)
+        .maybeSingle();
+    if (schoolError) console.error("School lookup failed:", schoolError);
+    if (schoolRow) return normalizeFeatureSettingsPayload(schoolRow);
     return hydrateFeatureSettings();
 }
 
@@ -258,11 +161,21 @@ function listenToFeatureSettings() {
         window.unsubFeatureSettings = null;
     }
     if (!currentSchoolId) return;
-    window.unsubFeatureSettings = onSnapshot(getFeatureSettingsDocRef(currentSchoolId), async (snap) => {
-        window.currentFeatureSettings = snap.exists() ? normalizeFeatureSettingsPayload(snap.data()) : await readSchoolFeatureSettings(currentSchoolId);
+    const schoolId = currentSchoolId;
+
+    const refreshFeatureSettings = async () => {
+        window.currentFeatureSettings = await readSchoolFeatureSettings(schoolId);
         applyFeatureLocks();
         renderFeatureToggleSettings();
-    });
+    };
+
+    const featureChannel = supabaseClient.channel('realtime:' + FEATURE_SETTINGS_TABLE + ':' + crypto.randomUUID())
+        .on('postgres_changes', { event: '*', schema: 'public', table: FEATURE_SETTINGS_TABLE, filter: `schoolId=eq.${schoolId}` }, () => {
+            refreshFeatureSettings();
+        })
+        .subscribe();
+
+    window.unsubFeatureSettings = () => supabaseClient.removeChannel(featureChannel);
 }
 
 const overlay = document.getElementById('auth-overlay');
@@ -365,9 +278,9 @@ function showLoginScreen(errorText = "") {
 // --- LICENSE VERIFICATION API LOGIC ---
 async function verifySchoolLicense(schoolId) {
     try {
-        const docSnap = await getDoc(doc(db, "schools", schoolId));
-        if (docSnap.exists()) {
-            const data = docSnap.data();
+        const { data, error } = await supabaseClient.from("schools").select("*").eq("id", schoolId).maybeSingle();
+        if (error) throw error;
+        if (data) {
             window.currentLicenseStatus = data.licenseStatus || "Active";
             // If locked, reject access immediately
             if (window.currentLicenseStatus === "Locked") return false;
@@ -416,7 +329,8 @@ window.unlockChairmanDashboard = () => {
 window.saveChairmanPin = async () => {
     const pin = document.getElementById("c_newPin").value;
     if (pin.length < 4) return alert("Please enter 4 digits");
-    await updateDoc(doc(db, "users", auth.currentUser.uid), { pin: pin });
+    const { error } = await supabaseClient.from("users").update({ pin: pin }).eq("id", currentUserId);
+    if (error) throw error;
     window.currentChairmanPin = pin;
     window.unlockChairmanDashboard();
 };
@@ -431,20 +345,26 @@ window.verifyChairmanPin = () => {
     }
 };
 
-window.logoutFromPin = () => signOut(auth);
+window.logoutFromPin = () => supabaseClient.auth.signOut();
 
 // ================= AUTH LOGIC (WITH PIN, LICENSE LOCK & SUPER ADMIN BYPASS) =================
-onAuthStateChanged(auth, async (user) => {
+supabaseClient.auth.onAuthStateChange(async (event, session) => {
     window.portalAuthStateReceived = true;
+    // A refreshed access token does not change who is signed in - skip the bootstrap.
+    if (event === 'TOKEN_REFRESHED') return;
+
+    const user = session?.user ? { uid: session.user.id, email: session.user.email } : null;
+    currentUserId = user ? user.uid : null;
+
     if (user) {
         try {
-            const userDoc = await getDoc(doc(db, "users", user.uid));
-            if (!userDoc.exists()) { await signOut(auth); showLoginScreen("Account not found."); return; }
-            const data = userDoc.data();
+            const { data, error: userError } = await supabaseClient.from("users").select("*").eq("id", user.uid).maybeSingle();
+            if (userError) throw userError;
+            if (!data) { await supabaseClient.auth.signOut(); showLoginScreen("Account not found."); return; }
 
             if (data.role === "chairman") {
                 if (data.status === "blocked") {
-                    await signOut(auth); showLoginScreen("Account Blocked. Reason: " + (data.blockReason || "Contact Super Admin")); return;
+                    await supabaseClient.auth.signOut(); showLoginScreen("Account Blocked. Reason: " + (data.blockReason || "Contact Super Admin")); return;
                 }
 
                 currentSchoolId = data.schoolId; currentSchoolName = data.schoolName;
@@ -508,17 +428,18 @@ onAuthStateChanged(auth, async (user) => {
                 if (!sessionStorage.getItem("tracked_login_" + user.uid) && sessionStorage.getItem("is_impersonating") !== "true") {
                     try {
                         const ipRes = await fetch('https://api.ipify.org?format=json'); const ipData = await ipRes.json();
-                        await setDoc(doc(collection(db, "login_logs")), {
+                        const { error: logError } = await supabaseClient.from("login_logs").insert({
                             uid: user.uid, name: data.name, email: data.email, role: "chairman", schoolId: currentSchoolId,
-                            ip: ipData.ip || "Unknown", device: navigator.userAgent, timestamp: serverTimestamp()
+                            ip: ipData.ip || "Unknown", device: navigator.userAgent, timestamp: new Date().toISOString()
                         });
+                        if (logError) throw logError;
                         sessionStorage.setItem("tracked_login_" + user.uid, "true");
                     } catch (e) { }
                 }
 
             } else if (data.role === "staff") {
                 if (data.status === "blocked") {
-                    await signOut(auth); showLoginScreen("Account Blocked."); return;
+                    await supabaseClient.auth.signOut(); showLoginScreen("Account Blocked."); return;
                 }
                 currentSchoolId = data.schoolId; currentSchoolName = data.schoolName;
                 await syncSchoolFeatureSettings(currentSchoolId);
@@ -554,7 +475,7 @@ onAuthStateChanged(auth, async (user) => {
                 });
 
             } else {
-                await signOut(auth);
+                await supabaseClient.auth.signOut();
                 if (sessionStorage.getItem("is_impersonating") !== "true") {
                     showLoginScreen("Access Denied: Invalid role.");
                 }
@@ -569,7 +490,11 @@ onAuthStateChanged(auth, async (user) => {
             document.getElementById('auth-overlay').style.display = 'flex';
             document.getElementById('login-wrapper').style.display = 'none';
 
-            signInWithEmailAndPassword(auth, decodeURIComponent(sessionStorage.getItem("imp_e")), decodeURIComponent(sessionStorage.getItem("imp_p")))
+            supabaseClient.auth.signInWithPassword({
+                email: decodeURIComponent(sessionStorage.getItem("imp_e")),
+                password: decodeURIComponent(sessionStorage.getItem("imp_p"))
+            })
+                .then(({ error: signInError }) => { if (signInError) throw signInError; })
                 .then(() => {
                     sessionStorage.removeItem("imp_e");
                     sessionStorage.removeItem("imp_p");
@@ -591,8 +516,9 @@ document.getElementById("doLoginBtn").addEventListener("click", async () => {
     if (!email || !pass) return showLoginScreen("Enter Username and Password");
     btn.innerText = "Verifying...";
     try {
-        await setPersistence(auth, browserLocalPersistence);
-        await signInWithEmailAndPassword(auth, email, pass);
+        // Session persistence + auto token refresh are configured on the client itself.
+        const { error: signInError } = await supabaseClient.auth.signInWithPassword({ email, password: pass });
+        if (signInError) throw signInError;
     } catch (e) {
         btn.innerText = "Login"; showLoginScreen("Invalid Credentials!");
     }
@@ -601,7 +527,7 @@ document.getElementById("doLoginBtn").addEventListener("click", async () => {
 window.doLogout = () => {
     document.getElementById("staff-dashboard-wrapper").style.display = "none";
     document.getElementById("student-dashboard-wrapper").style.display = "none";
-    signOut(auth);
+    supabaseClient.auth.signOut();
 };
 
 document.getElementById("deviceModeToggle").addEventListener("change", (e) => { e.target.checked ? document.body.classList.add("force-desktop") : document.body.classList.remove("force-desktop"); });
@@ -647,9 +573,9 @@ function populateClassDropdowns() {
 }
 
 async function checkAdmissionStatus() {
-    const docSnap = await getDoc(doc(db, "schools", currentSchoolId));
-    if (docSnap.exists()) {
-        const data = docSnap.data();
+    const { data, error } = await supabaseClient.from("schools").select("*").eq("id", currentSchoolId).maybeSingle();
+    if (error) console.error("School settings lookup failed:", error);
+    if (data) {
         if (data.idTemplateUrl) { currentIdTemplateUrl = data.idTemplateUrl; }
         if (data.idTemplateStyle) {
             currentTemplateStyle = data.idTemplateStyle;
@@ -710,9 +636,12 @@ async function checkAdmissionStatus() {
 }
 
 window.listenToTicker = () => {
-    onSnapshot(doc(db, "schools", currentSchoolId), (docSnap) => {
-        if (docSnap.exists()) {
-            const data = docSnap.data();
+    if (!currentSchoolId) return;
+    if (window.unsubTicker) { window.unsubTicker(); window.unsubTicker = null; }
+    const schoolId = currentSchoolId;
+
+    const applySchoolSnapshot = (data) => {
+        if (data) {
             if (data.tickerActive && data.emergencyTicker) {
                 document.getElementById("school-ticker-container").style.display = "block";
                 document.getElementById("school-ticker-text").innerText = data.emergencyTicker;
@@ -735,8 +664,8 @@ window.listenToTicker = () => {
                 if (waEl && waEl.value === "") waEl.value = data.whatsappGroup;
             }
 
-            // Feature controls are isolated in schools/{schoolId}/feature_controls/settings.
-            // Legacy fields on the school document are read only as fallback by listenToFeatureSettings().
+            // Feature controls live in their own `feature_controls` table (one row per school).
+            // Legacy toggle fields on the school row are only a fallback for readSchoolFeatureSettings().
 
             // Session Upgrade Status Logic
             const upgradeStatus = data.sessionUpgradeStatus;
@@ -763,13 +692,27 @@ window.listenToTicker = () => {
                 }
             }
         }
-    });
+    };
+
+    // Paint once, then keep in sync with a native Supabase Realtime channel.
+    supabaseClient.from("schools").select("*").eq("id", schoolId).maybeSingle()
+        .then(({ data }) => applySchoolSnapshot(data));
+
+    const tickerChannel = supabaseClient.channel('realtime:schools:' + crypto.randomUUID())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'schools', filter: `id=eq.${schoolId}` }, async () => {
+            const { data } = await supabaseClient.from("schools").select("*").eq("id", schoolId).maybeSingle();
+            applySchoolSnapshot(data);
+        })
+        .subscribe();
+
+    window.unsubTicker = () => supabaseClient.removeChannel(tickerChannel);
 };
 
 window.requestSessionUpgrade = async () => {
     if (confirm("Are you sure you want to request a Session Upgrade? This will send a request to the Super Admin (Master Core).")) {
         try {
-            await updateDoc(doc(db, "schools", currentSchoolId), { sessionUpgradeStatus: "pending" });
+            const { error } = await supabaseClient.from("schools").update({ sessionUpgradeStatus: "pending" }).eq("id", currentSchoolId);
+            if (error) throw error;
             alert("Request sent successfully! Please wait for Super Admin approval.");
         } catch (e) {
             console.error(e);
@@ -782,7 +725,7 @@ window.executePromotion = async () => {
     if (!confirm("CRITICAL WARNING: This will promote ALL approved students to the next class and RESET their Roll Numbers. This action cannot be undone. Do you want to proceed?")) return;
 
     try {
-        const batch = writeBatch(db);
+        const promotions = [];
         let promotedCount = 0;
 
         window.fetchedStudents.forEach(st => {
@@ -801,19 +744,23 @@ window.executePromotion = async () => {
                     nextClass = classMap[st.class];
                 }
 
-                const studentRef = doc(db, "students", st.id);
-                batch.update(studentRef, {
-                    class: nextClass,
-                    rollNo: "" // Reset roll number
-                });
+                promotions.push({ id: st.id, nextClass });
                 promotedCount++;
             }
         });
 
         if (promotedCount > 0) {
-            await batch.commit();
+            // Native PostgREST: one update per promoted student (replaces the legacy write batch).
+            for (const promotion of promotions) {
+                const { error } = await supabaseClient.from("students").update({
+                    class: promotion.nextClass,
+                    rollNo: "" // Reset roll number
+                }).eq("id", promotion.id);
+                if (error) throw error;
+            }
             // Reset status after successful execution
-            await updateDoc(doc(db, "schools", currentSchoolId), { sessionUpgradeStatus: null });
+            const { error: schoolError } = await supabaseClient.from("schools").update({ sessionUpgradeStatus: null }).eq("id", currentSchoolId);
+            if (schoolError) throw schoolError;
             alert(`Success! ${promotedCount} students have been promoted to the next class and roll numbers reset.`);
             loadStudents();
         } else {
@@ -828,18 +775,24 @@ window.executePromotion = async () => {
 window.saveEmergencyTicker = async () => {
     const text = document.getElementById("ticker_input").value.trim();
     if (!text) return alert("Enter ticker text.");
-    await updateDoc(doc(db, "schools", currentSchoolId), { emergencyTicker: text, tickerActive: true });
+    const { error } = await supabaseClient.from("schools").update({ emergencyTicker: text, tickerActive: true }).eq("id", currentSchoolId);
+    if (error) throw error;
     alert("Emergency Ticker Published!");
 };
 
 window.clearEmergencyTicker = async () => {
-    await updateDoc(doc(db, "schools", currentSchoolId), { tickerActive: false });
+    const { error } = await supabaseClient.from("schools").update({ tickerActive: false }).eq("id", currentSchoolId);
+    if (error) throw error;
     document.getElementById("ticker_input").value = "";
     alert("Ticker Cleared.");
 };
 
 document.getElementById("admissionToggle").addEventListener("change", async (e) => {
-    try { await updateDoc(doc(db, "schools", currentSchoolId), { admissionOpen: e.target.checked }); alert(e.target.checked ? "Admissions OPEN." : "Admissions CLOSED."); }
+    try {
+        const { error } = await supabaseClient.from("schools").update({ admissionOpen: e.target.checked }).eq("id", currentSchoolId);
+        if (error) throw error;
+        alert(e.target.checked ? "Admissions OPEN." : "Admissions CLOSED.");
+    }
     catch (err) { e.target.checked = !e.target.checked; }
 });
 
@@ -955,9 +908,11 @@ window.submitStudentTransfer = async () => {
         };
 
         btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Submitting Request...";
-        const transferRef = doc(collection(db, "student_transfers"));
+        // Client-generated primary key so the student row can reference the transfer.
+        const transferId = crypto.randomUUID();
         const transferPayload = {
-            transferId: transferRef.id,
+            id: transferId,
+            transferId: transferId,
             studentId,
             studentName: student.name || "",
             studentClass: student.class || "",
@@ -979,18 +934,19 @@ window.submitStudentTransfer = async () => {
                 { stage: "Target School Acceptance", done: false },
                 { stage: "Completed", done: false }
             ],
-            createdAt: serverTimestamp(),
-            createdBy: auth.currentUser?.uid || "chairman"
+            createdAt: new Date().toISOString(),
+            createdBy: currentUserId || "chairman"
         };
 
-        const batch = writeBatch(db);
-        batch.set(transferRef, transferPayload);
-        batch.update(doc(db, "students", studentId), {
+        const { error: transferError } = await supabaseClient.from("student_transfers").insert(transferPayload);
+        if (transferError) throw transferError;
+
+        const { error: studentError } = await supabaseClient.from("students").update({
             transferStatus: "Pending HQ Approval",
-            transferRecordId: transferRef.id,
+            transferRecordId: transferId,
             pendingTransferTo: toSchoolId
-        });
-        await batch.commit();
+        }).eq("id", studentId);
+        if (studentError) throw studentError;
 
         alert("Transfer request submitted. Status: Pending HQ Approval.\nCoreEdu HQ will review and approve this request.");
         document.getElementById("transfer_student_select").value = "";
@@ -1101,6 +1057,11 @@ window.renderIncomingTransfers = () => {
     tbody.innerHTML = html || "<tr><td colspan='7' style='text-align:center;'>No incoming transfer requests.</td></tr>";
 };
 
+// Transfer rows store ISO timestamps in Supabase, so ordering is done on parsed time.
+function transferCreatedTime(record) {
+    return toEpochMillis(record?.createdAt);
+}
+
 window.loadStudentTransfers = async () => {
     if (!currentSchoolId) return;
     populateTransferClassFilters();
@@ -1109,25 +1070,18 @@ window.loadStudentTransfers = async () => {
     if (tbody) tbody.innerHTML = "<tr><td colspan='8' style='text-align:center;'>Loading transfers...</td></tr>";
     if (incomingTbody) incomingTbody.innerHTML = "<tr><td colspan='7' style='text-align:center;'>Loading incoming requests...</td></tr>";
     try {
-        const [outSnap, inSnap] = await Promise.all([
-            getDocs(query(collection(db, "student_transfers"), where("fromSchoolId", "==", currentSchoolId))),
-            getDocs(query(collection(db, "student_transfers"), where("toSchoolId", "==", currentSchoolId)))
+        const [outRes, inRes] = await Promise.all([
+            supabaseClient.from("student_transfers").select("*").eq("fromSchoolId", currentSchoolId),
+            supabaseClient.from("student_transfers").select("*").eq("toSchoolId", currentSchoolId)
         ]);
-        window.fetchedStudentTransfers = [];
-        outSnap.forEach(d => window.fetchedStudentTransfers.push({ id: d.id, ...d.data() }));
-        window.fetchedStudentTransfers.sort((a, b) => {
-            const aTime = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
-            const bTime = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
-            return bTime - aTime;
-        });
+        if (outRes.error) throw outRes.error;
+        if (inRes.error) throw inRes.error;
 
-        window.fetchedIncomingTransfers = [];
-        inSnap.forEach(d => window.fetchedIncomingTransfers.push({ id: d.id, ...d.data() }));
-        window.fetchedIncomingTransfers.sort((a, b) => {
-            const aTime = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
-            const bTime = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
-            return bTime - aTime;
-        });
+        window.fetchedStudentTransfers = outRes.data || [];
+        window.fetchedStudentTransfers.sort((a, b) => transferCreatedTime(b) - transferCreatedTime(a));
+
+        window.fetchedIncomingTransfers = inRes.data || [];
+        window.fetchedIncomingTransfers.sort((a, b) => transferCreatedTime(b) - transferCreatedTime(a));
 
         populateTransferClassFilters();
         window.renderTransferHistory();
@@ -1147,23 +1101,24 @@ window.acceptIncomingTransfer = async (transferId) => {
     try {
         const stages = tr.workflowStages || [];
         stages.forEach(s => { if (s.stage === "Target School Acceptance") { s.done = true; s.at = new Date().toISOString(); } if (s.stage === "Completed") { s.done = true; s.at = new Date().toISOString(); } });
-        const batch = writeBatch(db);
-        batch.update(doc(db, "student_transfers", transferId), {
+        const { error: transferError } = await supabaseClient.from("student_transfers").update({
             status: "Completed",
             workflowStage: 4,
-            acceptedAt: serverTimestamp(),
-            acceptedBy: auth.currentUser?.uid || "chairman",
+            acceptedAt: new Date().toISOString(),
+            acceptedBy: currentUserId || "chairman",
             workflowStages: stages
-        });
-        batch.update(doc(db, "students", tr.studentId), {
+        }).eq("id", transferId);
+        if (transferError) throw transferError;
+
+        const { error: studentError } = await supabaseClient.from("students").update({
             schoolId: currentSchoolId,
             previousSchoolId: tr.fromSchoolId,
             previousSchoolName: tr.fromSchoolName,
             transferStatus: "Completed",
-            transferredAt: serverTimestamp(),
+            transferredAt: new Date().toISOString(),
             transferRecordId: transferId
-        });
-        await batch.commit();
+        }).eq("id", tr.studentId);
+        if (studentError) throw studentError;
         alert("Transfer accepted. Student has been moved to your school.");
         loadStudents();
         loadStudentTransfers();
@@ -1181,19 +1136,20 @@ window.rejectIncomingTransfer = async (transferId) => {
     try {
         const stages = tr.workflowStages || [];
         stages.forEach(s => { if (s.stage === "Target School Acceptance") { s.done = true; s.at = new Date().toISOString(); s.rejected = true; } });
-        const batch = writeBatch(db);
-        batch.update(doc(db, "student_transfers", transferId), {
+        const { error: transferError } = await supabaseClient.from("student_transfers").update({
             status: "Rejected",
-            rejectedAt: serverTimestamp(),
-            rejectedBy: auth.currentUser?.uid || "chairman",
+            rejectedAt: new Date().toISOString(),
+            rejectedBy: currentUserId || "chairman",
             rejectReason: rejectReason || "Rejected by target school",
             workflowStages: stages
-        });
-        batch.update(doc(db, "students", tr.studentId), {
-            transferStatus: deleteField(),
-            pendingTransferTo: deleteField()
-        });
-        await batch.commit();
+        }).eq("id", transferId);
+        if (transferError) throw transferError;
+
+        const { error: studentError } = await supabaseClient.from("students").update({
+            transferStatus: null,
+            pendingTransferTo: null
+        }).eq("id", tr.studentId);
+        if (studentError) throw studentError;
         alert("Transfer rejected. The student remains at the original school.");
         loadStudents();
         loadStudentTransfers();
@@ -1209,10 +1165,15 @@ window.cancelTransferRequest = async (transferId) => {
     if (tr.status === "Completed") return alert("Cannot cancel a completed transfer.");
     if (!confirm("Cancel this transfer request? The student will remain at this school.")) return;
     try {
-        const batch = writeBatch(db);
-        batch.update(doc(db, "student_transfers", transferId), { status: "Cancelled", cancelledAt: serverTimestamp() });
-        batch.update(doc(db, "students", tr.studentId), { transferStatus: deleteField(), pendingTransferTo: deleteField() });
-        await batch.commit();
+        const { error: transferError } = await supabaseClient.from("student_transfers")
+            .update({ status: "Cancelled", cancelledAt: new Date().toISOString() })
+            .eq("id", transferId);
+        if (transferError) throw transferError;
+
+        const { error: studentError } = await supabaseClient.from("students")
+            .update({ transferStatus: null, pendingTransferTo: null })
+            .eq("id", tr.studentId);
+        if (studentError) throw studentError;
         alert("Transfer request cancelled.");
         loadStudents();
         loadStudentTransfers();
@@ -1699,11 +1660,26 @@ function renderFeatureToggleSettings() {
 async function persistFeatureSettings() {
     try {
         if (!currentSchoolId) throw new Error("School ID missing");
-        await setDoc(getFeatureSettingsDocRef(currentSchoolId), {
+        const featurePayload = {
             featureSettings: window.currentFeatureSettings,
-            updatedAt: serverTimestamp(),
-            updatedBy: auth.currentUser?.uid || "school"
-        }, { merge: true });
+            updatedAt: new Date().toISOString(),
+            updatedBy: currentUserId || "school"
+        };
+
+        // One feature_controls row per school: update it when present, otherwise create it.
+        const { data: existingRows, error: updateError } = await supabaseClient
+            .from(FEATURE_SETTINGS_TABLE)
+            .update(featurePayload)
+            .eq("schoolId", currentSchoolId)
+            .select("id");
+        if (updateError) throw updateError;
+
+        if (!existingRows || existingRows.length === 0) {
+            const { error: insertError } = await supabaseClient
+                .from(FEATURE_SETTINGS_TABLE)
+                .insert({ id: currentSchoolId, schoolId: currentSchoolId, ...featurePayload });
+            if (insertError) throw insertError;
+        }
         applyFeatureLocks();
         renderFeatureToggleSettings();
     } catch (e) {
@@ -1739,7 +1715,8 @@ window.saveThemeSettings = async () => {
     const secColor = document.getElementById("school_secondary_color")?.value || currentSecondaryColor;
     const style = currentTemplateStyle || "wave";
     try {
-        await updateDoc(doc(db, "schools", currentSchoolId), { themeColor: color, idTemplateColor: color, secondaryColor: secColor, idTemplateStyle: style });
+        const { error } = await supabaseClient.from("schools").update({ themeColor: color, idTemplateColor: color, secondaryColor: secColor, idTemplateStyle: style }).eq("id", currentSchoolId);
+        if (error) throw error;
         currentThemeColor = color;
         currentSecondaryColor = secColor;
         document.documentElement.style.setProperty('--theme-color', currentThemeColor);
@@ -1755,7 +1732,8 @@ window.saveIDColorSettings = async () => {
     const dColor = document.getElementById("idDetailsColor")?.value || currentDetailsColor;
     const pbColor = document.getElementById("idPhotoBgColor")?.value || currentPhotoBgColor;
     try {
-        await updateDoc(doc(db, "schools", currentSchoolId), { schoolNameColor: scColor, studentNameColor: stColor, detailsColor: dColor, photoBgColor: pbColor });
+        const { error } = await supabaseClient.from("schools").update({ schoolNameColor: scColor, studentNameColor: stColor, detailsColor: dColor, photoBgColor: pbColor }).eq("id", currentSchoolId);
+        if (error) throw error;
         currentSchoolNameColor = scColor;
         currentStudentNameColor = stColor;
         currentDetailsColor = dColor;
@@ -1767,7 +1745,11 @@ window.saveIDColorSettings = async () => {
 };
 window.saveEmergency = async () => {
     const num = document.getElementById("school_emergency").value.trim(); if (!num) return alert("Enter Emergency Number");
-    try { await updateDoc(doc(db, "schools", currentSchoolId), { emergencyMobile: num }); document.getElementById("print_emergency").innerText = "Emergency: " + num; alert("Emergency Number Saved!"); } catch (e) { }
+    try {
+        const { error } = await supabaseClient.from("schools").update({ emergencyMobile: num }).eq("id", currentSchoolId);
+        if (error) throw error;
+        document.getElementById("print_emergency").innerText = "Emergency: " + num; alert("Emergency Number Saved!");
+    } catch (e) { }
 };
 window.saveSignature = async () => {
     let sigUrl = currentSignatureUrl;
@@ -1784,7 +1766,8 @@ window.saveSignature = async () => {
     };
 
     try {
-        await updateDoc(doc(db, "schools", currentSchoolId), { signatureUrl: sigUrl, sigSettings: sigSettings });
+        const { error } = await supabaseClient.from("schools").update({ signatureUrl: sigUrl, sigSettings: sigSettings }).eq("id", currentSchoolId);
+        if (error) throw error;
         currentSignatureUrl = sigUrl;
         window.currentSigSettings = sigSettings;
         if (sigUrl) {
@@ -1808,7 +1791,8 @@ window.savePaymentSettings = async () => {
     if (!upiId) return alert("Please enter a valid UPI ID.");
 
     try {
-        await updateDoc(doc(db, "schools", currentSchoolId), { paymentQrUrl: qrUrl, upiId: upiId });
+        const { error } = await supabaseClient.from("schools").update({ paymentQrUrl: qrUrl, upiId: upiId }).eq("id", currentSchoolId);
+        if (error) throw error;
         currentPaymentQrUrl = qrUrl;
         if (qrUrl) document.getElementById("payment_qr_preview").src = qrUrl;
         alert("Payment Settings Saved successfully!");
@@ -1819,7 +1803,11 @@ window.savePaymentSettings = async () => {
 
 window.sendPasswordRequest = async () => {
     const newPass = document.getElementById("req_new_pass").value.trim(); if (!newPass) return alert("Please enter a new password.");
-    try { await updateDoc(doc(db, "users", auth.currentUser.uid), { suggestedPassword: newPass }); alert("Password change request sent to Super Admin!"); document.getElementById("req_new_pass").value = ""; } catch (e) { }
+    try {
+        const { error } = await supabaseClient.from("users").update({ suggestedPassword: newPass }).eq("id", currentUserId);
+        if (error) throw error;
+        alert("Password change request sent to Super Admin!"); document.getElementById("req_new_pass").value = "";
+    } catch (e) { }
 };
 
 // ================= MAIL BOX =================
@@ -1829,13 +1817,18 @@ window.sendChairmanMessage = async () => {
     if (!title || !body) return alert("Fill title and body");
     let receiverId = target; let receiverType = target;
     if (target === "specific_staff") { receiverId = document.getElementById("mail_specific_staff").value; receiverType = "staff_member"; if (!receiverId) return alert("Please select a staff member."); }
-    try { await setDoc(doc(collection(db, "direct_messages")), { senderId: auth.currentUser.uid, senderName: currentSchoolName + " (Chairman)", senderRole: "chairman", schoolId: currentSchoolId, receiverType: receiverType, receiverId: receiverId, title: title, body: body, isRead: false, createdAt: serverTimestamp() }); alert("Message Sent!"); document.getElementById("mail_title").value = ""; document.getElementById("mail_body").value = ""; loadSentMail(); } catch (e) { }
+    try {
+        const { error } = await supabaseClient.from("direct_messages").insert({ senderId: currentUserId, senderName: currentSchoolName + " (Chairman)", senderRole: "chairman", schoolId: currentSchoolId, receiverType: receiverType, receiverId: receiverId, title: title, body: body, isRead: false, createdAt: new Date().toISOString() });
+        if (error) throw error;
+        alert("Message Sent!"); document.getElementById("mail_title").value = ""; document.getElementById("mail_body").value = ""; loadSentMail();
+    } catch (e) { }
 };
 async function loadInbox() {
     try {
-        const snap = await getDocs(query(collection(db, "direct_messages"), where("schoolId", "==", currentSchoolId), where("receiverType", "==", "chairman")));
-        let html = ""; let msgs = []; snap.forEach(d => msgs.push({ id: d.id, ...d.data() }));
-        msgs.sort((a, b) => { if (!a.createdAt) return 1; if (!b.createdAt) return -1; return b.createdAt.toMillis() - a.createdAt.toMillis(); });
+        const { data: rows, error } = await supabaseClient.from("direct_messages").select("*").eq("schoolId", currentSchoolId).eq("receiverType", "chairman");
+        if (error) throw error;
+        let html = ""; let msgs = rows || [];
+        msgs.sort((a, b) => { if (!a.createdAt) return 1; if (!b.createdAt) return -1; return toEpochMillis(b.createdAt) - toEpochMillis(a.createdAt); });
         let unreadCount = 0;
         msgs.forEach(msg => {
             let isUnread = !msg.isRead;
@@ -1845,7 +1838,7 @@ async function loadInbox() {
             }
             if (isUnread) unreadCount++;
 
-            let ts = msg.createdAt ? new Date(msg.createdAt.toMillis()).toLocaleString() : "Unknown";
+            let ts = msg.createdAt ? new Date(msg.createdAt).toLocaleString() : "Unknown";
             let sender = msg.senderRole || 'Admin';
             let initial = sender.charAt(0).toUpperCase();
             html += `<div class="gmail-item" onclick="openMailThread('${msg.id}')" style="${isUnread ? 'font-weight:bold; background:#f0f7ff;' : ''}">
@@ -1871,16 +1864,17 @@ async function loadInbox() {
 }
 async function loadSentMail() {
     try {
-        const snap = await getDocs(query(collection(db, "direct_messages"), where("senderId", "==", auth.currentUser.uid)));
-        let html = ""; let msgs = []; snap.forEach(d => msgs.push({ id: d.id, ...d.data() }));
-        msgs.sort((a, b) => { if (!a.createdAt) return 1; if (!b.createdAt) return -1; return b.createdAt.toMillis() - a.createdAt.toMillis(); });
+        const { data: rows, error } = await supabaseClient.from("direct_messages").select("*").eq("senderId", currentUserId);
+        if (error) throw error;
+        let html = ""; let msgs = rows || [];
+        msgs.sort((a, b) => { if (!a.createdAt) return 1; if (!b.createdAt) return -1; return toEpochMillis(b.createdAt) - toEpochMillis(a.createdAt); });
         msgs.forEach(msg => {
             let isUnreadReply = false;
             if (msg.replies && msg.replies.length > 0) {
                 let lastReply = msg.replies[msg.replies.length - 1];
                 if (lastReply.senderRole !== "chairman" && !lastReply.isRead) isUnreadReply = true;
             }
-            let ts = msg.createdAt ? new Date(msg.createdAt.toMillis()).toLocaleString() : "Unknown";
+            let ts = msg.createdAt ? new Date(msg.createdAt).toLocaleString() : "Unknown";
             let toWho = msg.receiverType === 'staff_member' ? 'Specific Staff' : (msg.receiverType === 'school' ? 'Specific School' : msg.receiverType);
             let initial = toWho.charAt(0).toUpperCase();
             html += `<div class="gmail-item" onclick="openMailThread('${msg.id}')" style="${isUnreadReply ? 'font-weight:bold; background:#f0f7ff;' : ''}">
@@ -1918,14 +1912,10 @@ window.loadStudentComplaints = async () => {
     if (!tbody || !currentSchoolId) return;
     tbody.innerHTML = "<tr><td colspan='7' style='text-align:center;'>Loading complaints...</td></tr>";
     try {
-        const snap = await getDocs(query(collection(db, "complaints"), where("schoolId", "==", currentSchoolId)));
-        window.fetchedStudentComplaints = [];
-        snap.forEach(d => window.fetchedStudentComplaints.push({ id: d.id, ...d.data() }));
-        window.fetchedStudentComplaints.sort((a, b) => {
-            const aTime = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
-            const bTime = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
-            return bTime - aTime;
-        });
+        const { data: rows, error } = await supabaseClient.from("complaints").select("*").eq("schoolId", currentSchoolId);
+        if (error) throw error;
+        window.fetchedStudentComplaints = rows || [];
+        window.fetchedStudentComplaints.sort((a, b) => toEpochMillis(b.createdAt) - toEpochMillis(a.createdAt));
         window.renderStudentComplaints();
     } catch (e) {
         console.error("Load complaints failed:", e);
@@ -1942,7 +1932,7 @@ window.renderStudentComplaints = () => {
         const status = c.status || "Open";
         if (status === "Open") openCount++;
         const statusColor = status === "Open" ? "#f59e0b" : status === "In Progress" ? "#3b82f6" : "#10b981";
-        const ts = c.createdAt ? new Date(c.createdAt.toMillis()).toLocaleDateString("en-CA") : "N/A";
+        const ts = c.createdAt ? new Date(c.createdAt).toLocaleDateString("en-CA") : "N/A";
         html += `<tr>
             <td>${ts}</td>
             <td><strong>${c.studentName || "N/A"}</strong><br><small>Class ${c.studentClass || "N/A"}</small></td>
@@ -1970,7 +1960,8 @@ window.resolveComplaint = async (complaintId) => {
     if (!c) return alert("Complaint not found.");
     if (!confirm(`Mark complaint "${c.subject || "this complaint"}" as Resolved?`)) return;
     try {
-        await updateDoc(doc(db, "complaints", complaintId), { status: "Resolved", resolvedAt: serverTimestamp(), resolvedBy: auth.currentUser?.uid || "chairman" });
+        const { error } = await supabaseClient.from("complaints").update({ status: "Resolved", resolvedAt: new Date().toISOString(), resolvedBy: currentUserId || "chairman" }).eq("id", complaintId);
+        if (error) throw error;
         alert("Complaint marked as resolved.");
         window.loadStudentComplaints();
     } catch (e) {
@@ -1985,7 +1976,8 @@ window.replyToComplaint = async (complaintId) => {
     const reply = prompt(`Reply to ${c.studentName || "student"} regarding "${c.subject || "complaint"}":`);
     if (!reply) return;
     try {
-        await updateDoc(doc(db, "complaints", complaintId), { chairmanReply: reply, status: "In Progress", repliedAt: serverTimestamp() });
+        const { error } = await supabaseClient.from("complaints").update({ chairmanReply: reply, status: "In Progress", repliedAt: new Date().toISOString() }).eq("id", complaintId);
+        if (error) throw error;
         alert("Reply sent to student.");
         window.loadStudentComplaints();
     } catch (e) {
@@ -2002,7 +1994,17 @@ window.saveFeeStructure = async () => {
     const oth = document.getElementById("master_other").value;
     if (!tui) return alert("Tuition fee is required.");
     try {
-        await setDoc(doc(db, `schools/${currentSchoolId}/feeStructures`, cls), { tuition: Number(tui), bus: bus ? Number(bus) : 0, other: oth ? Number(oth) : 0, updatedAt: serverTimestamp() });
+        // One row per school + class in the dedicated fee_structures table.
+        const { error } = await supabaseClient.from("fee_structures").upsert({
+            id: `${currentSchoolId}_${cls}`,
+            schoolId: currentSchoolId,
+            class: cls,
+            tuition: Number(tui),
+            bus: bus ? Number(bus) : 0,
+            other: oth ? Number(oth) : 0,
+            updatedAt: new Date().toISOString()
+        });
+        if (error) throw error;
         alert(`Fee structure for Class ${cls} updated successfully!`);
     } catch (e) { alert("Error saving fee structure."); }
 };
@@ -2018,20 +2020,32 @@ window.saveStudentFee = async () => {
     const cls = document.getElementById("fee_class").value; const sId = document.getElementById("fee_student").value; const mob = document.getElementById("fee_mobile").value; const amt = document.getElementById("fee_amount").value; const mode = document.getElementById("fee_mode").value; const date = document.getElementById("fee_date").value;
     if (!sId || !amt || !date) return alert("Fill all required details.");
     const selectEl = document.getElementById("fee_student"); const sName = selectEl.options[selectEl.selectedIndex].text.split('(')[0].trim();
-    try { await setDoc(doc(collection(db, "transactions")), { schoolId: currentSchoolId, type: "Fee", personId: sId, personName: sName, class: cls, mobile: mob, amount: Number(amt), mode: mode, date: date, createdAt: serverTimestamp() }); alert("Fee Record Added!"); document.getElementById("fee_amount").value = ""; loadTransactions(); } catch (e) { }
+    try {
+        const { error } = await supabaseClient.from("transactions").insert({ schoolId: currentSchoolId, type: "Fee", personId: sId, personName: sName, class: cls, mobile: mob, amount: Number(amt), mode: mode, date: date, createdAt: new Date().toISOString() });
+        if (error) throw error;
+        alert("Fee Record Added!"); document.getElementById("fee_amount").value = ""; loadTransactions();
+    } catch (e) { }
 };
 
 window.saveStaffSalary = async () => {
     const stId = document.getElementById("salary_staff").value; const amt = document.getElementById("salary_amount").value; const mode = document.getElementById("salary_mode").value; const date = document.getElementById("salary_date").value;
     if (!stId || !amt || !date) return alert("Fill all details.");
     const selectEl = document.getElementById("salary_staff"); const stName = selectEl.options[selectEl.selectedIndex].text.split('(')[0].trim();
-    try { await setDoc(doc(collection(db, "transactions")), { schoolId: currentSchoolId, type: "Salary", personId: stId, personName: stName, amount: Number(amt), mode: mode, date: date, createdAt: serverTimestamp() }); alert("Salary Disbursed & Approved!"); document.getElementById("salary_amount").value = ""; loadTransactions(); } catch (e) { }
+    try {
+        const { error } = await supabaseClient.from("transactions").insert({ schoolId: currentSchoolId, type: "Salary", personId: stId, personName: stName, amount: Number(amt), mode: mode, date: date, createdAt: new Date().toISOString() });
+        if (error) throw error;
+        alert("Salary Disbursed & Approved!"); document.getElementById("salary_amount").value = ""; loadTransactions();
+    } catch (e) { }
 };
 
 window.saveExpense = async () => {
     const title = document.getElementById("exp_title").value.trim(); const amt = document.getElementById("exp_amount").value; const date = document.getElementById("exp_date").value;
     if (!title || !amt || !date) return alert("Fill all expense details.");
-    try { await setDoc(doc(collection(db, "transactions")), { schoolId: currentSchoolId, type: "Expense", personName: title, amount: Number(amt), mode: "Cash/Bank", date: date, createdAt: serverTimestamp() }); alert("Expense Logged!"); document.getElementById("exp_title").value = ""; document.getElementById("exp_amount").value = ""; loadTransactions(); } catch (e) { }
+    try {
+        const { error } = await supabaseClient.from("transactions").insert({ schoolId: currentSchoolId, type: "Expense", personName: title, amount: Number(amt), mode: "Cash/Bank", date: date, createdAt: new Date().toISOString() });
+        if (error) throw error;
+        alert("Expense Logged!"); document.getElementById("exp_title").value = ""; document.getElementById("exp_amount").value = ""; loadTransactions();
+    } catch (e) { }
 };
 
 window.fetchedTransactions = [];
@@ -2039,9 +2053,9 @@ window.currentLedgerTab = 'All';
 
 async function loadTransactions() {
     try {
-        const snap = await getDocs(query(collection(db, "transactions"), where("schoolId", "==", currentSchoolId)));
-        window.fetchedTransactions = [];
-        snap.forEach(d => window.fetchedTransactions.push({ id: d.id, ...d.data() }));
+        const { data: rows, error } = await supabaseClient.from("transactions").select("*").eq("schoolId", currentSchoolId);
+        if (error) throw error;
+        window.fetchedTransactions = rows || [];
         window.fetchedTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
 
         let totalFees = 0, totalSalaries = 0, totalExpenses = 0;
@@ -2140,7 +2154,8 @@ window.requestTransactionDeletion = async (id) => {
 
     if (confirm("Request Super Admin to delete this transaction?")) {
         try {
-            await setDoc(doc(db, "pending_deletions", id), {
+            const { error } = await supabaseClient.from("pending_deletions").upsert({
+                id,
                 ...t,
                 targetDocId: id,
                 targetCollection: 'transactions',
@@ -2148,6 +2163,7 @@ window.requestTransactionDeletion = async (id) => {
                 requestDate: new Date().toISOString(),
                 status: "Pending"
             });
+            if (error) throw error;
             alert("Deletion request sent to Super Admin for approval.");
         } catch (e) {
             console.error(e);
@@ -2305,42 +2321,43 @@ window.generatePayslip = async (id) => {
 // ================= STUDENTS, CERTS & DEFAULTER LOCKDOWN =================
 async function loadStudents() {
     try {
-        const snap = await getDocs(query(collection(db, "students"), where("schoolId", "==", currentSchoolId)));
+        const { data: studentRows, error: studentError } = await supabaseClient.from("students").select("*").eq("schoolId", currentSchoolId);
+        if (studentError) throw studentError;
         let pendingCount = 0; let totalPresent = 0;
         
         // --- SECURE BATCH 2 READ PATH FOR ADMISSIONS ---
-        const admissionSnap = await getDocs(query(collection(db, "admission_applications"), where("schoolId", "==", currentSchoolId)));
+        const { data: admissionRows, error: admissionError } = await supabaseClient.from("admission_applications").select("*").eq("schoolId", currentSchoolId);
+        if (admissionError) throw admissionError;
         
         window.fetchedStudents = []; 
         
         // Push actual students
-        snap.forEach(d => { 
-            let dt = d.data(); dt.id = d.id; 
+        (studentRows || []).forEach(dt => { 
             // Legacy pendings (should be 0)
             if (dt.status === "Pending") pendingCount++; 
             window.fetchedStudents.push(dt); 
         });
 
         // Push new secure admission applications
-        admissionSnap.forEach(d => {
-            let dt = d.data();
+        (admissionRows || []).forEach(dt => {
             // Flatten JSONB payload to match legacy format
-            let flatDt = { id: d.id, ...dt, ...dt.data, _isNewAdmission: true };
+            let flatDt = { ...dt, ...dt.data, _isNewAdmission: true };
             if (flatDt.status === "Pending") pendingCount++;
             window.fetchedStudents.push(flatDt);
         });
 
-        document.getElementById("count-students").innerText = snap.size; 
+        document.getElementById("count-students").innerText = (studentRows || []).length; 
         document.getElementById("count-pending").innerText = pendingCount;
 
-        if (snap.size > 0) {
+        if (studentRows && studentRows.length > 0) {
             try {
                 const todayStr = new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD
-                const attSnap = await getDocs(query(collection(db, "attendance"), where("schoolId", "==", currentSchoolId), where("date", "==", todayStr)));
+                const { data: attendanceRows, error: attendanceError } = await supabaseClient.from("attendance").select("*").eq("schoolId", currentSchoolId).eq("date", todayStr);
+                if (attendanceError) throw attendanceError;
                 let totalStudentsRecorded = 0;
                 let totalPresent = 0;
-                attSnap.forEach(d => {
-                    const recs = d.data().records || {};
+                (attendanceRows || []).forEach(record => {
+                    const recs = record.records || {};
                     for (let sid in recs) {
                         totalStudentsRecorded++;
                         if (recs[sid] === "Present") totalPresent++;
@@ -2685,7 +2702,7 @@ function renderAdmitCardStudentsTable(className = "ALL", searchTerm = null, stat
 
 window.toggleAdmitCardVisibility = async (studentId, isPublished) => {
     try {
-        const { error: rpcError } = await supabase.rpc('update_student', { p_student_id: studentId, p_payload: { admitCardPublished: isPublished } });
+        const { error: rpcError } = await supabaseClient.rpc('update_student', { p_student_id: studentId, p_payload: { admitCardPublished: isPublished } });
         if (rpcError) throw new Error(rpcError.message);
         // Optionally update the local fetched array so it persists on re-filter
         const idx = window.fetchedStudents.findIndex(s => s.id === studentId);
@@ -2744,13 +2761,15 @@ window.saveStudentMarks = async () => {
     });
 
     try {
-        await setDoc(doc(db, "student_marks", studentId), {
+        const { error } = await supabaseClient.from("student_marks").upsert({
+            id: studentId,
             marks: marksData,
             totalMax,
             totalObt,
             examTerm: examTerm,
             updatedAt: new Date().toISOString()
         });
+        if (error) throw error;
         alert("Marks saved successfully!");
     } catch (e) {
         console.error(e);
@@ -2889,13 +2908,14 @@ window.generateBulkMarksheets = async (students) => {
         let pdfAdded = false;
 
         for (let st of students) {
-            const docSnap = await getDoc(doc(db, "student_marks", st.id));
-            if (!docSnap.exists()) {
+            const { data: marksRow, error: marksError } = await supabaseClient.from("student_marks").select("*").eq("id", st.id).maybeSingle();
+            if (marksError) throw marksError;
+            if (!marksRow) {
                 console.warn(`No marks found for ${st.name}`);
                 continue; // Skip if no real data
             }
 
-            const imgData = await window.generateMarksheet(st, docSnap.data());
+            const imgData = await window.generateMarksheet(st, marksRow);
 
             if (pdfAdded) pdf.addPage();
 
@@ -2928,7 +2948,7 @@ window.updateStudentStatus = async (id, isNewAdmission) => {
     if (isNewAdmission) {
         if (!confirm("Approve this new admission and create student record?")) return;
         try {
-            const { data, error } = await supabase.rpc('approve_admission', { p_application_id: id });
+            const { data, error } = await supabaseClient.rpc('approve_admission', { p_application_id: id });
             if (error) throw error;
             alert('Admission approved successfully! Student record created.');
             loadStudents();
@@ -2940,7 +2960,7 @@ window.updateStudentStatus = async (id, isNewAdmission) => {
     }
     if (confirm("Approve legacy admission?")) { 
         try {
-            const { error: rpcError } = await supabase.rpc('update_student', { p_student_id: id, p_payload: { status: "Approved" } });
+            const { error: rpcError } = await supabaseClient.rpc('update_student', { p_student_id: id, p_payload: { status: "Approved" } });
             if (rpcError) throw new Error(rpcError.message);
             alert("Status updated successfully.");
             loadStudents(); 
@@ -2952,7 +2972,7 @@ window.updateStudentStatus = async (id, isNewAdmission) => {
 window.deleteStudent = async (id) => { 
     if (confirm("Delete this student permanently?")) { 
         try {
-            const { error: rpcError } = await supabase.rpc('delete_student', { p_student_id: id });
+            const { error: rpcError } = await supabaseClient.rpc('delete_student', { p_student_id: id });
             if (rpcError) throw new Error(rpcError.message);
             loadStudents(); 
         } catch (err) {
@@ -2964,7 +2984,7 @@ window.deleteStudent = async (id) => {
 window.toggleStudentLock = async (id, state) => {
     if (confirm(state ? "Lock this student's account?" : "Unlock this student's account?")) {
         try {
-            const { error: rpcError } = await supabase.rpc('update_student', { p_student_id: id, p_payload: { lockedOut: state } });
+            const { error: rpcError } = await supabaseClient.rpc('update_student', { p_student_id: id, p_payload: { lockedOut: state } });
             if (rpcError) throw new Error(rpcError.message);
             loadStudents();
         } catch (e) {
@@ -3105,12 +3125,12 @@ window.saveStudentModal = async () => {
 
     try {
         if (id) {
-            const { error: rpcError } = await supabase.rpc('update_student', { p_student_id: id, p_payload: data });
+            const { error: rpcError } = await supabaseClient.rpc('update_student', { p_student_id: id, p_payload: data });
             if (rpcError) throw new Error(rpcError.message);
             alert("Student details updated successfully!");
         } else {
             // Use Secure Server-Side Student Creation RPC
-            const { data: newStudentId, error: rpcError } = await supabase.rpc('create_student', { p_payload: data });
+            const { data: newStudentId, error: rpcError } = await supabaseClient.rpc('create_student', { p_payload: data });
             if (rpcError) {
                 console.error("RPC Error:", rpcError);
                 throw new Error(rpcError.message || "Failed to create student securely.");
@@ -3255,21 +3275,27 @@ window.saveStaff = async () => {
 
     let photoUrl = await uploadToCloudinary("s_photo", "s_btn", "<i class='fas fa-save'></i> Add Staff Member"); if (!photoUrl) photoUrl = "https://via.placeholder.com/100";
     try {
-        const cred = await createUserWithEmailAndPassword(secondaryAuth, email, pass);
-        await setDoc(doc(db, "users", cred.user.uid), { name, email, role: "staff", staffRole: role, plainPassword: pass, photoUrl: photoUrl, schoolId: currentSchoolId, status: "active", privileges: { attendance: true, marks: true, finance: false, notices: false, admissions: false, certs: false, exams: false, settings: false, view_finance: false, delete: false } });
+        const { data: created, error: signUpError } = await staffAuthClient.auth.signUp({ email, password: pass });
+        if (signUpError) throw signUpError;
+        const newStaffId = created?.user?.id;
+        if (!newStaffId) throw new Error("Auth account was not created. Please try again.");
+
+        const { error } = await supabaseClient.from("users").upsert({ id: newStaffId, name, email, role: "staff", staffRole: role, plainPassword: pass, photoUrl: photoUrl, schoolId: currentSchoolId, status: "active", privileges: { attendance: true, marks: true, finance: false, notices: false, admissions: false, certs: false, exams: false, settings: false, view_finance: false, delete: false } });
+        if (error) throw error;
         alert("Staff created successfully!"); document.getElementById("s_name").value = ""; document.getElementById("s_email").value = ""; document.getElementById("s_pass").value = ""; loadStaff();
-    } catch (e) { alert("Error: " + e.message); } finally { await signOut(secondaryAuth).catch(e => { }); }
+    } catch (e) { alert("Error: " + e.message); } finally { await staffAuthClient.auth.signOut().catch(() => { }); }
 };
 
 async function loadStaff() {
     try {
-        const snap = await getDocs(query(collection(db, "users"), where("schoolId", "==", currentSchoolId), where("role", "==", "staff")));
-        window.fetchedStaff = []; let html = ""; document.getElementById("count-staff").innerText = snap.size; let staffOpts = "<option value=''>-- Select Staff --</option>";
-        snap.forEach(d => {
-            const dt = d.data(); dt.id = d.id; window.fetchedStaff.push(dt);
-            staffOpts += `<option value="${d.id}">${dt.name} (${dt.staffRole})</option>`;
+        const { data: staffRows, error } = await supabaseClient.from("users").select("*").eq("schoolId", currentSchoolId).eq("role", "staff");
+        if (error) throw error;
+        window.fetchedStaff = []; let html = ""; document.getElementById("count-staff").innerText = (staffRows || []).length; let staffOpts = "<option value=''>-- Select Staff --</option>";
+        (staffRows || []).forEach(dt => {
+            window.fetchedStaff.push(dt);
+            staffOpts += `<option value="${dt.id}">${dt.name} (${dt.staffRole})</option>`;
             const statusColor = dt.status === "blocked" ? "red" : "green";
-            const blockBtn = dt.status === "blocked" ? `<button class="action-btn btn-green" onclick="updateStaffStatus('${d.id}', 'active')">Unblock</button>` : `<button class="action-btn btn-yellow" onclick="updateStaffStatus('${d.id}', 'blocked')">Block</button>`;
+            const blockBtn = dt.status === "blocked" ? `<button class="action-btn btn-green" onclick="updateStaffStatus('${dt.id}', 'active')">Unblock</button>` : `<button class="action-btn btn-yellow" onclick="updateStaffStatus('${dt.id}', 'blocked')">Block</button>`;
 
             let privs = dt.privileges || {}; let privStr = [];
             if (privs.attendance) privStr.push("Att."); if (privs.marks) privStr.push("Marks"); if (privs.finance) privStr.push("Fin."); if (privs.notices) privStr.push("Notices");
@@ -3281,8 +3307,8 @@ async function loadStaff() {
                 <td><span style="font-size:11px; background:#e2e8f0; padding:2px 5px; border-radius:4px;">${privStr.join(', ') || 'None'}</span></td>
                 <td style="color:${statusColor}; font-weight:bold;">${(dt.status || 'ACTIVE').toUpperCase()}</td>
                 <td>
-                    <button class="action-btn btn-blue" onclick="editStaff('${d.id}')"><i class="fas fa-user-edit"></i> Auth / Edit</button>
-                    ${blockBtn} <button class="action-btn btn-red" onclick="deleteStaff('${d.id}')"><i class="fas fa-trash"></i></button>
+                    <button class="action-btn btn-blue" onclick="editStaff('${dt.id}')"><i class="fas fa-user-edit"></i> Auth / Edit</button>
+                    ${blockBtn} <button class="action-btn btn-red" onclick="deleteStaff('${dt.id}')"><i class="fas fa-trash"></i></button>
                 </td>
             </tr>`;
         });
@@ -3296,18 +3322,17 @@ window.downloadGlobalStaffCSV = async (evt = null) => {
     const originalHtml = triggerBtn?.innerHTML;
     try {
         if (triggerBtn) { triggerBtn.disabled = true; triggerBtn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Preparing CSV..."; }
-        const [staffSnap, schoolsSnap] = await Promise.all([
-            getDocs(query(collection(db, "users"), where("role", "==", "staff"))),
-            getDocs(collection(db, "vw_public_schools")).catch(() => null)
+        const [staffRes, schoolsRes] = await Promise.all([
+            supabaseClient.from("users").select("*").eq("role", "staff"),
+            supabaseClient.from("vw_public_schools").select("*").then(res => (res.error ? null : res))
         ]);
+        if (staffRes.error) throw staffRes.error;
         const schoolMap = {};
-        schoolsSnap?.forEach(d => {
-            const school = d.data();
-            schoolMap[d.id] = school.name || school.schoolName || school.entityName || "";
+        (schoolsRes?.data || []).forEach(school => {
+            schoolMap[school.id] = school.name || school.schoolName || school.entityName || "";
         });
         const rows = [["School ID", "School Name", "Name", "Role", "Email", "Password", "Status"]];
-        staffSnap.forEach(d => {
-            const s = d.data();
+        (staffRes.data || []).forEach(s => {
             rows.push([s.schoolId || '', s.schoolName || schoolMap[s.schoolId] || currentSchoolName || '', s.name || '', s.staffRole || '', s.email || '', s.plainPassword || '', s.status || 'active']);
         });
         if (rows.length === 1) {
@@ -3378,31 +3403,32 @@ window.saveStaffEdits = async () => {
         delete: document.getElementById("priv_delete").checked
     };
     try {
-        const updatePayload = { schoolName, name, email, staffRole: r, privileges: privs, updatedAt: serverTimestamp() };
+        const updatePayload = { schoolName, name, email, staffRole: r, privileges: privs, updatedAt: new Date().toISOString() };
         if (p) updatePayload.plainPassword = p;
-        await updateDoc(doc(db, "users", currentEditStaffId), updatePayload);
+        const { error } = await supabaseClient.from("users").update(updatePayload).eq("id", currentEditStaffId);
+        if (error) throw error;
         alert("Node, Chairman details aur privileges updated successfully!"); document.getElementById("edit-staff-modal").style.display = "none"; loadStaff();
     } catch (e) { console.error(e); alert("Error saving node details."); }
 };
 
 window.updateStaffStatus = async (uid, newStatus) => {
-    if (newStatus === 'blocked') { const reason = prompt("Enter reason for blocking this staff member:"); if (reason === null) return; await updateDoc(doc(db, "users", uid), { status: newStatus, blockReason: reason || "Violation of policies" }); } else { if (confirm("Unblock this staff member?")) { await updateDoc(doc(db, "users", uid), { status: newStatus, blockReason: "" }); } else return; } loadStaff();
+    if (newStatus === 'blocked') { const reason = prompt("Enter reason for blocking this staff member:"); if (reason === null) return; const { error } = await supabaseClient.from("users").update({ status: newStatus, blockReason: reason || "Violation of policies" }).eq("id", uid); if (error) throw error; } else { if (confirm("Unblock this staff member?")) { const { error } = await supabaseClient.from("users").update({ status: newStatus, blockReason: "" }).eq("id", uid); if (error) throw error; } else return; } loadStaff();
 };
-window.deleteStaff = async (uid) => { if (confirm("Permanently delete this staff member?")) { await deleteDoc(doc(db, "users", uid)); loadStaff(); } };
+window.deleteStaff = async (uid) => { if (confirm("Permanently delete this staff member?")) { const { error } = await supabaseClient.from("users").delete().eq("id", uid); if (error) throw error; loadStaff(); } };
 
 // ================= ACADEMIC VETO =================
 async function loadPendingResults() {
     try {
-        const snap = await getDocs(query(collection(db, "exam_marks"), where("schoolId", "==", currentSchoolId), where("status", "==", "Pending")));
+        const { data: pendingMarks, error } = await supabaseClient.from("exam_marks").select("*").eq("schoolId", currentSchoolId).eq("status", "Pending");
+        if (error) throw error;
         let html = "";
-        snap.forEach(d => {
-            const dt = d.data();
-            html += `<tr><td>${dt.date || 'Recent'}</td><td><strong>${dt.studentName}</strong><br><small>Class: ${dt.class}</small></td><td><strong>${dt.examName}</strong><br><small>${dt.subject}</small></td><td><span style="color:#e67e22; font-weight:bold;">${dt.marksObtained} / ${dt.maxMarks}</span></td><td><button class="action-btn btn-green" onclick="approveResult('${d.id}')"><i class="fas fa-check"></i> Approve Result</button></td></tr>`;
+        (pendingMarks || []).forEach(dt => {
+            html += `<tr><td>${dt.date || 'Recent'}</td><td><strong>${dt.studentName}</strong><br><small>Class: ${dt.class}</small></td><td><strong>${dt.examName}</strong><br><small>${dt.subject}</small></td><td><span style="color:#e67e22; font-weight:bold;">${dt.marksObtained} / ${dt.maxMarks}</span></td><td><button class="action-btn btn-green" onclick="approveResult('${dt.id}')"><i class="fas fa-check"></i> Approve Result</button></td></tr>`;
         });
         document.getElementById("veto-table").innerHTML = html || "<tr><td colspan='5' style='text-align:center;'>No pending results to vet.</td></tr>";
     } catch (e) { console.log("Academic veto skip", e); }
 }
-window.approveResult = async (docId) => { try { await updateDoc(doc(db, "exam_marks", docId), { status: "Approved" }); alert("Result Approved! Students can now see it."); loadPendingResults(); } catch (e) { } };
+window.approveResult = async (docId) => { try { const { error } = await supabaseClient.from("exam_marks").update({ status: "Approved" }).eq("id", docId); if (error) throw error; alert("Result Approved! Students can now see it."); loadPendingResults(); } catch (e) { } };
 
 // ================= NOTICES =================
 window.saveNotice = async () => {
@@ -3410,7 +3436,8 @@ window.saveNotice = async () => {
     const title = document.getElementById("n_title").value.trim(); const body = document.getElementById("n_body").value.trim();
     if (!title || !body) return alert("Fill title and body");
     try {
-        await setDoc(doc(collection(db, "notices")), { target, title, body, date: new Date().toLocaleDateString(), visible: true, schoolId: currentSchoolId, createdAt: serverTimestamp() });
+        const { error } = await supabaseClient.from("notices").insert({ target, title, body, date: new Date().toLocaleDateString(), visible: true, schoolId: currentSchoolId, createdAt: new Date().toISOString() });
+        if (error) throw error;
         document.getElementById("n_title").value = ""; document.getElementById("n_body").value = ""; loadNotices();
     } catch (e) { alert("Error saving notice."); }
 };
@@ -3420,7 +3447,8 @@ window.saveWhatsappLink = async () => {
     if (!link) return alert("Please enter the WhatsApp Group Link.");
 
     try {
-        await updateDoc(doc(db, "schools", currentSchoolId), { whatsappGroup: link });
+        const { error } = await supabaseClient.from("schools").update({ whatsappGroup: link }).eq("id", currentSchoolId);
+        if (error) throw error;
         alert("WhatsApp Group Link saved successfully!");
     } catch (e) {
         alert("Error saving link.");
@@ -3446,25 +3474,27 @@ window.broadcastToWhatsapp = async () => {
 
 async function loadNotices() {
     try {
-        const snap = await getDocs(query(collection(db, "notices"), where("schoolId", "==", currentSchoolId)));
+        const { data: noticeRows, error } = await supabaseClient.from("notices").select("*").eq("schoolId", currentSchoolId);
+        if (error) throw error;
         let html = "", activeCount = 0;
-        snap.forEach(d => {
-            const dt = d.data(); if (dt.visible) activeCount++;
+        (noticeRows || []).forEach(dt => {
+            if (dt.visible) activeCount++;
             const eyeIcon = dt.visible ? "fa-eye" : "fa-eye-slash", eyeColor = dt.visible ? "btn-blue" : "btn-yellow";
             html += `<tr><td>${dt.date}</td><td><strong>${dt.target || 'All'}</strong></td><td>${dt.title}</td><td>${dt.body}</td>
-            <td><button class="action-btn ${eyeColor}" onclick="toggleNotice('${d.id}', ${!dt.visible})"><i class="fas ${eyeIcon}"></i></button></td>
-            <td><button class="action-btn btn-red" onclick="deleteDocFromDb('notices', '${d.id}', loadNotices)"><i class="fas fa-trash"></i> Del</button></td></tr>`;
+            <td><button class="action-btn ${eyeColor}" onclick="toggleNotice('${dt.id}', ${!dt.visible})"><i class="fas ${eyeIcon}"></i></button></td>
+            <td><button class="action-btn btn-red" onclick="deleteRecordFromDb('notices', '${dt.id}', loadNotices)"><i class="fas fa-trash"></i> Del</button></td></tr>`;
         });
         document.getElementById("notice-table").innerHTML = html || "<tr><td colspan='6'>No Notices Found.</td></tr>";
         document.getElementById("count-notices").innerText = activeCount;
     } catch (e) { }
 }
 
-window.toggleNotice = async (id, state) => { await updateDoc(doc(db, "notices", id), { visible: state }); loadNotices(); };
+window.toggleNotice = async (id, state) => { const { error } = await supabaseClient.from("notices").update({ visible: state }).eq("id", id); if (error) throw error; loadNotices(); };
 
-window.deleteDocFromDb = async (colName, id, callback) => {
+window.deleteRecordFromDb = async (tableName, id, callback) => {
     if (confirm("Are you sure you want to permanently delete this record?")) {
-        await deleteDoc(doc(db, colName, id));
+        const { error } = await supabaseClient.from(tableName).delete().eq("id", id);
+        if (error) throw error;
         callback();
     }
 };
@@ -3694,19 +3724,14 @@ window.proceedAdmitCards = async (mode) => {
 
     const uniqueClasses = [...new Set(students.map(st => st.class))];
     const classSchedules = {};
-    const schoolSnap = await getDoc(doc(db, "schools", currentSchoolId));
-    const schoolData = schoolSnap.exists() ? schoolSnap.data() : {};
+    const { data: schoolRow, error: schoolError } = await supabaseClient.from("schools").select("*").eq("id", currentSchoolId).maybeSingle();
+    if (schoolError) throw schoolError;
+    const schoolData = schoolRow || {};
     for (let cls of uniqueClasses) {
         if (cls) {
             const fieldKey = "examSchedule_" + cls;
-            if (schoolData[fieldKey] && Array.isArray(schoolData[fieldKey])) {
-                classSchedules[cls] = schoolData[fieldKey];
-            } else {
-                try {
-                    const snap = await getDoc(doc(db, "schools", currentSchoolId, "examSchedules", cls));
-                    classSchedules[cls] = snap.exists() ? (snap.data().schedule || []) : [];
-                } catch (e) { classSchedules[cls] = []; }
-            }
+            // Per-class schedule column first, the shared `schedule` column as fallback.
+            classSchedules[cls] = Array.isArray(schoolData[fieldKey]) ? schoolData[fieldKey] : (schoolData.schedule || []);
         }
     }
 
@@ -3892,20 +3917,21 @@ window.generateBatchIDCards = async (students) => {
 
 window.loadFeeVerifications = async () => {
     try {
-        const snap = await getDocs(query(collection(db, "fee_verifications"), where("schoolId", "==", currentSchoolId)));
+        const { data: rows, error } = await supabaseClient.from("fee_verifications").select("*").eq("schoolId", currentSchoolId);
+        if (error) throw error;
         let html = "";
         const now = new Date();
 
-        let verifications = [];
-        snap.forEach(d => verifications.push({ id: d.id, ...d.data() }));
+        let verifications = rows || [];
 
         // Sort by newest first
-        verifications.sort((a, b) => b.createdAt.toDate() - a.createdAt.toDate());
+        verifications.sort((a, b) => toEpochMillis(b.createdAt) - toEpochMillis(a.createdAt));
 
         verifications.forEach(data => {
+            const createdAt = data.createdAt ? new Date(data.createdAt) : null;
             // Auto-hide successful verifications older than 24 hours
             if (data.status === "Successful") {
-                const ageHours = (now - data.createdAt.toDate()) / (1000 * 60 * 60);
+                const ageHours = createdAt ? (now - createdAt) / (1000 * 60 * 60) : 0;
                 if (ageHours > 24) return;
             }
 
@@ -3916,7 +3942,7 @@ window.loadFeeVerifications = async () => {
                 `<span style="color:#059669; font-weight:bold;"><i class="fas fa-check-circle"></i> Approved</span>`;
 
             html += `<tr>
-                <td>${data.createdAt.toDate().toLocaleString()}</td>
+                <td>${createdAt ? createdAt.toLocaleString() : 'N/A'}</td>
                 <td><strong>${data.studentName}</strong><br><small>Reg: ${data.regNo}</small></td>
                 <td style="font-family: monospace;">${data.utr}</td>
                 <td><strong>Rs. ${data.amount}</strong></td>
@@ -3935,15 +3961,14 @@ window.approveFeeVerification = async (verificationId, studentId, studentName, a
     if (!confirm(`Approve Rs.${amount} fee payment for ${studentName}? This will update the student's balance and ledger.`)) return;
 
     try {
-        const batch = writeBatch(db);
-
         // 1. Mark verification successful
-        const vRef = doc(db, "fee_verifications", verificationId);
-        batch.update(vRef, { status: "Successful", updatedAt: serverTimestamp() });
+        const { error: verificationError } = await supabaseClient.from("fee_verifications")
+            .update({ status: "Successful", updatedAt: new Date().toISOString() })
+            .eq("id", verificationId);
+        if (verificationError) throw verificationError;
 
         // 2. Add to transaction ledger
-        const tRef = doc(collection(db, "transactions"));
-        batch.set(tRef, {
+        const { error: ledgerError } = await supabaseClient.from("transactions").insert({
             schoolId: currentSchoolId,
             type: "Fee",
             personId: studentId,
@@ -3951,14 +3976,18 @@ window.approveFeeVerification = async (verificationId, studentId, studentName, a
             amount: Number(amount),
             mode: "UPI Manual QR",
             date: new Date().toISOString().split('T')[0],
-            createdAt: serverTimestamp()
+            createdAt: new Date().toISOString()
         });
+        if (ledgerError) throw ledgerError;
 
-        // 3. Decrease due balance in student doc
-        const sRef = doc(db, "students", studentId);
-        batch.update(sRef, { dueBalance: increment(-amount) });
-
-        await batch.commit();
+        // 3. Decrease the due balance held on the student row
+        const { data: studentRow, error: studentReadError } = await supabaseClient.from("students").select("*").eq("id", studentId).maybeSingle();
+        if (studentReadError) throw studentReadError;
+        const updatedDueBalance = Number(studentRow?.dueBalance || 0) - Number(amount);
+        const { error: studentError } = await supabaseClient.from("students")
+            .update({ dueBalance: updatedDueBalance })
+            .eq("id", studentId);
+        if (studentError) throw studentError;
         alert("Payment Approved! Ledger updated and student balance reduced.");
         loadFeeVerifications();
         loadTransactions();
@@ -3977,19 +4006,16 @@ window.loadExamSchedule = async () => {
     const cls = document.getElementById("scheduler-class-select").value;
     const targetClass = (cls === "All") ? "Nursery" : cls;
     try {
-        const schoolSnap = await getDoc(doc(db, "schools", currentSchoolId));
-        if (schoolSnap.exists()) {
-            const schoolData = schoolSnap.data();
-            const fieldKey = "examSchedule_" + targetClass;
-            if (schoolData[fieldKey] && Array.isArray(schoolData[fieldKey])) {
-                populateSchedulerTable(schoolData[fieldKey]);
-                window.lastExamScheduleCache = schoolData[fieldKey];
-                return;
-            }
+        const { data: schoolData, error } = await supabaseClient.from("schools").select("*").eq("id", currentSchoolId).maybeSingle();
+        if (error) throw error;
+        const fieldKey = "examSchedule_" + targetClass;
+        if (schoolData && Array.isArray(schoolData[fieldKey])) {
+            populateSchedulerTable(schoolData[fieldKey]);
+            window.lastExamScheduleCache = schoolData[fieldKey];
+            return;
         }
-        const docSnap = await getDoc(doc(db, "schools", currentSchoolId, "examSchedules", targetClass));
-        if (docSnap.exists()) {
-            const data = docSnap.data().schedule || [];
+        if (schoolData) {
+            const data = schoolData.schedule || [];
             populateSchedulerTable(data);
             window.lastExamScheduleCache = data;
         } else if (window.lastExamScheduleCache) {
@@ -4055,11 +4081,13 @@ window.saveExamSchedule = async () => {
             const allClasses = ["Nursery", "LKG", "UKG", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th"];
             const scheduleMap = {};
             allClasses.forEach(c => { scheduleMap["examSchedule_" + c] = schedule; });
-            await updateDoc(doc(db, "schools", currentSchoolId), scheduleMap);
+            const { error } = await supabaseClient.from("schools").update(scheduleMap).eq("id", currentSchoolId);
+            if (error) throw error;
             alert("Schedule saved for ALL Classes!");
         } else {
             const fieldKey = "examSchedule_" + cls;
-            await updateDoc(doc(db, "schools", currentSchoolId), { [fieldKey]: schedule });
+            const { error } = await supabaseClient.from("schools").update({ [fieldKey]: schedule }).eq("id", currentSchoolId);
+            if (error) throw error;
             alert("Schedule saved for Class " + cls);
         }
         window.lastExamScheduleCache = schedule;
@@ -4097,14 +4125,15 @@ window.sendDirectMessage = async () => {
     const msg = document.getElementById("dm-message-body").value.trim();
     if (!msg) return alert("Please type a message.");
     try {
-        await addDoc(collection(db, "direct_messages"), {
+        const { error } = await supabaseClient.from("direct_messages").insert({
             schoolId: currentSchoolId,
             studentId: currentDMStudentId,
             message: msg,
             sender: "Chairman",
-            timestamp: serverTimestamp(),
+            timestamp: new Date().toISOString(),
             read: false
         });
+        if (error) throw error;
         alert("Message sent successfully!");
         closeCustomModal("direct-message-modal");
     } catch (e) {
@@ -4140,14 +4169,16 @@ window.addMasterSubject = async () => {
     document.getElementById("new-custom-subject").value = "";
     window.renderMasterSubjects();
     window.updateSchedulerDatalists();
-    await updateDoc(doc(db, "schools", currentSchoolId), { examSubjects: window.examSubjects });
+    const { error } = await supabaseClient.from("schools").update({ examSubjects: window.examSubjects }).eq("id", currentSchoolId);
+    if (error) throw error;
 };
 
 window.deleteMasterSubject = async (index) => {
     window.examSubjects.splice(index, 1);
     window.renderMasterSubjects();
     window.updateSchedulerDatalists();
-    await updateDoc(doc(db, "schools", currentSchoolId), { examSubjects: window.examSubjects });
+    const { error } = await supabaseClient.from("schools").update({ examSubjects: window.examSubjects }).eq("id", currentSchoolId);
+    if (error) throw error;
 };
 
 window.resetMasterSubjects = async () => {
@@ -4155,7 +4186,8 @@ window.resetMasterSubjects = async () => {
     window.examSubjects = [...window.factoryDefaultSubjects];
     window.renderMasterSubjects();
     window.updateSchedulerDatalists();
-    await updateDoc(doc(db, "schools", currentSchoolId), { examSubjects: window.examSubjects });
+    const { error } = await supabaseClient.from("schools").update({ examSubjects: window.examSubjects }).eq("id", currentSchoolId);
+    if (error) throw error;
 };
 
 
@@ -4244,16 +4276,16 @@ window.triggerGlobalBonafideBatch = async () => {
 // ================= PHASE 2: TRANSPORT MANAGER =================
 window.loadTransportRoutes = async () => {
     try {
-        const snap = await getDocs(query(collection(db, "bus_routes"), where("schoolId", "==", currentSchoolId)));
+        const { data: routeRows, error } = await supabaseClient.from("bus_routes").select("*").eq("schoolId", currentSchoolId);
+        if (error) throw error;
         let html = "";
-        snap.forEach(d => {
-            const dt = d.data();
+        (routeRows || []).forEach(dt => {
             html += `<tr class="hover-row">
                 <td><strong>${dt.routeName}</strong></td>
                 <td>${dt.driverName}</td>
                 <td>${dt.contact}</td>
                 <td>₹ ${dt.fee}</td>
-                <td><button class="action-btn" style="background:#e53e3e; padding:5px 10px;" onclick="deleteBusRoute('${d.id}')"><i class="fas fa-trash"></i></button></td>
+                <td><button class="action-btn" style="background:#e53e3e; padding:5px 10px;" onclick="deleteBusRoute('${dt.id}')"><i class="fas fa-trash"></i></button></td>
             </tr>`;
         });
         document.getElementById("transport-body").innerHTML = html || "<tr><td colspan='5' style='text-align:center;'>No routes found.</td></tr>";
@@ -4267,9 +4299,10 @@ window.saveBusRoute = async () => {
     const fe = document.getElementById("transportBusFee").value.trim();
     if (!rn || !dn || !dc || !fe) return alert("Fill all fields.");
     try {
-        await addDoc(collection(db, "bus_routes"), {
+        const { error } = await supabaseClient.from("bus_routes").insert({
             schoolId: currentSchoolId, routeName: rn, driverName: dn, contact: dc, fee: Number(fe), createdAt: new Date().toISOString()
         });
+        if (error) throw error;
         alert("Route saved!");
         document.getElementById("transportRouteName").value = "";
         document.getElementById("transportDriverName").value = "";
@@ -4281,22 +4314,26 @@ window.saveBusRoute = async () => {
 
 window.deleteBusRoute = async (id) => {
     if (!confirm("Delete this route?")) return;
-    try { await deleteDoc(doc(db, "bus_routes", id)); loadTransportRoutes(); } catch (e) { alert("Error deleting route."); }
+    try {
+        const { error } = await supabaseClient.from("bus_routes").delete().eq("id", id);
+        if (error) throw error;
+        loadTransportRoutes();
+    } catch (e) { alert("Error deleting route."); }
 };
 
 // ================= PHASE 2: INVENTORY MANAGER =================
 window.loadInventory = async () => {
     try {
-        const snap = await getDocs(query(collection(db, "inventory"), where("schoolId", "==", currentSchoolId)));
+        const { data: assetRows, error } = await supabaseClient.from("inventory").select("*").eq("schoolId", currentSchoolId);
+        if (error) throw error;
         let html = "";
-        snap.forEach(d => {
-            const dt = d.data();
+        (assetRows || []).forEach(dt => {
             html += `<tr class="hover-row">
                 <td><strong>${dt.itemName}</strong></td>
                 <td><span class="status-badge" style="background:#3182ce;">${dt.category}</span></td>
                 <td>${dt.quantity}</td>
                 <td>${dt.dateAcquired}</td>
-                <td><button class="action-btn" style="background:#e53e3e; padding:5px 10px;" onclick="deleteAsset('${d.id}')"><i class="fas fa-trash"></i></button></td>
+                <td><button class="action-btn" style="background:#e53e3e; padding:5px 10px;" onclick="deleteAsset('${dt.id}')"><i class="fas fa-trash"></i></button></td>
             </tr>`;
         });
         document.getElementById("inventory-body").innerHTML = html || "<tr><td colspan='5' style='text-align:center;'>No assets found.</td></tr>";
@@ -4310,9 +4347,10 @@ window.logAsset = async () => {
     const dt = document.getElementById("inventoryDate").value;
     if (!iname || !qty || !dt) return alert("Fill all fields.");
     try {
-        await addDoc(collection(db, "inventory"), {
+        const { error } = await supabaseClient.from("inventory").insert({
             schoolId: currentSchoolId, itemName: iname, category: cat, quantity: Number(qty), dateAcquired: dt, createdAt: new Date().toISOString()
         });
+        if (error) throw error;
         alert("Asset saved!");
         document.getElementById("inventoryItemName").value = "";
         document.getElementById("inventoryQuantity").value = "";
@@ -4323,7 +4361,11 @@ window.logAsset = async () => {
 
 window.deleteAsset = async (id) => {
     if (!confirm("Delete this asset?")) return;
-    try { await deleteDoc(doc(db, "inventory", id)); loadInventory(); } catch (e) { alert("Error deleting asset."); }
+    try {
+        const { error } = await supabaseClient.from("inventory").delete().eq("id", id);
+        if (error) throw error;
+        loadInventory();
+    } catch (e) { alert("Error deleting asset."); }
 };
 
 // ================= PHASE 2: ATTENDANCE ENGINE =================
@@ -4366,13 +4408,15 @@ window.saveDailyAttendance = async () => {
 
     try {
         const attId = currentSchoolId + "_" + cls + "_" + dt;
-        await setDoc(doc(db, "attendance", attId), {
+        const { error } = await supabaseClient.from("attendance").upsert({
+            id: attId,
             schoolId: currentSchoolId,
             class: cls,
             date: dt,
             records: records,
             updatedAt: new Date().toISOString()
         });
+        if (error) throw error;
         alert("Attendance saved!");
         loadStudents();
     } catch (e) { console.error(e); alert("Error saving attendance."); }
@@ -4493,7 +4537,6 @@ const isSafeStudentPhotoUrl = url => {
 
 const studentTimestamp = value => {
     if (!value) return '—';
-    if (typeof value.toDate === 'function') return value.toDate().toLocaleString();
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString();
 };
@@ -4531,28 +4574,34 @@ async function fetchStudentModuleRecords(featureId) {
     const scope = studentScope();
     if (featureId === 'profile' || featureId === 'social-media') return [];
     if (featureId === 'datesheet') {
-        const snap = await getDoc(doc(db, 'schools', scope.schoolId, 'examSchedules', scope.className));
-        return snap.exists() ? (snap.data().schedule || []).map(item => ({ ...item, schoolId: scope.schoolId })) : [];
+        // The published routine lives on the school row: `examSchedule_<class>` first,
+        // with the shared `schedule` column kept as a fallback.
+        const { data: schoolRow } = await supabaseClient.from('schools').select('*').eq('id', scope.schoolId).maybeSingle();
+        const classSchedule = schoolRow ? schoolRow['examSchedule_' + scope.className] : null;
+        const schedule = Array.isArray(classSchedule) ? classSchedule : (schoolRow?.schedule || []);
+        return schedule.map(item => ({ ...item, schoolId: scope.schoolId }));
     }
     // Existing admin schema stores marks in a student-keyed document. Read only that key,
     // then verify the school through the authenticated student record already returned by login.
     if (featureId === 'result') {
-        const snap = await getDoc(doc(db, 'student_marks', scope.studentId));
-        if (!snap.exists()) return [];
-        const data = snap.data();
+        const { data, error } = await supabaseClient.from('student_marks').select('*').eq('id', scope.studentId).maybeSingle();
+        if (error) throw error;
+        if (!data) return [];
         if (data.schoolId && data.schoolId !== scope.schoolId) return [];
-        return [{ id: scope.studentId, ...data, schoolId: scope.schoolId }];
+        return [{ ...data, id: scope.studentId, schoolId: scope.schoolId }];
     }
     // Existing attendance is one school/class/date document with a student-keyed records map.
     if (featureId === 'attendance') {
-        const snap = await getDocs(query(collection(db, 'attendance'), where('schoolId', '==', scope.schoolId), where('class', '==', scope.className)));
-        return snap.docs.map(d => ({ id: d.id, ...d.data(), status: d.data().records?.[scope.studentId] })).filter(item => item.status);
+        const { data: rows, error } = await supabaseClient.from('attendance').select('*').eq('schoolId', scope.schoolId).eq('class', scope.className);
+        if (error) throw error;
+        return (rows || []).map(row => ({ ...row, status: row.records?.[scope.studentId] })).filter(item => item.status);
     }
     const module = STUDENT_MODULES[featureId];
     for (const name of module?.collections || []) {
         try {
-            const snap = await getDocs(query(collection(db, name), where('schoolId', '==', scope.schoolId)));
-            const records = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            const { data: rows, error } = await supabaseClient.from(name).select('*').eq('schoolId', scope.schoolId);
+            if (error) throw error;
+            const records = rows || [];
             const personal = ['attendance', 'result', 'sms', 'leave', 'gatepass', 'complaint', 'fee-receipt', 'transport', 'assignment'].includes(featureId);
             const filtered = records.filter(record => studentRecordMatches(record, scope, personal));
             if (filtered.length || name === module.collections[module.collections.length - 1]) return filtered;
@@ -4602,7 +4651,7 @@ window.submitStudentComplaint = async (e) => {
     btn.disabled = true;
 
     try {
-        await addDoc(collection(db, "complaints"), {
+        const { error } = await supabaseClient.from("complaints").insert({
             schoolId: currentStudentSchoolDoc.id || currentSchoolId,
             studentId: currentStudentUser.id || currentStudentUser.regNo,
             studentName: currentStudentUser.name,
@@ -4610,9 +4659,10 @@ window.submitStudentComplaint = async (e) => {
             target: target,
             subject: subject,
             description: desc,
-            timestamp: serverTimestamp(),
+            timestamp: new Date().toISOString(),
             status: 'Pending'
         });
+        if (error) throw error;
 
         alert("Complaint submitted successfully!");
         e.target.reset();
@@ -4633,8 +4683,9 @@ window.loadStudentComplaintHistory = async () => {
     target.innerHTML = studentModuleState('Loading complaint history…', 'loading');
     try {
         const scope = studentScope();
-        const snap = await getDocs(query(collection(db, 'complaints'), where('schoolId', '==', scope.schoolId), where('studentId', '==', scope.studentId)));
-        const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const { data: rows, error } = await supabaseClient.from('complaints').select('*').eq('schoolId', scope.schoolId).eq('studentId', scope.studentId);
+        if (error) throw error;
+        const items = rows || [];
         target.innerHTML = items.length ? items.map(item => `<article class="student-history-item"><div><strong>${studentHtml(item.subject)}</strong><p>${studentHtml(item.description)}</p><small>${studentHtml(studentTimestamp(item.timestamp))}</small></div><span class="student-status-badge">${studentHtml(item.status || 'Pending')}</span>${item.chairmanReply ? `<p class="student-reply"><b>Response:</b> ${studentHtml(item.chairmanReply)}</p>` : ''}</article>`).join('') : studentModuleState('No complaints submitted yet.');
     } catch (error) {
         console.error('Complaint history failed', error);
@@ -4649,8 +4700,9 @@ window.showStudentReceiptsSection = async () => {
     tbody.innerHTML = `<tr><td colspan="8">${studentModuleState('Loading receipts…', 'loading')}</td></tr>`;
     try {
         const scope = studentScope();
-        const snap = await getDocs(query(collection(db, 'transactions'), where('schoolId', '==', scope.schoolId), where('type', '==', 'Fee')));
-        const receipts = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(item => studentRecordMatches(item, scope, true));
+        const { data: rows, error } = await supabaseClient.from('transactions').select('*').eq('schoolId', scope.schoolId).eq('type', 'Fee');
+        if (error) throw error;
+        const receipts = (rows || []).filter(item => studentRecordMatches(item, scope, true));
         window.studentReceiptCache = receipts;
         tbody.innerHTML = receipts.length ? receipts.map(r => `<tr>
             <td>${studentHtml(r.receiptNo || r.recNo || r.id)}</td><td>${studentHtml(r.date || studentTimestamp(r.createdAt))}</td>
@@ -4916,7 +4968,7 @@ document.getElementById("student-verification-form").addEventListener("submit", 
         const screenshotUrl = uploadData.secure_url;
         if (!screenshotUrl) throw new Error("Image upload failed.");
 
-        await addDoc(collection(db, "fee_verifications"), {
+        const { error } = await supabaseClient.from("fee_verifications").insert({
             schoolId: currentSchoolId,
             studentId: currentStudentUser.id,
             studentName: currentStudentUser.name,
@@ -4925,8 +4977,9 @@ document.getElementById("student-verification-form").addEventListener("submit", 
             utr: utr,
             screenshotUrl: screenshotUrl,
             status: "Pending",
-            createdAt: serverTimestamp()
+            createdAt: new Date().toISOString()
         });
+        if (error) throw error;
 
         document.getElementById("student-payment-section").style.display = "none";
         document.getElementById("student-success-section").style.display = "block";
@@ -5017,8 +5070,9 @@ window.downloadStudentAdmitCard = async () => {
     btn.disabled = true;
 
     try {
-        const snap = await getDoc(doc(db, "schools", currentSchoolId, "examSchedules", currentStudentUser.class));
-        const sched = snap.exists() ? (snap.data().schedule || []) : [];
+        const { data: schoolRow } = await supabaseClient.from("schools").select("*").eq("id", currentSchoolId).maybeSingle();
+        const classSchedule = schoolRow ? schoolRow["examSchedule_" + currentStudentUser.class] : null;
+        const sched = Array.isArray(classSchedule) ? classSchedule : (schoolRow?.schedule || []);
 
         if (sched.length === 0) {
             alert("No exam routine published for your class yet.");
@@ -5095,21 +5149,23 @@ window.downloadStudentAdmitCard = async () => {
 
 // --- CoreEdu Chat ---
 window.loadCoreEduChat = () => {
-    const q = query(collection(db, "school_communications"), where("schoolId", "==", currentSchoolId), orderBy("timestamp"));
-    onSnapshot(q, async (snap) => {
+    if (!currentSchoolId) return;
+    if (window.unsubCoreEduChat) { window.unsubCoreEduChat(); window.unsubCoreEduChat = null; }
+    const schoolId = currentSchoolId;
+
+    const renderCoreEduChat = async (messages) => {
         let html = "";
         let unreadCount = 0;
         let batchUpdates = [];
 
-        snap.forEach(d => {
-            let msg = d.data();
+        (messages || []).forEach(msg => {
             let isMaster = msg.sender === "master";
             if (isMaster && !msg.isRead) {
                 unreadCount++;
-                batchUpdates.push(d.id);
+                batchUpdates.push(msg.id);
             }
 
-            let ts = msg.timestamp ? new Date(msg.timestamp.toMillis()).toLocaleString() : "";
+            let ts = msg.timestamp ? new Date(msg.timestamp).toLocaleString() : "";
             let className = msg.sender === "school" ? "chat-bubble sent" : "chat-bubble received";
             let attachHtml = msg.attachmentUrl ? `<br><a href="${msg.attachmentUrl}" target="_blank" style="font-size:12px; color:blue;"><i class="fas fa-paperclip"></i> Attachment</a>` : "";
 
@@ -5128,10 +5184,30 @@ window.loadCoreEduChat = () => {
 
         if (unreadCount > 0 && document.getElementById("tab-coreedu-comm").classList.contains("active")) {
             for (let id of batchUpdates) {
-                await updateDoc(doc(db, "school_communications", id), { isRead: true });
+                await supabaseClient.from("school_communications").update({ isRead: true }).eq("id", id);
             }
         }
-    });
+    };
+
+    const loadCoreEduMessages = async () => {
+        const { data, error } = await supabaseClient
+            .from("school_communications")
+            .select("*")
+            .eq("schoolId", schoolId)
+            .order("timestamp", { ascending: true });
+        if (error) return console.error("CoreEdu chat load failed:", error);
+        await renderCoreEduChat(data);
+    };
+
+    loadCoreEduMessages();
+
+    const chatChannel = supabaseClient.channel('realtime:school_communications:' + crypto.randomUUID())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'school_communications', filter: `schoolId=eq.${schoolId}` }, () => {
+            loadCoreEduMessages();
+        })
+        .subscribe();
+
+    window.unsubCoreEduChat = () => supabaseClient.removeChannel(chatChannel);
 };
 
 window.sendCoreEduMessage = async () => {
@@ -5153,15 +5229,16 @@ window.sendCoreEduMessage = async () => {
     }
 
     try {
-        await addDoc(collection(db, "school_communications"), {
+        const { error } = await supabaseClient.from("school_communications").insert({
             schoolId: currentSchoolId,
             schoolName: currentSchoolName,
             sender: "school",
             text: text,
             attachmentUrl: attachmentUrl,
-            timestamp: serverTimestamp(),
+            timestamp: new Date().toISOString(),
             isRead: false
         });
+        if (error) throw error;
         document.getElementById("coreedu-message-input").value = "";
         document.getElementById("coreedu-attachment").value = "";
     } catch (e) {
@@ -5174,13 +5251,13 @@ window.sendCoreEduMessage = async () => {
 window.allSchoolsCache = [];
 window.loadAllSchools = async () => {
     try {
-        const snap = await getDocs(collection(db, "vw_public_schools"));
+        const { data: rows, error } = await supabaseClient.from("vw_public_schools").select("*");
+        if (error) throw error;
         let html = "<option value=''>-- Select School --</option>";
         window.allSchoolsCache = [];
-        snap.forEach(d => {
-            const school = { id: d.id, ...d.data() };
+        (rows || []).forEach(school => {
             window.allSchoolsCache.push(school);
-            if (d.id !== currentSchoolId) html += `<option value="${d.id}">${school.schoolName || school.name || d.id}</option>`;
+            if (school.id !== currentSchoolId) html += `<option value="${school.id}">${school.schoolName || school.name || school.id}</option>`;
         });
         const mailSelect = document.getElementById("mail_specific_school");
         if (mailSelect) mailSelect.innerHTML = html;
@@ -5201,11 +5278,13 @@ window.openMailThread = async (msgId) => {
     document.getElementById("mail-thread-container").innerHTML = "<div style='text-align:center;'>Loading thread...</div>";
 
     try {
-        await updateDoc(doc(db, "direct_messages", msgId), { isRead: true });
+        const { error: readError } = await supabaseClient.from("direct_messages").update({ isRead: true }).eq("id", msgId);
+        if (readError) throw readError;
 
-        onSnapshot(doc(db, "direct_messages", msgId), async (d) => {
-            if (!d.exists()) return;
-            let msg = d.data();
+        if (window.unsubMailThread) { window.unsubMailThread(); window.unsubMailThread = null; }
+
+        const renderMailThread = async (msg) => {
+            if (!msg) return;
             let html = "";
 
             let updatedReplies = false;
@@ -5217,10 +5296,10 @@ window.openMailThread = async (msgId) => {
                 }
             });
             if (updatedReplies) {
-                await updateDoc(doc(db, "direct_messages", msgId), { replies: replies });
+                await supabaseClient.from("direct_messages").update({ replies: replies }).eq("id", msgId);
             }
 
-            let ts = msg.createdAt ? new Date(msg.createdAt.toMillis()).toLocaleString() : "";
+            let ts = msg.createdAt ? new Date(msg.createdAt).toLocaleString() : "";
             let attachHtml = msg.attachmentUrl ? `<div style="margin-top:10px;"><a href="${msg.attachmentUrl}" target="_blank" class="action-btn" style="background:#e2e8f0; color:#333; padding:5px 10px; font-size:12px; display:inline-block;"><i class="fas fa-paperclip"></i> View Attachment</a></div>` : "";
 
             html += `<div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:15px;">
@@ -5234,7 +5313,7 @@ window.openMailThread = async (msgId) => {
                      </div>`;
 
             replies.forEach(r => {
-                let rTs = r.timestamp ? new Date(r.timestamp.toMillis()).toLocaleString() : "";
+                let rTs = r.timestamp ? new Date(r.timestamp).toLocaleString() : "";
                 let rAttachHtml = r.attachmentUrl ? `<div style="margin-top:10px;"><a href="${r.attachmentUrl}" target="_blank" class="action-btn" style="background:#e2e8f0; color:#333; padding:5px 10px; font-size:12px; display:inline-block;"><i class="fas fa-paperclip"></i> View Attachment</a></div>` : "";
                 let align = r.senderRole === "chairman" ? "margin-left: 30px; border-left: 4px solid #3182ce;" : "margin-right: 30px; border-left: 4px solid #e53e3e;";
                 html += `<div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:15px; margin-top:10px; ${align}">
@@ -5253,7 +5332,23 @@ window.openMailThread = async (msgId) => {
             }, 100);
 
             loadInbox(); loadSentMail();
-        });
+        };
+
+        const loadMailThread = async () => {
+            const { data, error } = await supabaseClient.from("direct_messages").select("*").eq("id", msgId).maybeSingle();
+            if (error) throw error;
+            await renderMailThread(data);
+        };
+
+        await loadMailThread();
+
+        const threadChannel = supabaseClient.channel('realtime:direct_messages:' + crypto.randomUUID())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'direct_messages', filter: `id=eq.${msgId}` }, () => {
+                loadMailThread().catch(err => console.error("Mail thread refresh failed:", err));
+            })
+            .subscribe();
+
+        window.unsubMailThread = () => supabaseClient.removeChannel(threadChannel);
     } catch (e) { console.error(e); }
 };
 
@@ -5277,19 +5372,21 @@ window.replyToMailThread = async () => {
     }
 
     try {
-        const d = await getDoc(doc(db, "direct_messages", window.currentMailThreadId));
-        if (!d.exists()) throw new Error();
-        let replies = d.data().replies || [];
+        const { data: threadRow, error: threadError } = await supabaseClient.from("direct_messages").select("*").eq("id", window.currentMailThreadId).maybeSingle();
+        if (threadError) throw threadError;
+        if (!threadRow) throw new Error("Message thread not found.");
+        let replies = threadRow.replies || [];
         replies.push({
             senderRole: "chairman",
             senderName: currentSchoolName + " (Chairman)",
             text: text,
             attachmentUrl: attachmentUrl,
-            timestamp: serverTimestamp(),
+            timestamp: new Date().toISOString(),
             isRead: false
         });
 
-        await updateDoc(doc(db, "direct_messages", window.currentMailThreadId), { replies: replies });
+        const { error } = await supabaseClient.from("direct_messages").update({ replies: replies }).eq("id", window.currentMailThreadId);
+        if (error) throw error;
 
         document.getElementById("mail-reply-body").value = "";
         document.getElementById("mail-reply-attachment").value = "";
