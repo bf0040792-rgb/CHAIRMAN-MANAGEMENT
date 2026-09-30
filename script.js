@@ -2331,18 +2331,31 @@ async function loadStudents() {
         
         window.fetchedStudents = []; 
         
-        // Push actual students
-        (studentRows || []).forEach(dt => { 
+        // Push actual students. The approval function keeps the profile fields
+        // (name, rollNo, mobile, parentage, photoUrl, status ...) inside the
+        // JSONB `data` column of `students`, so flatten it exactly like the
+        // admission payload below - otherwise every real student renders as
+        // "N/A". A students row carrying no status at all is an enrolled
+        // (approved) student by definition.
+        (studentRows || []).forEach(dt => {
+            let row = (dt && dt.data) ? { ...dt, ...dt.data } : dt;
+            if (!row.status) row.status = "Approved";
             // Legacy pendings (should be 0)
-            if (dt.status === "Pending") pendingCount++; 
-            window.fetchedStudents.push(dt); 
+            if (row.status === "Pending") pendingCount++;
+            window.fetchedStudents.push(row);
         });
 
-        // Push new secure admission applications
+        // Push only ACTIONABLE (Pending) admission applications.
+        // Approved / Rejected applications remain in `admission_applications`
+        // as audit history, but the approved child already exists in `students`
+        // (created by approve_admission), so merging finished applications into
+        // the student list rendered the same child twice.
         (admissionRows || []).forEach(dt => {
             // Flatten JSONB payload to match legacy format
             let flatDt = { ...dt, ...dt.data, _isNewAdmission: true };
-            if (flatDt.status === "Pending") pendingCount++;
+            // Finished applications (Approved / Rejected) are history only.
+            if (flatDt.status !== "Pending") return;
+            pendingCount++;
             window.fetchedStudents.push(flatDt);
         });
 
@@ -5395,5 +5408,3 @@ window.replyToMailThread = async () => {
     }
     btn.innerHTML = "<i class='fas fa-reply'></i> Reply"; btn.disabled = false;
 };
-
-
