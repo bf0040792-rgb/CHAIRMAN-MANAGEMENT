@@ -47,11 +47,19 @@ grant execute on function public.portal_user_context() to authenticated;
 -- ----------------------------------------------------------------------------
 grant select, insert, update, delete on public.users to authenticated;
 
-do $$ begin
-  drop policy if exists u_portal_select on public.users;
-  drop policy if exists u_portal_insert on public.users;
-  drop policy if exists u_portal_update on public.users;
-  drop policy if exists u_portal_delete on public.users;
+-- Drop EVERY existing policy on users first: the live schema shipped a policy
+-- whose WITH CHECK re-queries public.users, causing
+-- "infinite recursion detected in policy for relation users" on every upsert.
+-- The four policies recreated below fully cover the portal's users access
+-- (chairman manage own-school staff, staff read own school, self read/update).
+do $$
+declare r record;
+begin
+  for r in select policyname from pg_policies
+           where schemaname = 'public' and tablename = 'users'
+  loop
+    execute format('drop policy if exists %I on public.users', r.policyname);
+  end loop;
 end $$;
 
 -- Any portal user (chairman/staff) may read users of their own school; a user
