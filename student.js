@@ -820,5 +820,3 @@ document.addEventListener('DOMContentLoaded', () => {
         if (event.key === 'Enter') loginStudent();
     });
 });
-
-
