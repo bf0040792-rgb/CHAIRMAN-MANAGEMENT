@@ -35,7 +35,7 @@ set search_path = public
 as $$
   select u.role, u."schoolId"
   from public.users u
-  where u.id = (select auth.uid());
+  where u.id = (select auth.uid())::text;
 $$;
 
 revoke all on function public.portal_user_context() from public;
@@ -59,7 +59,7 @@ end $$;
 create policy u_portal_select on public.users
 for select to authenticated
 using (
-  id = (select auth.uid())
+  id = (select auth.uid())::text
   or "schoolId" = (select school_id from public.portal_user_context())
 );
 
@@ -77,12 +77,12 @@ with check (
 create policy u_portal_update on public.users
 for update to authenticated
 using (
-  id = (select auth.uid())
+  id = (select auth.uid())::text
   or ((select role from public.portal_user_context()) = 'chairman'
       and "schoolId" = (select school_id from public.portal_user_context()))
 )
 with check (
-  id = (select auth.uid())
+  id = (select auth.uid())::text
   or ((select role from public.portal_user_context()) = 'chairman'
       and "schoolId" = (select school_id from public.portal_user_context()))
 );
@@ -198,13 +198,13 @@ create policy lr_staff_insert on public.leave_requests
 for insert to authenticated
 with check (
   "schoolId" = (select school_id from public.portal_user_context())
-  and "studentId" = (select auth.uid())
+  and "studentId" = (select auth.uid())::text
 );
 
 create policy lr_staff_select on public.leave_requests
 for select to authenticated
 using (
-  "studentId" = (select auth.uid())
+  "studentId" = (select auth.uid())::text
   or ((select role from public.portal_user_context()) = 'chairman'
       and "schoolId" = (select school_id from public.portal_user_context()))
 );
@@ -241,8 +241,8 @@ using (
     and (select role from public.portal_user_context()) in ('chairman', 'staff') )
   or
   -- student (Render JWT identity helpers; NULL for non-student sessions)
-  ( "studentId" = (select public.current_user_student_id())
-    and "schoolId" = (select public.current_user_school_id())
+  ( "studentId" = (select public.current_user_student_id())::text
+    and "schoolId" = (select public.current_user_school_id())::text
     and (select public.current_user_student_id()) is not null )
 );
 
