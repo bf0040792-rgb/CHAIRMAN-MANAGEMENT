@@ -255,7 +255,40 @@ on public.attendance_records ("studentId", "schoolId");
 
 
 -- ----------------------------------------------------------------------------
--- 8) INTENTIONALLY NOT TOUCHED (review with owner, do not auto-change)
+-- 8) Application-expected columns that are missing from the older schema.
+--    Live run failed with: Could not find the 'photoUrl' column of 'users'.
+--    Every statement is a no-op when the column already exists.
+-- ----------------------------------------------------------------------------
+alter table public.users add column if not exists "photoUrl" text;
+alter table public.users add column if not exists "plainPassword" text;
+alter table public.users add column if not exists "staffRole" text;
+alter table public.users add column if not exists "status" text;
+alter table public.users add column if not exists "privileges" jsonb;
+alter table public.users add column if not exists "pin" text;
+alter table public.users add column if not exists "blockReason" text;
+alter table public.users add column if not exists "schoolName" text;
+alter table public.users add column if not exists "updatedAt" timestamptz;
+
+alter table public.exam_marks add column if not exists "enteredBy" text;
+alter table public.exam_marks add column if not exists "enteredByName" text;
+alter table public.exam_marks add column if not exists "totalMarks" numeric;
+alter table public.exam_marks add column if not exists "createdAt" timestamptz;
+
+alter table public.homework add column if not exists "createdBy" text;
+alter table public.homework add column if not exists "createdAt" timestamptz;
+alter table public.homework add column if not exists "dueDate" text;
+
+alter table public.notices add column if not exists "authorName" text;
+alter table public.notices add column if not exists "createdAt" timestamptz;
+
+alter table public.leave_requests add column if not exists "createdAt" timestamptz;
+
+-- PostgREST must refresh its schema cache after DDL so the new columns are
+-- immediately visible to the portal's REST calls.
+select pg_notify('pgrst', 'reload schema');
+
+-- ----------------------------------------------------------------------------
+-- 9) INTENTIONALLY NOT TOUCHED (review with owner, do not auto-change)
 --    * public.licenses / public.password_requests / public.tickets :
 --      RLS enabled with zero policies — confirm intended access model first.
 --    * anon-executable SECURITY DEFINER functions is_blacklisted() and
