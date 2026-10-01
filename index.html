@@ -848,6 +848,7 @@
                                     <option value="Chairman">Chairman</option>
                                     <option value="Principal">Principal</option>
                                     <option value="Teacher">Teacher</option>
+                                    <option value="HOD">HOD (Department Head)</option>
                                     <option value="Accountant">Accountant</option>
                                     <option value="Clerk">Clerk</option>
                                     <option value="Vice Principal">Vice Principal</option>
@@ -2446,23 +2447,35 @@
                     style="color: white; font-weight: bold; font-size: 14px; background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px;">
                     <i class="fas fa-chalkboard-teacher"></i> Staff Portal
                 </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <img id="staff-avatar" src="" alt="avatar"
+                        style="width:36px; height:36px; border-radius:50%; object-fit:cover; border:2px solid #3b82f6;">
+                    <span id="staff-avatar-name" style="color:white; font-size:13px; font-weight:bold;"></span>
+                </div>
             </div>
         </div>
 
         <div class="dashboard-body">
             <div class="sidebar" style="background: #1a252f;">
                 <div class="menu-container">
-                    <div class="menu-item active" data-target="staff-tab-attendance"><i
+                    <div class="menu-item active" data-target="staff-tab-home" id="staff-menu-home"><i
+                            class="fas fa-home"></i> Dashboard</div>
+                    <div class="menu-item" data-target="staff-tab-attendance" id="staff-menu-attendance"><i
                             class="fas fa-clipboard-list"></i> Daily Attendance</div>
-                    <div class="menu-item" data-target="staff-tab-marks"><i class="fas fa-pen-alt"></i> Enter Exam
-                        Marks
-                    </div>
-                    <div class="menu-item" data-target="staff-tab-notices"><i class="fas fa-bullhorn"></i> Notice
-                        Board
-                    </div>
-                    <div class="menu-item" data-target="staff-tab-profile"><i class="fas fa-user-circle"></i> My
-                        Profile
-                    </div>
+                    <div class="menu-item" data-target="staff-tab-marks" id="staff-menu-marks"><i
+                            class="fas fa-pen-alt"></i> Enter Exam Marks</div>
+                    <div class="menu-item" data-target="staff-tab-homework" id="staff-menu-homework"><i
+                            class="fas fa-book-open"></i> Homework</div>
+                    <div class="menu-item" data-target="staff-tab-notices" id="staff-menu-notices"><i
+                            class="fas fa-bullhorn"></i> Notice Board</div>
+                    <div class="menu-item" data-target="staff-tab-timetable" id="staff-menu-timetable"><i
+                            class="fas fa-calendar-alt"></i> Timetable</div>
+                    <div class="menu-item" data-target="staff-tab-leave" id="staff-menu-leave"><i
+                            class="fas fa-calendar-minus"></i> Leave Request</div>
+                    <div class="menu-item" data-target="staff-tab-staff" id="staff-menu-staff"><i
+                            class="fas fa-users"></i> Teachers</div>
+                    <div class="menu-item" data-target="staff-tab-profile" id="staff-menu-profile"><i
+                            class="fas fa-user-circle"></i> My Profile</div>
                     <div class="logout-btn" onclick="doLogout()" style="background: #e53e3e;"><i
                             class="fas fa-power-off"></i> Secure Logout</div>
                 </div>
@@ -2470,19 +2483,106 @@
 
             <div class="main-content">
                 <div class="header-title">
-                    <h1 id="staff-tab-title">Teacher Dashboard</h1>
+                    <h1 id="staff-tab-title">Dashboard</h1>
                     <p style="color: #94a3b8; margin-top: 5px;">Welcome, <span id="staff-welcome-name"
-                            style="color: white; font-weight: bold;">Teacher Name</span>!</p>
+                            style="color: white; font-weight: bold;">Staff</span>! <span id="staff-role-subtitle"
+                            style="color:#60a5fa; font-size:12px; font-weight:bold;"></span></p>
+                    <p id="staff-today-date" style="color:#64748b; font-size:12px; margin-top:4px;"></p>
+                </div>
+
+                <!-- STAFF TAB: HOME / DASHBOARD -->
+                <div id="staff-tab-home" class="tab-content active">
+                    <div id="staff-kpi-grid"
+                        style="display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:16px; margin-bottom:16px;"></div>
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(330px,1fr)); gap:16px;">
+                        <div class="card" style="border-left: 4px solid #3b82f6;">
+                            <h3><i class="fas fa-chart-bar"></i> Class-wise Average Marks (Approved Results)</h3>
+                            <div style="height:250px; padding:10px;"><canvas id="staff-marks-chart"></canvas></div>
+                        </div>
+                        <div class="card" style="border-left: 4px solid #10b981;">
+                            <h3><i class="fas fa-bullhorn"></i> Latest Notices</h3>
+                            <div id="staff-home-notices" style="max-height:270px; overflow:auto;"></div>
+                        </div>
+                    </div>
+                    <div id="staff-mgmt-panel" style="display:none; margin-top:16px;">
+                        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(330px,1fr)); gap:16px;">
+                            <div class="card" style="border-left: 4px solid #8b5cf6;">
+                                <h3><i class="fas fa-tasks"></i> Teacher Task Compliance (Today)</h3>
+                                <div style="overflow:auto;">
+                                    <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                                        <thead>
+                                            <tr style="background:#f1f5f9; text-align:left;">
+                                                <th style="padding:8px;">Teacher</th>
+                                                <th style="padding:8px;">Role</th>
+                                                <th style="padding:8px;">Attendance</th>
+                                                <th style="padding:8px;">Marks</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="staff-compliance-body"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="card" style="border-left: 4px solid #f59e0b;">
+                                <h3><i class="fas fa-hourglass-half"></i> Results Awaiting Veto</h3>
+                                <div id="staff-approval-body"></div>
+                                <div id="staff-approval-detail" style="margin-top:10px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="staff-teacher-panel" style="display:none; margin-top:16px;">
+                        <div class="card" style="border-left: 4px solid #8b5cf6;">
+                            <h3><i class="fas fa-tasks"></i> My Pending Tasks</h3>
+                            <div id="staff-tasks-body"></div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- STAFF TAB: ATTENDANCE -->
-                <div id="staff-tab-attendance" class="tab-content active">
+                <div id="staff-tab-attendance" class="tab-content">
                     <div class="card" style="border-left: 4px solid #3b82f6;">
                         <h3><i class="fas fa-clipboard-list"></i> Class Attendance</h3>
-                        <p style="font-size:13px; color:#666;">Select your class to mark daily student attendance.
-                        </p>
-                        <!-- Form fields for attendance will come here -->
-                        <button class="submit-btn"><i class="fas fa-search"></i> Load Students</button>
+                        <p style="font-size:13px; color:#666;">Select your class and date to mark daily student
+                            attendance.</p>
+                        <div style="display:flex; gap:12px; flex-wrap:wrap; margin:12px 0;">
+                            <select id="staff_att_class" class="input-premium" style="flex:1; min-width:140px;">
+                                <option value="">Select Class</option>
+                                        <option value="Nursery">Nursery</option>
+                                        <option value="LKG">LKG</option>
+                                        <option value="UKG">UKG</option>
+                                        <option value="1st">1st</option>
+                                        <option value="2nd">2nd</option>
+                                        <option value="3rd">3rd</option>
+                                        <option value="4th">4th</option>
+                                        <option value="5th">5th</option>
+                                        <option value="6th">6th</option>
+                                        <option value="7th">7th</option>
+                                        <option value="8th">8th</option>
+                                        <option value="9th">9th</option>
+                                        <option value="10th">10th</option>
+                                        <option value="11th">11th</option>
+                                        <option value="12th">12th</option>
+                            </select>
+                            <input type="date" id="staff_att_date" class="input-premium" style="flex:1; min-width:160px;">
+                            <button class="submit-btn" onclick="window.loadStaffAttendanceRoster()"><i
+                                    class="fas fa-search"></i> Load Students</button>
+                        </div>
+                        <div id="staff_att_panel" style="display:none;">
+                            <div style="overflow:auto;">
+                                <table style="width:100%; border-collapse:collapse; font-size:14px;">
+                                    <thead>
+                                        <tr style="background:#f1f5f9; text-align:left;">
+                                            <th style="padding:10px;">Roll No</th>
+                                            <th style="padding:10px;">Student</th>
+                                            <th style="padding:10px;">Parentage</th>
+                                            <th style="padding:10px; text-align:center;">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="staff_att_roster_body"></tbody>
+                                </table>
+                            </div>
+                            <button class="submit-btn" style="margin-top:14px;" onclick="window.saveStaffAttendance()"><i
+                                    class="fas fa-save"></i> Save Attendance</button>
+                        </div>
                     </div>
                 </div>
 
@@ -2491,23 +2591,166 @@
                     <div class="card" style="border-left: 4px solid #10b981;">
                         <h3><i class="fas fa-pen-alt"></i> Enter Students Marks</h3>
                         <p style="font-size:13px; color:#666;">Marks entered here will go to the Chairman for Final
-                            Veto
-                            Approval.</p>
-                        <!-- Form fields for marks entry will come here -->
-                        <button class="submit-btn" style="background: #10b981;"><i class="fas fa-upload"></i> Submit
-                            for
-                            Veto</button>
+                            Veto Approval.</p>
+                        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin:12px 0;">
+                            <select id="staff_mk_class" class="input-premium">
+                                <option value="">Select Class</option>
+                                        <option value="Nursery">Nursery</option>
+                                        <option value="LKG">LKG</option>
+                                        <option value="UKG">UKG</option>
+                                        <option value="1st">1st</option>
+                                        <option value="2nd">2nd</option>
+                                        <option value="3rd">3rd</option>
+                                        <option value="4th">4th</option>
+                                        <option value="5th">5th</option>
+                                        <option value="6th">6th</option>
+                                        <option value="7th">7th</option>
+                                        <option value="8th">8th</option>
+                                        <option value="9th">9th</option>
+                                        <option value="10th">10th</option>
+                                        <option value="11th">11th</option>
+                                        <option value="12th">12th</option>
+                            </select>
+                            <input type="text" id="staff_mk_exam" class="input-premium" placeholder="Exam name (Unit Test 1)">
+                            <input type="text" id="staff_mk_subject" class="input-premium" placeholder="Subject">
+                            <input type="number" id="staff_mk_max" class="input-premium" placeholder="Max marks" value="100">
+                            <input type="date" id="staff_mk_date" class="input-premium">
+                            <button class="submit-btn" onclick="window.loadStaffMarksRoster()"><i
+                                    class="fas fa-search"></i> Load Students</button>
+                        </div>
+                        <div id="staff_mk_panel" style="display:none;">
+                            <div style="overflow:auto;">
+                                <table style="width:100%; border-collapse:collapse; font-size:14px;">
+                                    <thead>
+                                        <tr style="background:#f1f5f9; text-align:left;">
+                                            <th style="padding:10px;">Roll No</th>
+                                            <th style="padding:10px;">Student</th>
+                                            <th style="padding:10px; text-align:center;">Marks Obtained</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="staff_mk_roster_body"></tbody>
+                                </table>
+                            </div>
+                            <button class="submit-btn" style="margin-top:14px; background:#10b981;"
+                                onclick="window.submitStaffMarks()"><i class="fas fa-upload"></i> Submit for Veto</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STAFF TAB: HOMEWORK -->
+                <div id="staff-tab-homework" class="tab-content">
+                    <div class="card" style="border-left: 4px solid #6366f1;">
+                        <h3><i class="fas fa-book-open"></i> Publish Homework</h3>
+                        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; margin:12px 0;">
+                            <select id="sh_class" class="input-premium">
+                                <option value="">Select Class</option>
+                                        <option value="Nursery">Nursery</option>
+                                        <option value="LKG">LKG</option>
+                                        <option value="UKG">UKG</option>
+                                        <option value="1st">1st</option>
+                                        <option value="2nd">2nd</option>
+                                        <option value="3rd">3rd</option>
+                                        <option value="4th">4th</option>
+                                        <option value="5th">5th</option>
+                                        <option value="6th">6th</option>
+                                        <option value="7th">7th</option>
+                                        <option value="8th">8th</option>
+                                        <option value="9th">9th</option>
+                                        <option value="10th">10th</option>
+                                        <option value="11th">11th</option>
+                                        <option value="12th">12th</option>
+                            </select>
+                            <input type="text" id="sh_subject" class="input-premium" placeholder="Subject">
+                            <input type="text" id="sh_title" class="input-premium" placeholder="Title">
+                            <input type="date" id="sh_due" class="input-premium">
+                        </div>
+                        <textarea id="sh_desc" class="input-premium" rows="3" placeholder="Homework description..."
+                            style="width:100%; margin-bottom:10px;"></textarea>
+                        <button class="submit-btn" style="background:#6366f1;" onclick="window.publishStaffHomework()"><i
+                                class="fas fa-paper-plane"></i> Publish Homework</button>
+                    </div>
+                    <div class="card" style="margin-top:16px;">
+                        <h3><i class="fas fa-history"></i> Published Homework</h3>
+                        <div id="staff-hw-list"></div>
                     </div>
                 </div>
 
                 <!-- STAFF TAB: NOTICES -->
                 <div id="staff-tab-notices" class="tab-content">
-                    <div class="card">
-                        <h3><i class="fas fa-bullhorn"></i> School Notices</h3>
-                        <div
-                            style="padding: 20px; text-align: center; color: #888; background: #f8fafc; border-radius: 8px;">
-                            Loading latest announcements from Chairman...
+                    <div id="staff-notice-form" class="card" style="border-left: 4px solid #10b981; display:none;">
+                        <h3><i class="fas fa-bullhorn"></i> Publish Notice</h3>
+                        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; margin:12px 0;">
+                            <select id="sn_target" class="input-premium">
+                                <option value="All">All</option>
+                                <option value="Staff">Staff</option>
+                                <option value="Students">Students</option>
+                            </select>
+                            <input type="text" id="sn_title" class="input-premium" placeholder="Notice title">
                         </div>
+                        <textarea id="sn_body" class="input-premium" rows="3" placeholder="Notice body..."
+                            style="width:100%; margin-bottom:10px;"></textarea>
+                        <button class="submit-btn" style="background:#10b981;" onclick="window.publishStaffNotice()"><i
+                                class="fas fa-paper-plane"></i> Publish Notice</button>
+                    </div>
+                    <div class="card" style="margin-top:16px;">
+                        <h3><i class="fas fa-bullhorn"></i> School Notices</h3>
+                        <div id="staff-notices-list"></div>
+                    </div>
+                </div>
+
+                <!-- STAFF TAB: TIMETABLE -->
+                <div id="staff-tab-timetable" class="tab-content">
+                    <div class="card" style="border-left: 4px solid #0ea5e9;">
+                        <h3><i class="fas fa-calendar-alt"></i> School Timetable</h3>
+                        <div id="staff-timetable-body"></div>
+                    </div>
+                </div>
+
+                <!-- STAFF TAB: LEAVE -->
+                <div id="staff-tab-leave" class="tab-content">
+                    <div class="card" style="border-left: 4px solid #f59e0b;">
+                        <h3><i class="fas fa-calendar-minus"></i> Apply for Leave</h3>
+                        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; margin:12px 0;">
+                            <input type="date" id="sl_start" class="input-premium">
+                            <input type="date" id="sl_end" class="input-premium">
+                            <input type="text" id="sl_reason" class="input-premium" placeholder="Reason">
+                            <button class="submit-btn" style="background:#f59e0b;" onclick="window.submitStaffLeave()"><i
+                                    class="fas fa-paper-plane"></i> Submit Request</button>
+                        </div>
+                    </div>
+                    <div class="card" style="margin-top:16px;">
+                        <h3><i class="fas fa-history"></i> My Leave Requests</h3>
+                        <div id="staff-leave-list"></div>
+                    </div>
+                </div>
+
+                <!-- STAFF TAB: TEACHERS (management only) -->
+                <div id="staff-tab-staff" class="tab-content">
+                    <div class="card" style="border-left: 4px solid #8b5cf6;">
+                        <h3><i class="fas fa-users"></i> Teaching & Non-Teaching Staff</h3>
+                        <div style="overflow:auto;">
+                            <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                                <thead>
+                                    <tr style="background:#f1f5f9; text-align:left;">
+                                        <th style="padding:8px;">Name</th>
+                                        <th style="padding:8px;">Role</th>
+                                        <th style="padding:8px;">Email</th>
+                                        <th style="padding:8px;">Status</th>
+                                        <th style="padding:8px;">Attendance Today</th>
+                                        <th style="padding:8px;">Marks Submitted</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="staff-teachers-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STAFF TAB: PROFILE -->
+                <div id="staff-tab-profile" class="tab-content">
+                    <div class="card" style="border-left: 4px solid #3b82f6;">
+                        <h3><i class="fas fa-user-circle"></i> My Profile</h3>
+                        <div id="staff-profile-body"></div>
                     </div>
                 </div>
 
@@ -3144,7 +3387,7 @@
         </div>
     </div>
 
-    <script src="script.js?v=20261001"></script>
+    <script src="script.js?v=20261002"></script>
 </body>
 
 </html>
