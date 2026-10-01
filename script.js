@@ -3293,13 +3293,26 @@ window.saveStaff = async () => {
 
     let photoUrl = await uploadToCloudinary("s_photo", "s_btn", "<i class='fas fa-save'></i> Add Staff Member"); if (!photoUrl) photoUrl = "https://via.placeholder.com/100";
     try {
+        // Step 1: auth account. Supabase returns NO error and a null user when the email is
+        // already registered, so that case is detected explicitly instead of failing opaquely.
         const { data: created, error: signUpError } = await staffAuthClient.auth.signUp({ email, password: pass });
-        if (signUpError) throw signUpError;
-        const newStaffId = created?.user?.id;
-        if (!newStaffId) throw new Error("Auth account was not created. Please try again.");
+        if (signUpError) throw new Error("Auth account creation failed: " + signUpError.message);
+        let newStaffId = created && created.user ? created.user.id : null;
+        if (!newStaffId) {
+            // Supabase returns NO error and a null user when the email is already registered.
+            // That happens when an earlier attempt created the auth account but the users
+            // profile row failed (RLS). Recover the orphaned account: sign in with the same
+            // credentials to learn its UID, then (re)create the profile row below.
+            const { data: signInData, error: signInError } = await staffAuthClient.auth.signInWithPassword({ email, password: pass });
+            if (signInError) throw new Error("Email already registered and this password does not match it (" + signInError.message + "). Re-enter the same password used first time, or delete the old account in Supabase Auth.");
+            newStaffId = signInData && signInData.user ? signInData.user.id : null;
+            if (!newStaffId) throw new Error("Email already registered; could not recover the existing account.");
+        }
 
+        // Step 2: staff profile row (RLS requires the chairman policy added in
+        // supabase/2026-10-02_staff_portal_rls.sql; the error is surfaced verbatim otherwise).
         const { error } = await supabaseClient.from("users").upsert({ id: newStaffId, name, email, role: "staff", staffRole: role, plainPassword: pass, photoUrl: photoUrl, schoolId: currentSchoolId, status: "active", privileges: { attendance: true, marks: true, finance: false, notices: false, admissions: false, certs: false, exams: false, settings: false, view_finance: false, delete: false } });
-        if (error) throw error;
+        if (error) throw new Error("Staff profile could not be saved (" + error.message + "). If this mentions row-level security, run the staff RLS migration in supabase/2026-10-02_staff_portal_rls.sql.");
         alert("Staff created successfully!"); document.getElementById("s_name").value = ""; document.getElementById("s_email").value = ""; document.getElementById("s_pass").value = ""; loadStaff();
     } catch (e) { alert("Error: " + e.message); } finally { await staffAuthClient.auth.signOut().catch(() => { }); }
 };
