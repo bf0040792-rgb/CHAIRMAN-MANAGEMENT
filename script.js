@@ -4472,16 +4472,41 @@ const staffEsc = (value) => { const node = document.createElement('span'); node.
 const staffPill = (ok, okText, noText) => ok
     ? `<span style="background:#dcfce7; color:#166534; padding:3px 10px; border-radius:12px; font-size:11px; font-weight:bold; white-space:nowrap;"><i class="fas fa-check"></i> ${okText}</span>`
     : `<span style="background:#fef3c7; color:#b45309; padding:3px 10px; border-radius:12px; font-size:11px; font-weight:bold; white-space:nowrap;"><i class="fas fa-clock"></i> ${noText}</span>`;
-const staffKpiCard = (icon, bg, fg, value, label) => `
-    <div style="background:white; border-radius:12px; padding:16px 18px; box-shadow:0 1px 4px rgba(0,0,0,0.08); display:flex; align-items:center; gap:14px;">
-        <div style="width:46px; height:46px; border-radius:12px; background:${bg}; display:flex; align-items:center; justify-content:center; flex:none;">
-            <i class="fas ${icon}" style="color:${fg}; font-size:18px;"></i>
+const staffKpiCard = (icon, bg, fg, value, label, sub) => `
+    <div class="staff-card" style="padding:16px 18px; display:flex; align-items:center; gap:14px;">
+        <div style="width:46px; height:46px; border-radius:50%; background:${bg}; display:flex; align-items:center; justify-content:center; flex:none;">
+            <i class="fas ${icon}" style="color:${fg}; font-size:17px;"></i>
         </div>
-        <div><div style="font-size:13px; color:#475569;">${label}</div><div style="font-size:24px; font-weight:800; color:#0f172a;">${value}</div></div>
+        <div style="min-width:0;">
+            <div style="font-size:12px; color:#8fa3bf;">${label}</div>
+            <div style="font-size:24px; font-weight:800; color:#f1f5f9; line-height:1.15;">${value}</div>
+            <div style="font-size:11px; font-weight:700; color:#34d399; margin-top:2px;">${sub || ''}</div>
+        </div>
     </div>`;
 
+function syncStaffMenuGroups() {
+    document.querySelectorAll('#staff-dashboard-wrapper .staff-group').forEach(g => {
+        const any = Array.from(g.querySelectorAll('.menu-item')).some(m => m.style.display !== 'none');
+        g.style.display = any ? '' : 'none';
+    });
+}
+
+window.toggleStaffGroup = (id) => { const g = document.getElementById(id); if (g) g.classList.toggle('collapsed'); };
+
+window.filterStaffMenus = (q) => {
+    q = (q || '').trim().toLowerCase();
+    const allowed = window.__staffMenuAllowed || {};
+    document.querySelectorAll('#staff-dashboard-wrapper .menu-item').forEach(m => {
+        const privOk = allowed[m.id] !== false;
+        const textOk = !q || m.innerText.toLowerCase().includes(q);
+        m.style.display = (privOk && textOk) ? '' : 'none';
+    });
+    syncStaffMenuGroups();
+};
+
 function applyStaffPortalAccess() {
-    const show = (id, ok) => { const el = document.getElementById(id); if (el) el.style.display = ok ? '' : 'none'; };
+    window.__staffMenuAllowed = window.__staffMenuAllowed || {};
+    const show = (id, ok) => { const el = document.getElementById(id); if (el) { el.style.display = ok ? '' : 'none'; window.__staffMenuAllowed[id] = ok; } };
     show('staff-menu-attendance', staffHasPriv('attendance'));
     show('staff-menu-marks', staffHasPriv('marks'));
     show('staff-menu-homework', staffHasPriv('marks'));
@@ -4489,6 +4514,7 @@ function applyStaffPortalAccess() {
     show('staff-mgmt-panel', staffIsManagement());
     show('staff-teacher-panel', !staffIsManagement());
     show('staff-notice-form', staffHasPriv('notices'));
+    syncStaffMenuGroups();
     if (!staffHasPriv('attendance')) document.getElementById('staff-menu-home') && document.getElementById('staff-menu-home').click();
 }
 
@@ -4498,9 +4524,9 @@ function renderStaffProfile() {
     const d = currentStaffDoc;
     const rows = [['Name', d.name], ['Role', d.staffRole], ['Email', d.email], ['Staff ID', d.id], ['Status', d.status || 'active'], ['School', currentSchoolName]];
     el.innerHTML = `<div style="display:flex; gap:18px; align-items:center; flex-wrap:wrap;">
-        <img src="${d.photoUrl ? staffEsc(d.photoUrl) : 'https://via.placeholder.com/100'}" alt="profile" style="width:84px; height:84px; border-radius:50%; object-fit:cover; border:3px solid #3b82f6;">
+        <img src="${d.photoUrl ? staffEsc(d.photoUrl) : 'https://via.placeholder.com/100'}" alt="profile" style="width:84px; height:84px; border-radius:50%; object-fit:cover; border:3px solid #10b981;">
         <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px 26px; flex:1;">
-            ${rows.map(([label, value]) => `<div><div style="font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:0.4px;">${staffEsc(label)}</div><div style="font-weight:700; color:#0f172a;">${staffEsc(value)}</div></div>`).join('')}
+            ${rows.map(([label, value]) => `<div><div style="font-size:11px; color:#8fa3bf; text-transform:uppercase; letter-spacing:0.4px;">${staffEsc(label)}</div><div style="font-weight:700; color:#e2e8f0;">${staffEsc(value)}</div></div>`).join('')}
         </div>
     </div>`;
 }
@@ -4522,22 +4548,89 @@ function staffRenderChart(approvedRows) {
     window.staffChartInstance = new Chart(canvas, {
         type: 'bar',
         data: { labels, datasets: [{ label: 'Average %', data: values, backgroundColor: ['#3b82f6', '#60a5fa', '#10b981', '#34d399', '#64748b', '#1e3a8a', '#8b5cf6', '#f59e0b'], borderRadius: 6 }] },
-        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } }, plugins: { legend: { display: false } } }
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100, ticks: { color: '#8fa3bf' }, grid: { color: 'rgba(148,163,184,0.12)' } }, x: { ticks: { color: '#8fa3bf' }, grid: { color: 'rgba(148,163,184,0.08)' } } }, plugins: { legend: { display: false } } }
     });
 }
 
-function staffComplianceHtml(staffRows, attRows, mkRows) {
-    if (!staffRows || staffRows.length === 0) return '<tr><td colspan="4" style="padding:14px; text-align:center; color:#888;">No staff records found.</td></tr>';
+function staffComplianceHtml(staffRows, mkRows) {
+    if (!staffRows || staffRows.length === 0) return '<tr><td colspan="4" style="padding:14px; text-align:center; color:#64748b;">No staff records found.</td></tr>';
     return staffRows.map(st => {
-        const attOk = (attRows || []).some(a => a.uid === st.id);
         const mkOk = (mkRows || []).some(m => m.enteredBy === st.id);
-        return `<tr style="border-bottom:1px solid #e2e8f0;">
-            <td style="padding:8px;">${staffEsc(st.name)}</td>
-            <td style="padding:8px;">${staffEsc(st.staffRole)}</td>
-            <td style="padding:8px;">${staffPill(attOk, 'Submitted', 'Pending')}</td>
-            <td style="padding:8px;">${staffPill(mkOk, 'Submitted', 'Pending')}</td>
+        const active = (st.status || 'active') !== 'blocked';
+        return `<tr>
+            <td>${staffEsc(st.name)}</td>
+            <td>${staffEsc(st.staffRole)}</td>
+            <td>${staffPill(active, 'Active', 'Blocked')}</td>
+            <td>${staffPill(mkOk, 'Submitted', 'Pending')}</td>
         </tr>`;
     }).join('');
+}
+
+const staffAttBar = (label, pct, color) => `
+    <div class="staff-att-row">
+        <div style="display:flex; justify-content:space-between; font-size:12px; color:#9fb0c8; margin-bottom:6px;">
+            <span><i class="fas fa-circle" style="color:${color}; font-size:8px; margin-right:7px;"></i>${label}</span>
+            <strong style="color:#e2e8f0;">${pct}%</strong>
+        </div>
+        <div style="height:8px; border-radius:6px; background:#0d1830;">
+            <div style="height:8px; border-radius:6px; width:${Math.max(0, Math.min(100, pct))}%; background:${color};"></div>
+        </div>
+    </div>`;
+
+function staffRenderAttSummary(rows) {
+    const el = document.getElementById('staff-att-summary');
+    if (el) el.innerHTML = rows.map(([label, pct, color]) => staffAttBar(label, pct, color)).join('');
+}
+
+function staffRenderAttChart(monthRows, monthKeys) {
+    const canvas = document.getElementById('staff-att-chart');
+    if (!canvas || !window.Chart) return;
+    if (window.staffAttChartInstance) { window.staffAttChartInstance.destroy(); window.staffAttChartInstance = null; }
+    const per = {};
+    monthKeys.forEach(k => per[k] = { present: 0, absent: 0 });
+    (monthRows || []).forEach(r => {
+        const k = String(r.date || '').slice(0, 7);
+        if (!per[k]) return;
+        Object.values(r.records || {}).forEach(v => { v === 'Absent' ? per[k].absent++ : per[k].present++; });
+    });
+    const labels = monthKeys.map(k => { const [y, m] = k.split('-'); return new Date(Number(y), Number(m) - 1, 1).toLocaleDateString('en-US', { month: 'short' }); });
+    window.staffAttChartInstance = new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [
+                { label: 'Present', data: monthKeys.map(k => per[k].present), backgroundColor: '#10b981', borderRadius: 4 },
+                { label: 'Absent', data: monthKeys.map(k => per[k].absent), backgroundColor: '#f97316', borderRadius: 4 }
+            ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { color: '#8fa3bf' }, grid: { color: 'rgba(148,163,184,0.08)' } }, y: { beginAtZero: true, ticks: { color: '#8fa3bf' }, grid: { color: 'rgba(148,163,184,0.12)' } } }, plugins: { legend: { labels: { color: '#cbd5e1', boxWidth: 12 } } } }
+    });
+}
+
+let staffCalOffset = 0;
+window.staffCalNav = (dir) => { staffCalOffset += dir; staffRenderCalendar(); };
+
+function staffRenderCalendar() {
+    const el = document.getElementById('staff-calendar');
+    if (!el) return;
+    const base = new Date();
+    const view = new Date(base.getFullYear(), base.getMonth() + staffCalOffset, 1);
+    const days = new Date(view.getFullYear(), view.getMonth() + 1, 0).getDate();
+    const firstDow = view.getDay();
+    const title = view.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    let body = '<tr>';
+    let col = firstDow;
+    for (let i = 0; i < firstDow; i++) body += '<td class="staff-cal-dim"></td>';
+    for (let d = 1; d <= days; d++) {
+        const isToday = staffCalOffset === 0 && d === base.getDate();
+        body += `<td class="${isToday ? 'staff-cal-today' : ''}"><span>${d}</span></td>`;
+        col++;
+        if (col % 7 === 0) body += '</tr><tr>';
+    }
+    while (col % 7 !== 0) { body += '<td class="staff-cal-dim"></td>'; col++; }
+    body += '</tr>';
+    el.innerHTML = `<div style="text-align:center; font-weight:800; color:#e2e8f0; margin-bottom:8px;">${title}</div>
+        <table><thead><tr><th>Su</th><th>Mo</th><th>Tu</th><th>We</th><th>Th</th><th>Fr</th><th>Sa</th></tr></thead><tbody>${body}</tbody></table>`;
 }
 
 window.initStaffPortal = (data) => {
@@ -4560,61 +4653,94 @@ async function loadStaffHome() {
     if (!grid || !currentStaffDoc) return;
     grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:18px; color:#64748b;"><i class="fas fa-spinner fa-spin"></i> Loading dashboard...</div>';
     const today = staffTodayStr();
-    const [stuRes, usrRes, attRes, mkRes, ntRes] = await Promise.all([
+    const now = new Date();
+    const monthKeys = [];
+    for (let i = 7; i >= 0; i--) { const d = new Date(now.getFullYear(), now.getMonth() - i, 1); monthKeys.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`); }
+    const rangeStart = monthKeys[0] + '-01';
+    const [stuRes, usrRes, attTodayRes, attRangeRes, mkRes, ntRes, hwRes] = await Promise.all([
         supabaseClient.from('students').select('id, class, status').eq('schoolId', currentSchoolId),
         supabaseClient.from('users').select('id, name, staffRole, status, email, photoUrl').eq('schoolId', currentSchoolId).eq('role', 'staff'),
-        supabaseClient.from('attendance').select('class, date, uid').eq('schoolId', currentSchoolId).eq('date', today),
+        supabaseClient.from('attendance').select('class, date, records').eq('schoolId', currentSchoolId).eq('date', today),
+        supabaseClient.from('attendance').select('date, records').eq('schoolId', currentSchoolId).gte('date', rangeStart),
         supabaseClient.from('exam_marks').select('id, class, examName, subject, studentName, marksObtained, maxMarks, totalMarks, status, enteredBy, enteredByName').eq('schoolId', currentSchoolId),
-        supabaseClient.from('notices').select('title, body, date, target, createdAt').eq('schoolId', currentSchoolId)
+        supabaseClient.from('notices').select('title, body, date, target, createdAt').eq('schoolId', currentSchoolId),
+        supabaseClient.from('homework').select('id').eq('schoolId', currentSchoolId)
     ]);
     const students = (stuRes.data || []).filter(s => s.status === 'Approved');
     const staffRows = (usrRes.data || []).filter(u => u.status !== 'blocked');
-    const attToday = attRes.data || [];
+    const attToday = attTodayRes.data || [];
     const mkRows = mkRes.data || [];
     const notices = (ntRes.data || []).slice().sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
     const approvedMarks = mkRows.filter(m => m.status === 'Approved');
     const pendingMarks = mkRows.filter(m => m.status === 'Pending');
+    const hwCount = (hwRes.data || []).length;
     window.staffHomeCache = { staffRows, attToday, mkRows, pendingMarks };
 
+    const countRecords = (rows) => {
+        let present = 0, absent = 0;
+        (rows || []).forEach(r => { Object.values(r.records || {}).forEach(v => { v === 'Absent' ? absent++ : present++; }); });
+        return { present, absent };
+    };
+    const todayCounts = countRecords(attToday);
     const classTotal = new Set(students.map(s => s.class)).size;
-    const classMarked = new Set(attToday.map(a => a.class)).size;
+    const classMarked = attToday.length;
     const attPct = classTotal ? Math.round((classMarked / classTotal) * 100) : 0;
+    const markedTotalToday = todayCounts.present + todayCounts.absent;
+    const presentTodayPct = markedTotalToday ? Math.round((todayCounts.present / markedTotalToday) * 100) : 0;
+    const monthRows = (attRangeRes.data || []).filter(r => monthKeys.includes(String(r.date || '').slice(0, 7)));
+    const monthCounts = countRecords(monthRows);
+    const monthTotal = monthCounts.present + monthCounts.absent;
+    const monthPresentPct = monthTotal ? Math.round((monthCounts.present / monthTotal) * 100) : 0;
+    const monthAbsentPct = monthTotal ? Math.round((monthCounts.absent / monthTotal) * 100) : 0;
+    const approvedPct = mkRows.length ? Math.round((approvedMarks.length / mkRows.length) * 100) : 0;
+    const mgmtCount = staffRows.filter(u => STAFF_MANAGEMENT_ROLES.includes(u.staffRole)).length;
+    const examSets = new Set(pendingMarks.map(m => m.examName + '|' + m.class)).size;
 
     grid.innerHTML =
-        staffKpiCard('fa-users', '#dbeafe', '#2563eb', staffRows.length, 'Teachers & Staff') +
-        staffKpiCard('fa-user-graduate', '#d1fae5', '#059669', students.length, 'Active Students') +
-        staffKpiCard('fa-clipboard-check', '#fef3c7', '#d97706', attPct + '%', 'Attendance Marked Today') +
-        staffKpiCard('fa-hourglass-half', '#ede9fe', '#7c3aed', pendingMarks.length, 'Results Awaiting Veto');
+        staffKpiCard('fa-chalkboard-teacher', 'rgba(16,185,129,0.15)', '#34d399', staffRows.length, 'Teachers & Staff', `${mgmtCount} management`) +
+        staffKpiCard('fa-user-graduate', 'rgba(59,130,246,0.15)', '#60a5fa', students.length, 'Active Students', `${classTotal} classes`) +
+        staffKpiCard('fa-clipboard-check', 'rgba(245,158,11,0.15)', '#fbbf24', attPct + '%', 'Attendance Marked Today', `${classMarked}/${classTotal} classes`) +
+        staffKpiCard('fa-user-check', 'rgba(34,211,238,0.15)', '#22d3ee', todayCounts.present, 'Present Today', `${todayCounts.absent} absent · ${presentTodayPct}%`) +
+        staffKpiCard('fa-hourglass-half', 'rgba(139,92,246,0.15)', '#a78bfa', pendingMarks.length, 'Results Awaiting Veto', `${examSets} exam sets`) +
+        staffKpiCard('fa-book-open', 'rgba(16,185,129,0.15)', '#34d399', hwCount, 'Homework Published', `${notices.length} notices`);
 
+    staffRenderAttSummary([
+        ['Present (this month)', monthPresentPct, '#10b981'],
+        ['Absent (this month)', monthAbsentPct, '#f97316'],
+        ['Classes Marked Today', attPct, '#8b5cf6'],
+        ['Results Approved', approvedPct, '#22d3ee']
+    ]);
+    staffRenderAttChart(monthRows, monthKeys);
     staffRenderChart(approvedMarks);
+    staffRenderCalendar();
 
     const noticeBox = document.getElementById('staff-home-notices');
     if (noticeBox) {
         noticeBox.innerHTML = notices.length ? notices.slice(0, 6).map(n => `
-            <div style="border-left:3px solid #10b981; background:#f8fafc; border-radius:8px; padding:10px 12px; margin-bottom:10px;">
-                <div style="font-weight:700; color:#0f172a;">${staffEsc(n.title)}</div>
-                <div style="font-size:12px; color:#475569; margin-top:4px;">${staffEsc(n.body)}</div>
-                <div style="font-size:11px; color:#94a3b8; margin-top:6px;"><i class="fas fa-calendar"></i> ${staffEsc(n.date)}</div>
-            </div>`).join('') : '<div style="padding:16px; text-align:center; color:#888; background:#f8fafc; border-radius:8px;">No notices published yet.</div>';
+            <div style="border-left:3px solid #10b981; background:#0f1a30; border-radius:8px; padding:10px 12px; margin-bottom:10px;">
+                <div style="font-weight:700; color:#e2e8f0;">${staffEsc(n.title)}</div>
+                <div style="font-size:12px; color:#9fb0c8; margin-top:4px;">${staffEsc(n.body)}</div>
+                <div style="font-size:11px; color:#64748b; margin-top:6px;"><i class="fas fa-calendar"></i> ${staffEsc(n.date)}</div>
+            </div>`).join('') : '<div style="padding:16px; text-align:center; color:#64748b; background:#0f1a30; border-radius:8px;">No notices published yet.</div>';
     }
 
     if (staffIsManagement()) {
         const cb = document.getElementById('staff-compliance-body');
-        if (cb) cb.innerHTML = staffComplianceHtml(staffRows, attToday, mkRows);
+        if (cb) cb.innerHTML = staffComplianceHtml(staffRows, mkRows);
         const ab = document.getElementById('staff-approval-body');
         if (ab) ab.innerHTML = pendingMarks.length ? pendingMarks.slice(0, 6).map(m => `
-            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; border-bottom:1px solid #e2e8f0; padding:8px 2px;">
-                <div style="font-size:13px;"><strong>${staffEsc(m.enteredByName || 'Staff')}</strong> — ${staffEsc(m.examName)} (${staffEsc(m.subject)}) · Class ${staffEsc(m.class)}</div>
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; border-bottom:1px solid #1c2c47; padding:8px 2px;">
+                <div style="font-size:13px; color:#dbe4f0;"><strong>${staffEsc(m.enteredByName || 'Staff')}</strong> — ${staffEsc(m.examName)} (${staffEsc(m.subject)}) · Class ${staffEsc(m.class)}</div>
                 <button class="submit-btn" style="padding:6px 10px; font-size:12px;" onclick="window.viewStaffApprovalDetail('${m.id}')">View Entries</button>
-            </div>`).join('') : '<div style="padding:16px; text-align:center; color:#888; background:#f8fafc; border-radius:8px;">No results awaiting veto.</div>';
+            </div>`).join('') : '<div style="padding:16px; text-align:center; color:#64748b; background:#0f1a30; border-radius:8px;">No results awaiting veto.</div>';
     } else {
         const tb = document.getElementById('staff-tasks-body');
         if (tb) {
             const myPending = pendingMarks.filter(m => m.enteredBy === currentStaffDoc.id).length;
             const tasks = [];
-            if (staffHasPriv('attendance')) tasks.push(`<div style="display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 2px; border-bottom:1px solid #e2e8f0;"><div><i class="fas fa-clipboard-list" style="color:#3b82f6;"></i> Today's class attendance${attToday.length ? '' : ' is not marked yet'}.</div><button class="submit-btn" style="padding:6px 12px; font-size:12px;" onclick="document.getElementById('staff-menu-attendance').click()">Mark Now</button></div>`);
-            if (staffHasPriv('marks')) tasks.push(`<div style="display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 2px; border-bottom:1px solid #e2e8f0;"><div><i class="fas fa-pen-alt" style="color:#10b981;"></i> ${myPending ? myPending + ' of your submitted results are awaiting chairman veto.' : 'No pending results. Enter exam marks when ready.'}</div><button class="submit-btn" style="padding:6px 12px; font-size:12px; background:#10b981;" onclick="document.getElementById('staff-menu-marks').click()">Enter Marks</button></div>`);
-            tasks.push(`<div style="display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 2px;"><div><i class="fas fa-book-open" style="color:#6366f1;"></i> Publish homework for your classes.</div><button class="submit-btn" style="padding:6px 12px; font-size:12px; background:#6366f1;" onclick="document.getElementById('staff-menu-homework').click()">Open</button></div>`);
+            if (staffHasPriv('attendance')) tasks.push(`<div style="display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 2px; border-bottom:1px solid #1c2c47; color:#dbe4f0;"><div><i class="fas fa-clipboard-list" style="color:#60a5fa;"></i> Today's class attendance${attToday.length ? '' : ' is not marked yet'}.</div><button class="submit-btn" style="padding:6px 12px; font-size:12px;" onclick="document.getElementById('staff-menu-attendance').click()">Mark Now</button></div>`);
+            if (staffHasPriv('marks')) tasks.push(`<div style="display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 2px; border-bottom:1px solid #1c2c47; color:#dbe4f0;"><div><i class="fas fa-pen-alt" style="color:#34d399;"></i> ${myPending ? myPending + ' of your submitted results are awaiting chairman veto.' : 'No pending results. Enter exam marks when ready.'}</div><button class="submit-btn" style="padding:6px 12px; font-size:12px; background:#10b981;" onclick="document.getElementById('staff-menu-marks').click()">Enter Marks</button></div>`);
+            tasks.push(`<div style="display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 2px; color:#dbe4f0;"><div><i class="fas fa-book-open" style="color:#818cf8;"></i> Publish homework for your classes.</div><button class="submit-btn" style="padding:6px 12px; font-size:12px; background:#6366f1;" onclick="document.getElementById('staff-menu-homework').click()">Open</button></div>`);
             tb.innerHTML = tasks.join('');
         }
     }
@@ -4626,9 +4752,9 @@ window.viewStaffApprovalDetail = (markId) => {
     const ref = cache.pendingMarks.find(m => m.id === markId);
     if (!ref) return;
     const rows = cache.pendingMarks.filter(m => m.examName === ref.examName && m.class === ref.class);
-    detail.innerHTML = `<div style="background:#fffbeb; border:1px solid #fde68a; border-radius:10px; padding:12px;">
-        <div style="font-weight:700; color:#92400e; margin-bottom:8px;">${staffEsc(ref.examName)} · ${staffEsc(ref.subject)} · Class ${staffEsc(ref.class)}</div>
-        ${rows.map(r => `<div style="display:flex; justify-content:space-between; font-size:13px; padding:4px 0; border-bottom:1px dashed #fde68a;"><span>${staffEsc(r.studentName)}</span><strong>${staffEsc(r.marksObtained)} / ${staffEsc(r.maxMarks || r.totalMarks)}</strong></div>`).join('')}
+    detail.innerHTML = `<div style="background:rgba(245,158,11,0.08); border:1px solid #7c5806; border-radius:10px; padding:12px;">
+        <div style="font-weight:700; color:#fbbf24; margin-bottom:8px;">${staffEsc(ref.examName)} · ${staffEsc(ref.subject)} · Class ${staffEsc(ref.class)}</div>
+        ${rows.map(r => `<div style="display:flex; justify-content:space-between; font-size:13px; padding:4px 0; border-bottom:1px dashed #7c5806; color:#dbe4f0;"><span>${staffEsc(r.studentName)}</span><strong>${staffEsc(r.marksObtained)} / ${staffEsc(r.maxMarks || r.totalMarks)}</strong></div>`).join('')}
     </div>`;
 };
 
@@ -4657,7 +4783,7 @@ window.loadStaffAttendanceRoster = async () => {
     const body = document.getElementById('staff_att_roster_body');
     body.innerHTML = stds.length ? stds.map(st => {
         const val = records[st.id] === 'Absent' ? 'Absent' : 'Present';
-        return `<tr class="hover-row" style="border-bottom:1px solid #e2e8f0;">
+        return `<tr class="hover-row" style="border-bottom:1px solid #1c2c47;">
             <td style="padding:10px;">${staffEsc(st.rollNo)}</td>
             <td style="padding:10px;"><strong>${staffEsc(st.name)}</strong></td>
             <td style="padding:10px;">${staffEsc(st.parentage || st.fatherName)}</td>
@@ -4699,9 +4825,9 @@ window.loadStaffMarksRoster = async () => {
     if (error) return alert('Error loading students: ' + error.message);
     const stds = students || [];
     document.getElementById('staff_mk_roster_body').innerHTML = stds.length ? stds.map(st => `
-        <tr style="border-bottom:1px solid #e2e8f0;">
+        <tr style="border-bottom:1px solid #1c2c47;">
             <td style="padding:10px;">${staffEsc(st.rollNo)}</td>
-            <td style="padding:10px;"><strong>${staffEsc(st.name)}</strong></td>
+            <td style="padding:10px;"><strong style="color:#e2e8f0;">${staffEsc(st.name)}</strong></td>
             <td style="padding:10px; text-align:center;"><input type="number" min="0" id="staffmk_${st.id}" class="input-premium" style="width:110px; text-align:center;" placeholder="0"></td>
         </tr>`).join('') : '<tr><td colspan="3" style="padding:14px; text-align:center;">No approved students in this class.</td></tr>';
     document.getElementById('staff_mk_panel').style.display = 'block';
@@ -4761,14 +4887,14 @@ window.loadStaffHomeworkList = async () => {
     if (error) return el.innerHTML = '<div style="padding:14px; color:#888;">Unable to load homework.</div>';
     const rows = (data || []).slice().sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
     el.innerHTML = rows.length ? rows.map(hw => `
-        <div style="border-left:3px solid #6366f1; background:#f8fafc; border-radius:8px; padding:10px 12px; margin-bottom:10px;">
+        <div style="border-left:3px solid #6366f1; background:#0f1a30; border-radius:8px; padding:10px 12px; margin-bottom:10px;">
             <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
-                <strong style="color:#0f172a;">${staffEsc(hw.subject)} — ${staffEsc(hw.title)}</strong>
+                <strong style="color:#e2e8f0;">${staffEsc(hw.subject)} — ${staffEsc(hw.title)}</strong>
                 <span style="font-size:11px; color:#64748b;">Class ${staffEsc(hw.class)} · Due: ${staffEsc(hw.dueDate || '—')}</span>
             </div>
-            <div style="font-size:13px; color:#475569; margin-top:4px;">${staffEsc(hw.description)}</div>
+            <div style="font-size:13px; color:#9fb0c8; margin-top:4px;">${staffEsc(hw.description)}</div>
             <div style="font-size:11px; color:#94a3b8; margin-top:6px;">By ${staffEsc(hw.teacherName)}</div>
-        </div>`).join('') : '<div style="padding:16px; text-align:center; color:#888; background:#f8fafc; border-radius:8px;">No homework published yet.</div>';
+        </div>`).join('') : '<div style="padding:16px; text-align:center; color:#64748b; background:#0f1a30; border-radius:8px;">No homework published yet.</div>';
 };
 
 window.loadStaffNotices = async () => {
@@ -4779,13 +4905,13 @@ window.loadStaffNotices = async () => {
     const rows = (data || []).filter(n => !n.target || n.target === 'All' || n.target === 'Staff' || n.target === role)
         .slice().sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
     el.innerHTML = rows.length ? rows.map(n => `
-        <div style="border-left:3px solid #10b981; background:#f8fafc; border-radius:8px; padding:10px 12px; margin-bottom:10px;">
+        <div style="border-left:3px solid #10b981; background:#0f1a30; border-radius:8px; padding:10px 12px; margin-bottom:10px;">
             <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
-                <strong style="color:#0f172a;">${staffEsc(n.title)}</strong>
+                <strong style="color:#e2e8f0;">${staffEsc(n.title)}</strong>
                 <span style="font-size:11px; color:#64748b;">${staffEsc(n.date)}</span>
             </div>
-            <div style="font-size:13px; color:#475569; margin-top:4px; white-space:pre-wrap;">${staffEsc(n.body)}</div>
-        </div>`).join('') : '<div style="padding:16px; text-align:center; color:#888; background:#f8fafc; border-radius:8px;">No notices for you yet.</div>';
+            <div style="font-size:13px; color:#9fb0c8; margin-top:4px; white-space:pre-wrap;">${staffEsc(n.body)}</div>
+        </div>`).join('') : '<div style="padding:16px; text-align:center; color:#64748b; background:#0f1a30; border-radius:8px;">No notices for you yet.</div>';
 };
 
 window.publishStaffNotice = async () => {
@@ -4808,8 +4934,8 @@ window.loadStaffTimetable = async () => {
     const { data: schoolRow } = await supabaseClient.from('schools').select('schedule').eq('id', currentSchoolId).maybeSingle();
     const rows = Array.isArray(schoolRow && schoolRow.schedule) ? schoolRow.schedule : [];
     el.innerHTML = rows.length ? `<div style="overflow:auto;"><table style="width:100%; border-collapse:collapse; font-size:13px;">
-        <thead><tr style="background:#f1f5f9; text-align:left;"><th style="padding:8px;">Period</th><th style="padding:8px;">Time</th><th style="padding:8px;">Class</th><th style="padding:8px;">Subject</th><th style="padding:8px;">Teacher</th><th style="padding:8px;">Room</th></tr></thead>
-        <tbody>${rows.map(r => `<tr style="border-bottom:1px solid #e2e8f0;">
+        <thead><tr style="background:#0f1a30; text-align:left;"><th style="padding:8px; color:#8fa3bf;">Period</th><th style="padding:8px; color:#8fa3bf;">Time</th><th style="padding:8px; color:#8fa3bf;">Class</th><th style="padding:8px; color:#8fa3bf;">Subject</th><th style="padding:8px; color:#8fa3bf;">Teacher</th><th style="padding:8px; color:#8fa3bf;">Room</th></tr></thead>
+        <tbody>${rows.map(r => `<tr style="border-bottom:1px solid #1c2c47; color:#dbe4f0;">
             <td style="padding:8px;">${staffEsc(r.period || r.title || '—')}</td>
             <td style="padding:8px;">${staffEsc(r.time || '—')}</td>
             <td style="padding:8px;">${staffEsc(r.class || '—')}</td>
@@ -4817,7 +4943,7 @@ window.loadStaffTimetable = async () => {
             <td style="padding:8px;">${staffEsc(r.teacher || '—')}</td>
             <td style="padding:8px;">${staffEsc(r.room || '—')}</td>
         </tr>`).join('')}</tbody></table></div>`
-        : '<div style="padding:16px; text-align:center; color:#888; background:#f8fafc; border-radius:8px;">Timetable has not been published by the school yet.</div>';
+        : '<div style="padding:16px; text-align:center; color:#64748b; background:#0f1a30; border-radius:8px;">Timetable has not been published by the school yet.</div>';
 };
 
 window.submitStaffLeave = async () => {
@@ -4844,33 +4970,31 @@ window.loadStaffLeaveList = async () => {
     el.innerHTML = rows.length ? rows.map(r => {
         const color = r.status === 'Approved' ? '#dcfce7;#166534' : (r.status === 'Rejected' ? '#fee2e2;#b91c1c' : '#fef3c7;#b45309');
         const [bg, fg] = color.split(';');
-        return `<div style="display:flex; justify-content:space-between; align-items:center; gap:10px; border-bottom:1px solid #e2e8f0; padding:10px 2px;">
-            <div><strong style="font-size:13px;">${staffEsc(r.startDate)} → ${staffEsc(r.endDate)}</strong><div style="font-size:12px; color:#64748b;">${staffEsc(r.reason)}</div></div>
+        return `<div style="display:flex; justify-content:space-between; align-items:center; gap:10px; border-bottom:1px solid #1c2c47; padding:10px 2px;">
+            <div><strong style="font-size:13px; color:#e2e8f0;">${staffEsc(r.startDate)} → ${staffEsc(r.endDate)}</strong><div style="font-size:12px; color:#8fa3bf;">${staffEsc(r.reason)}</div></div>
             <span style="background:${bg}; color:${fg}; padding:4px 12px; border-radius:12px; font-size:11px; font-weight:bold;">${staffEsc(r.status || 'Pending')}</span>
         </div>`;
-    }).join('') : '<div style="padding:16px; text-align:center; color:#888; background:#f8fafc; border-radius:8px;">No leave requests yet.</div>';
+    }).join('') : '<div style="padding:16px; text-align:center; color:#64748b; background:#0f1a30; border-radius:8px;">No leave requests yet.</div>';
 };
 
 window.loadStaffTeachers = async () => {
     const el = document.getElementById('staff-teachers-body'); if (!el) return;
     const cache = window.staffHomeCache;
     const today = staffTodayStr();
-    const [usrRes, attRes, mkRes] = await Promise.all([
+    const [usrRes, mkRes] = await Promise.all([
         supabaseClient.from('users').select('id, name, staffRole, email, status').eq('schoolId', currentSchoolId).eq('role', 'staff'),
-        supabaseClient.from('attendance').select('uid').eq('schoolId', currentSchoolId).eq('date', today),
         supabaseClient.from('exam_marks').select('enteredBy').eq('schoolId', currentSchoolId)
     ]);
-    const staffRows = usrRes.data || []; const attRows = attRes.data || []; const mkRows = mkRes.data || [];
-    window.staffHomeCache = Object.assign({}, cache, { staffRows, attToday: attRows, mkRows });
+    const staffRows = usrRes.data || []; const mkRows = mkRes.data || [];
+    window.staffHomeCache = Object.assign({}, cache, { staffRows, mkRows });
     el.innerHTML = staffRows.length ? staffRows.map(st => `
-        <tr style="border-bottom:1px solid #e2e8f0;">
-            <td style="padding:8px;"><strong>${staffEsc(st.name)}</strong></td>
-            <td style="padding:8px;">${staffEsc(st.staffRole)}</td>
-            <td style="padding:8px;">${staffEsc(st.email)}</td>
-            <td style="padding:8px;">${staffEsc(st.status || 'active')}</td>
-            <td style="padding:8px;">${staffPill(attRows.some(a => a.uid === st.id), 'Submitted', 'Pending')}</td>
-            <td style="padding:8px;">${staffPill(mkRows.some(m => m.enteredBy === st.id), 'Submitted', 'Pending')}</td>
-        </tr>`).join('') : '<tr><td colspan="6" style="padding:14px; text-align:center; color:#888;">No staff found.</td></tr>';
+        <tr>
+            <td><strong style="color:#e2e8f0;">${staffEsc(st.name)}</strong></td>
+            <td>${staffEsc(st.staffRole)}</td>
+            <td>${staffEsc(st.email)}</td>
+            <td>${staffEsc(st.status || 'active')}</td>
+            <td>${staffPill(mkRows.some(m => m.enteredBy === st.id), 'Submitted', 'Pending')}</td>
+        </tr>`).join('') : '<tr><td colspan="5" style="padding:14px; text-align:center; color:#64748b;">No staff found.</td></tr>';
 };
 
 // =============================================================================================

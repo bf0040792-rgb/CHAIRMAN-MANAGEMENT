@@ -291,6 +291,10 @@ alter table public.notices add column if not exists "createdAt" timestamptz;
 
 alter table public.leave_requests add column if not exists "createdAt" timestamptz;
 
+-- staff attendance writes carry the authoring staff member's identity
+alter table public.attendance add column if not exists "uid" text;
+alter table public.attendance add column if not exists "role" text;
+
 -- PostgREST must refresh its schema cache after DDL so the new columns are
 -- immediately visible to the portal's REST calls.
 select pg_notify('pgrst', 'reload schema');
