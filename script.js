@@ -3297,8 +3297,17 @@ window.saveStaff = async () => {
         // already registered, so that case is detected explicitly instead of failing opaquely.
         const { data: created, error: signUpError } = await staffAuthClient.auth.signUp({ email, password: pass });
         if (signUpError) throw new Error("Auth account creation failed: " + signUpError.message);
-        const newStaffId = created && created.user ? created.user.id : null;
-        if (!newStaffId) throw new Error("This email is already registered. Use another email, or delete the old staff entry first.");
+        let newStaffId = created && created.user ? created.user.id : null;
+        if (!newStaffId) {
+            // Supabase returns NO error and a null user when the email is already registered.
+            // That happens when an earlier attempt created the auth account but the users
+            // profile row failed (RLS). Recover the orphaned account: sign in with the same
+            // credentials to learn its UID, then (re)create the profile row below.
+            const { data: signInData, error: signInError } = await staffAuthClient.auth.signInWithPassword({ email, password: pass });
+            if (signInError) throw new Error("Email already registered and this password does not match it (" + signInError.message + "). Re-enter the same password used first time, or delete the old account in Supabase Auth.");
+            newStaffId = signInData && signInData.user ? signInData.user.id : null;
+            if (!newStaffId) throw new Error("Email already registered; could not recover the existing account.");
+        }
 
         // Step 2: staff profile row (RLS requires the chairman policy added in
         // supabase/2026-10-02_staff_portal_rls.sql; the error is surfaced verbatim otherwise).
