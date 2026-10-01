@@ -4442,6 +4442,55 @@ window.saveDailyAttendance = async () => {
 let currentStudentUser = null;
 let currentStudentSchoolDoc = null;
 
+// ---------------------------------------------------------------------------
+// Dedicated Supabase client for the merged student portal.
+// The Render API issues a student JWT on login and it is attached as the
+// `Authorization: Bearer` header of THIS client only. The chairman/staff client
+// (`supabaseClient`, GoTrue backed) is never reused for student modules, so a
+// chairman session open in the same browser can never become the authentication
+// source for student data.
+// ---------------------------------------------------------------------------
+let studentPortalClient = null;
+
+// Bumped on every student login/logout so a response that belongs to a previous
+// student session can never be rendered into the current dashboard.
+let studentSessionEpoch = 0;
+
+function createStudentPortalClient(accessToken) {
+    return window.supabase.createClient(supabaseUrl, supabaseKey, {
+        auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            detectSessionInUrl: false
+        },
+        global: { headers: { Authorization: `Bearer ${accessToken}` } }
+    });
+}
+
+// Shared student modules may fall back to the default client (none of them carried a
+// student JWT before). Modules that must run AS the student use
+// requireStudentPortalClient() so they can never silently use a staff/anon session.
+const studentSupabase = () => studentPortalClient || supabaseClient;
+
+function requireStudentPortalClient() {
+    if (!studentPortalClient) {
+        const error = new Error('Authenticated student session required. Please sign in again.');
+        error.studentAuthError = true;
+        throw error;
+    }
+    return studentPortalClient;
+}
+
+// PostgREST reports JWT problems in the PGRST30x group (HTTP 401) and Supabase surfaces
+// them as a PostgrestError, so a rejected/expired student token is detectable client side.
+function isStudentAuthError(error) {
+    if (!error) return false;
+    if (error.studentAuthError === true) return true;
+    const code = String(error.code || '').toUpperCase();
+    if (/^PGRST30[0-3]$/.test(code)) return true;
+    return /jwt|access token|token is expired|could not authenticate/i.test(`${error.message || ''} ${error.details || ''}`);
+}
+
 const studentFeatures = [
     { id: 'profile', title: 'Profile', icon: 'user' },
     { id: 'homework', title: 'Homework', icon: 'book-open' },
@@ -4511,7 +4560,9 @@ const STUDENT_MODULES = {
     homework: { title: 'Homework', subtitle: 'Homework published for your school and class.', collections: ['homework'] },
     assignment: { title: 'Assignments', subtitle: 'Assignments and submission status for your account.', collections: ['assignments', 'assignment'] },
     datesheet: { title: 'DateSheet', subtitle: 'Exam schedules published for your class.', collections: [] },
-    attendance: { title: 'Attendance', subtitle: 'Only your date-wise attendance records are shown.', collections: ['attendance'] },
+    // Attendance is served by the dedicated normalized query in fetchStudentModuleRecords(),
+    // so there is no legacy collection to fall back to.
+    attendance: { title: 'Attendance', subtitle: 'Only your date-wise attendance records are shown.', collections: [] },
     result: { title: 'Result', subtitle: 'Approved academic results for your account.', collections: ['student_marks', 'exam_marks'] },
     syllabus: { title: 'Syllabus', subtitle: 'Syllabus shared for your school and class.', collections: ['syllabus'] },
     'study-material': { title: 'Study Material', subtitle: 'Learning resources shared with your class.', collections: ['study_material', 'studyMaterials'] },
@@ -4589,7 +4640,7 @@ async function fetchStudentModuleRecords(featureId) {
     if (featureId === 'datesheet') {
         // The published routine lives on the school row: `examSchedule_<class>` first,
         // with the shared `schedule` column kept as a fallback.
-        const { data: schoolRow } = await supabaseClient.from('schools').select('*').eq('id', scope.schoolId).maybeSingle();
+        const { data: schoolRow } = await studentSupabase().from('schools').select('*').eq('id', scope.schoolId).maybeSingle();
         const classSchedule = schoolRow ? schoolRow['examSchedule_' + scope.className] : null;
         const schedule = Array.isArray(classSchedule) ? classSchedule : (schoolRow?.schedule || []);
         return schedule.map(item => ({ ...item, schoolId: scope.schoolId }));
@@ -4597,22 +4648,31 @@ async function fetchStudentModuleRecords(featureId) {
     // Existing admin schema stores marks in a student-keyed document. Read only that key,
     // then verify the school through the authenticated student record already returned by login.
     if (featureId === 'result') {
-        const { data, error } = await supabaseClient.from('student_marks').select('*').eq('id', scope.studentId).maybeSingle();
+        const { data, error } = await studentSupabase().from('student_marks').select('*').eq('id', scope.studentId).maybeSingle();
         if (error) throw error;
         if (!data) return [];
         if (data.schoolId && data.schoolId !== scope.schoolId) return [];
         return [{ ...data, id: scope.studentId, schoolId: scope.schoolId }];
     }
-    // Existing attendance is one school/class/date document with a student-keyed records map.
+    // Normalized attendance: this student's own rows, newest first, straight from
+    // public.attendance_records. It runs on the dedicated student client, never on the
+    // chairman/staff client. The schoolId / studentId filters only shrink the payload -
+    // Postgres RLS on attendance_records is the real authorization boundary.
     if (featureId === 'attendance') {
-        const { data: rows, error } = await supabaseClient.from('attendance').select('*').eq('schoolId', scope.schoolId).eq('class', scope.className);
+        const { data: rows, error } = await requireStudentPortalClient()
+            .from('attendance_records')
+            .select('date, status, class, updatedAt')
+            .eq('schoolId', scope.schoolId)
+            .eq('studentId', scope.studentId)
+            .order('date', { ascending: false })
+            .limit(180);
         if (error) throw error;
-        return (rows || []).map(row => ({ ...row, status: row.records?.[scope.studentId] })).filter(item => item.status);
+        return rows || [];
     }
     const module = STUDENT_MODULES[featureId];
     for (const name of module?.collections || []) {
         try {
-            const { data: rows, error } = await supabaseClient.from(name).select('*').eq('schoolId', scope.schoolId);
+            const { data: rows, error } = await studentSupabase().from(name).select('*').eq('schoolId', scope.schoolId);
             if (error) throw error;
             const records = rows || [];
             const personal = ['attendance', 'result', 'sms', 'leave', 'gatepass', 'complaint', 'fee-receipt', 'transport', 'assignment'].includes(featureId);
@@ -4633,8 +4693,22 @@ window.openStudentDataModule = async featureId => {
     content.innerHTML = featureId === 'profile' ? renderStudentModuleRows([], featureId) : studentModuleState('Loading records…', 'loading');
     const refresh = document.getElementById('student-module-refresh');
     refresh.onclick = () => window.openStudentDataModule(featureId);
-    try { content.innerHTML = renderStudentModuleRows(await fetchStudentModuleRecords(featureId), featureId); }
-    catch (error) { console.error(`Student ${featureId} module failed`, error); content.innerHTML = studentModuleState('Unable to load this module.', 'error'); }
+    const requestEpoch = studentSessionEpoch;
+    try {
+        const rows = await fetchStudentModuleRecords(featureId);
+        if (requestEpoch !== studentSessionEpoch) return; // logout / new login already happened
+        content.innerHTML = renderStudentModuleRows(rows, featureId);
+    } catch (error) {
+        if (requestEpoch !== studentSessionEpoch) return;
+        console.error(`Student ${featureId} module failed`, error);
+        if (isStudentAuthError(error)) {
+            // Rejected or expired student JWT: end the session instead of retrying.
+            window.logoutStudent();
+            showLoginScreen('Your session has expired. Please sign in again.');
+            return;
+        }
+        content.innerHTML = studentModuleState('Unable to load this module.', 'error');
+    }
 };
 
 window.handleStudentFeatureClick = (featureId) => {
@@ -4696,7 +4770,7 @@ window.loadStudentComplaintHistory = async () => {
     target.innerHTML = studentModuleState('Loading complaint history…', 'loading');
     try {
         const scope = studentScope();
-        const { data: rows, error } = await supabaseClient.from('complaints').select('*').eq('schoolId', scope.schoolId).eq('studentId', scope.studentId);
+        const { data: rows, error } = await studentSupabase().from('complaints').select('*').eq('schoolId', scope.schoolId).eq('studentId', scope.studentId);
         if (error) throw error;
         const items = rows || [];
         target.innerHTML = items.length ? items.map(item => `<article class="student-history-item"><div><strong>${studentHtml(item.subject)}</strong><p>${studentHtml(item.description)}</p><small>${studentHtml(studentTimestamp(item.timestamp))}</small></div><span class="student-status-badge">${studentHtml(item.status || 'Pending')}</span>${item.chairmanReply ? `<p class="student-reply"><b>Response:</b> ${studentHtml(item.chairmanReply)}</p>` : ''}</article>`).join('') : studentModuleState('No complaints submitted yet.');
@@ -4713,7 +4787,7 @@ window.showStudentReceiptsSection = async () => {
     tbody.innerHTML = `<tr><td colspan="8">${studentModuleState('Loading receipts…', 'loading')}</td></tr>`;
     try {
         const scope = studentScope();
-        const { data: rows, error } = await supabaseClient.from('transactions').select('*').eq('schoolId', scope.schoolId).eq('type', 'Fee');
+        const { data: rows, error } = await studentSupabase().from('transactions').select('*').eq('schoolId', scope.schoolId).eq('type', 'Fee');
         if (error) throw error;
         const receipts = (rows || []).filter(item => studentRecordMatches(item, scope, true));
         window.studentReceiptCache = receipts;
@@ -4789,6 +4863,16 @@ if (studentLoginBtn) studentLoginBtn.addEventListener("click", async () => {
         if (!result.student?.schoolId || !result.school?.id || result.student.schoolId !== result.school.id) {
             throw new Error("School mismatch detected. Login blocked for safety.");
         }
+
+        // The Render-issued JWT must exist before any student state is set: without it the
+        // merged portal would keep running on the chairman/staff client, so login fails here.
+        const accessToken = typeof result.token === 'string' ? result.token.trim() : '';
+        if (!accessToken) throw new Error("Login failed: no student session token was issued. Please try again.");
+
+        // Fresh dedicated client per login; the chairman/staff client is left untouched and
+        // the student token is never handed to GoTrue.
+        studentPortalClient = createStudentPortalClient(accessToken);
+        studentSessionEpoch += 1;
 
         currentStudentUser = result.student;
         currentSchoolId = result.student.schoolId;
@@ -5004,8 +5088,18 @@ document.getElementById("student-verification-form").addEventListener("submit", 
 });
 
 window.logoutStudent = () => {
+    // Drop the student JWT client FIRST so nothing queued after this point can send the
+    // previous student's token. `currentSchoolId` stays untouched: it belongs to the
+    // chairman/staff session that may still be active in this browser.
+    studentPortalClient = null;
+    studentSessionEpoch += 1;
+    window.studentReceiptCache = null;
     currentStudentUser = null;
     currentStudentSchoolDoc = null;
+    const moduleContent = document.getElementById("student-module-content");
+    if (moduleContent) moduleContent.innerHTML = "";
+    const complaintHistory = document.getElementById("student-complaint-history");
+    if (complaintHistory) complaintHistory.innerHTML = "";
     document.getElementById("student-dashboard-wrapper").style.display = "none";
     document.getElementById("student-payment-section").style.display = "none";
     document.getElementById("student-success-section").style.display = "none";
