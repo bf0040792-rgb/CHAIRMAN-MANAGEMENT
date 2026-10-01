@@ -33,6 +33,19 @@ function rebuildSupabaseClient(accessToken) {
     return window.supabase.createClient(supabaseUrl, supabaseKey, options);
 }
 
+// Bumped on every login/logout so a response that belongs to a previous student session
+// can never be rendered into the current dashboard.
+let studentSessionEpoch = 0;
+
+// PostgREST reports JWT problems in the PGRST30x group (HTTP 401) and Supabase surfaces them
+// as a PostgrestError, so a rejected/expired student token is detectable without a retry loop.
+function isStudentAuthError(error) {
+    if (!error) return false;
+    const code = String(error.code || '').toUpperCase();
+    if (/^PGRST30[0-3]$/.test(code)) return true;
+    return /jwt|access token|token is expired|could not authenticate/i.test(`${error.message || ''} ${error.details || ''}`);
+}
+
 // Dedicated Supabase table holding one feature-control row per school.
 const FEATURE_SETTINGS_TABLE = "feature_controls";
 
@@ -231,10 +244,17 @@ async function loginStudent() {
             throw new Error('School mismatch detected. Login blocked for safety.');
         }
 
-        if (data.token) {
-            supabaseClient = rebuildSupabaseClient(data.token);
-            sessionStorage.setItem('studentToken', data.token);
-        }
+        // The Render API must hand out the JWT that scopes every student query. Without it the
+        // portal would silently keep running on the anonymous client, so the login fails here
+        // and the dashboard is never opened.
+        const accessToken = typeof data.token === 'string' ? data.token.trim() : '';
+        if (!accessToken) throw new Error('Login failed: no student session token was issued. Please try again.');
+
+        // The Bearer client is built before any state is set, so no module can execute
+        // against the anonymous client.
+        supabaseClient = rebuildSupabaseClient(accessToken);
+        sessionStorage.setItem('studentToken', accessToken);
+        studentSessionEpoch += 1;
 
         currentStudentUser = data.student;
         currentSchoolId = data.student.schoolId;
@@ -361,6 +381,7 @@ window.logoutStudent = () => {
     // Fully clear sensitive student state
     sessionStorage.removeItem('studentToken');
     supabaseClient = rebuildSupabaseClient();
+    studentSessionEpoch += 1; // invalidate any in-flight response from this session
     currentStudentUser = null;
     currentStudentSchoolDoc = null;
     currentSchoolId = "";
@@ -434,30 +455,76 @@ window.loadStudentHomework = async () => {
     }
 };
 
+// `attendance_records` is normalized (one row per student per date), so the status comes
+// straight from the row instead of a class-wide records map.
+function normalizeStudentAttendanceStatus(status) {
+    const value = String(status == null ? '' : status).trim().toLowerCase();
+    return value === 'present' || value === 'absent' ? value : '';
+}
+
+function escapeStudentHtml(value) {
+    const node = document.createElement('span');
+    node.textContent = value == null || value === '' ? 'N/A' : String(value);
+    return node.innerHTML;
+}
+
 window.loadStudentAttendance = async () => {
     window.openStudentView('student-attendance-section');
     setContainerState('stu-attendance-container', 'loading');
+    const requestEpoch = studentSessionEpoch;
     try {
-        const data = await fetchScopedData('attendance', { class: currentStudentUser.class });
-        // Strictly filter on client for studentId if array, or specific id
-        const studentRecords = data.filter(d => d.studentId === currentStudentUser.id || (d.students && d.students.includes(currentStudentUser.id)));
-        
+        if (!currentStudentUser?.id || !currentSchoolId) throw new Error("Unauthenticated request blocked.");
+
+        // Normalized attendance: this student's own rows only, newest first. The schoolId /
+        // studentId filters only shrink the payload - Postgres RLS on public.attendance_records
+        // is the real authorization boundary for the student JWT sent by this client.
+        const { data: rows, error } = await supabaseClient
+            .from('attendance_records')
+            .select('date, status, class, updatedAt')
+            .eq('schoolId', currentSchoolId)
+            .eq('studentId', currentStudentUser.id)
+            .order('date', { ascending: false })
+            .limit(180);
+        if (error) throw error;
+        if (requestEpoch !== studentSessionEpoch) return; // logout / re-login happened mid-flight
+
+        const studentRecords = rows || [];
         if (studentRecords.length === 0) return setContainerState('stu-attendance-container', 'empty', 'No attendance records found.');
-        
+
+        const presentCount = studentRecords.filter(att => normalizeStudentAttendanceStatus(att.status) === 'present').length;
+        const absentCount = studentRecords.filter(att => normalizeStudentAttendanceStatus(att.status) === 'absent').length;
+        const markedCount = presentCount + absentCount;
+        const percentage = markedCount > 0 ? Math.round((presentCount / markedCount) * 100) : null;
+
         let html = `<div class="p-4 bg-green-50 border border-green-200 rounded-xl mb-4 text-center">
             <h4 class="text-green-800 font-bold text-lg mb-1">Attendance Records Found</h4>
-            <p class="text-sm text-green-600">Showing recent attendance dates.</p>
+            <p class="text-sm text-green-600">Showing your most recent attendance dates.</p>
+            <p class="text-sm text-slate-600 mt-2">Present: <span class="font-bold text-green-700">${presentCount}</span> &bull; Absent: <span class="font-bold text-red-600">${absentCount}</span>${percentage === null ? '' : ` &bull; Attendance: <span class="font-bold text-[#1E3A8A]">${percentage}%</span>`}</p>
         </div><div class="grid grid-cols-2 md:grid-cols-4 gap-3">`;
-        
+
         studentRecords.forEach(att => {
+            const status = normalizeStudentAttendanceStatus(att.status);
+            const badge = status === 'present'
+                ? { css: 'bg-green-100 text-green-700', label: 'Present' }
+                : status === 'absent'
+                    ? { css: 'bg-red-100 text-red-700', label: 'Absent' }
+                    : { css: 'bg-slate-100 text-slate-600', label: escapeStudentHtml(att.status) };
             html += `<div class="p-3 border border-gray-200 rounded-lg text-center bg-white shadow-sm">
-                <div class="font-bold text-gray-800 text-sm mb-1">${att.date || 'Unknown Date'}</div>
-                <div class="text-xs font-semibold px-2 py-1 rounded inline-block bg-green-100 text-green-700">Present</div>
+                <div class="font-bold text-gray-800 text-sm mb-1">${escapeStudentHtml(att.date || 'Unknown Date')}</div>
+                <div class="text-xs font-semibold px-2 py-1 rounded inline-block ${badge.css}">${badge.label}</div>
             </div>`;
         });
         html += `</div>`;
         document.getElementById('stu-attendance-container').innerHTML = html;
     } catch (e) {
+        if (requestEpoch !== studentSessionEpoch) return;
+        console.error("Student attendance load failed:", e);
+        if (isStudentAuthError(e)) {
+            // Rejected or expired student JWT: drop the session instead of retrying.
+            window.logoutStudent();
+            showStudentError("Your session has expired. Please sign in again.");
+            return;
+        }
         setContainerState('stu-attendance-container', 'error');
     }
 };
@@ -744,17 +811,6 @@ window.loadStudentOnlineClasses = async () => {
     }
 };
 
-window.logoutStudent = () => {
-    if (window.unsubStudent) window.unsubStudent();
-    if (window.unsubSchool) window.unsubSchool();
-    if (window.unsubStudentFeatureSettings) window.unsubStudentFeatureSettings();
-    currentStudentUser = null;
-    currentStudentSchoolDoc = null;
-    currentSchoolId = "";
-    $('student-dashboard-wrapper') && ($('student-dashboard-wrapper').style.display = 'none');
-    $('student-login-wrapper') && ($('student-login-wrapper').style.display = 'flex');
-};
-
 window.downloadStudentIDCard = () => alert("Digital ID card download will be connected in the next module pass.");
 window.downloadStudentAdmitCard = () => alert("Admit card download will be connected in the next module pass.");
 
@@ -764,6 +820,5 @@ document.addEventListener('DOMContentLoaded', () => {
         if (event.key === 'Enter') loginStudent();
     });
 });
-
 
 
