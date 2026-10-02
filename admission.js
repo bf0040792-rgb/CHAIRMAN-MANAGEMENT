@@ -29,6 +29,8 @@ const form = document.getElementById("admission-form");
 const submitBtn = document.getElementById("submit-btn");
 
 let currentSchoolId = "";
+let currentInstitutionType = "school";
+let collegeChoice = null; // { departmentId, programId, label }
 
 // Helper to show message
 function showMessage(title, text, type) {
@@ -60,11 +62,24 @@ if (!schoolIdParam) {
 // 2. Dynamic Branding
 async function loadSchoolData() {
     try {
-        const { data: school, error: schoolError } = await supabaseClient
-            .from("vw_public_schools")
-            .select("*")
-            .eq("id", currentSchoolId)
-            .maybeSingle();
+        let school = null, schoolError = null;
+        try {
+            const r = await supabaseClient
+                .from("vw_public_institution")
+                .select("*")
+                .eq("id", currentSchoolId)
+                .maybeSingle();
+            school = r.data; schoolError = r.error;
+        } catch (e) { schoolError = e; }
+        if (!school) {
+            const r2 = await supabaseClient
+                .from("vw_public_schools")
+                .select("*")
+                .eq("id", currentSchoolId)
+                .maybeSingle();
+            school = r2.data;
+            if (!schoolError) schoolError = r2.error;
+        }
 
         if (schoolError) console.error("School lookup failed:", schoolError);
 
@@ -90,6 +105,9 @@ async function loadSchoolData() {
                 document.documentElement.style.setProperty('--theme-color', data.themeColor);
             }
 
+            currentInstitutionType = data.institution_type || "school";
+            if (currentInstitutionType === "college") await loadCollegeStructure();
+
             // Show Form
             msgBox.style.display = "none";
             container.style.display = "flex";
@@ -99,6 +117,46 @@ async function loadSchoolData() {
     } catch (error) {
         console.error("Error fetching school data:", error);
         showMessage("Connection Error", "Failed to load school details. Please try again later.", "error");
+    }
+}
+
+// Phase A: college-aware academic structure on the public page.
+// Schools keep the hardcoded class list; colleges render
+// Department -> Program -> Level choices from the public views.
+async function loadCollegeStructure() {
+    const classSelect = document.getElementById("student-class");
+    if (!classSelect) return;
+    try {
+        const [dRes, pRes, lRes] = await Promise.all([
+            supabaseClient.from("vw_public_departments").select("*").eq("schoolId", currentSchoolId),
+            supabaseClient.from("vw_public_programs").select("*").eq("schoolId", currentSchoolId),
+            supabaseClient.from("vw_public_levels").select("*").eq("schoolId", currentSchoolId)
+        ]);
+        const depts = dRes.data || [];
+        const progs = pRes.data || [];
+        const levels = lRes.data || [];
+        const options = [];
+        window.collegeOptionsMap = {};
+        progs.forEach(pg => {
+            const dept = depts.find(d => d.id === pg.departmentId);
+            const pLevels = levels.filter(l => l.programId === pg.id).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+            if (pLevels.length) {
+                pLevels.forEach(lv => {
+                    const value = pg.id + "|" + lv.id;
+                    window.collegeOptionsMap[value] = { departmentId: pg.departmentId, programId: pg.id, label: pg.code + " — " + lv.name };
+                    options.push(`<option value="${value}">${dept ? dept.name + " / " : ""}${pg.name} — ${lv.name}</option>`);
+                });
+            } else {
+                const value = pg.id + "|";
+                window.collegeOptionsMap[value] = { departmentId: pg.departmentId, programId: pg.id, label: pg.code };
+                options.push(`<option value="${value}">${dept ? dept.name + " / " : ""}${pg.name}</option>`);
+            }
+        });
+        if (options.length) {
+            classSelect.innerHTML = `<option value="">Select Course / Semester</option>` + options.join("");
+        }
+    } catch (e) {
+        console.error("College structure load failed:", e);
     }
 }
 
@@ -139,7 +197,13 @@ form.addEventListener("submit", async (e) => {
     const name = document.getElementById("student-name").value.trim();
     const dob = document.getElementById("student-dob").value;
     const rollNo = document.getElementById("roll-no").value.trim();
-    const studentClass = document.getElementById("student-class").value;
+    const classRaw = document.getElementById("student-class").value;
+    let studentClass = classRaw;
+    collegeChoice = null;
+    if (currentInstitutionType === "college" && window.collegeOptionsMap && window.collegeOptionsMap[classRaw]) {
+        collegeChoice = window.collegeOptionsMap[classRaw];
+        studentClass = collegeChoice.label;
+    }
     const parentage = document.getElementById("parentage").value.trim();
     const motherName = document.getElementById("mother-name").value.trim();
     const mobile = document.getElementById("mobile").value.trim();
@@ -176,7 +240,12 @@ form.addEventListener("submit", async (e) => {
             photoUrl: photoUrl
         };
 
-        const { data: result, error: rpcError } = await supabaseClient.rpc('submit_admission', {
+        const rpcName = currentInstitutionType === 'college' ? 'submit_admission_v2' : 'submit_admission';
+        if (collegeChoice) {
+            payload.departmentId = collegeChoice.departmentId;
+            payload.programId = collegeChoice.programId;
+        }
+        const { data: result, error: rpcError } = await supabaseClient.rpc(rpcName, {
             p_school_id: currentSchoolId,
             p_payload: payload
         });

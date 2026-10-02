@@ -294,6 +294,32 @@ async function loadStudentDashboard() {
         photo.classList.remove('hidden');
         if (icon) icon.style.display = 'none';
     }
+    // Phase A: surface the student's academic structure (department / program /
+    // roll code) without touching the stable identity fields above.
+    (async () => {
+        try {
+            if (!currentStudentUser || !currentStudentUser.id) return;
+            const { data } = await supabaseClient.from('students')
+                .select('departmentId, programId, rollCode').eq('id', currentStudentUser.id).maybeSingle();
+            if (!data || (!data.departmentId && !data.programId && !data.rollCode)) return;
+            let dept = '', prog = '';
+            try {
+                if (data.departmentId) { const r = await supabaseClient.from('vw_public_departments').select('name').eq('id', data.departmentId).maybeSingle(); dept = r.data ? r.data.name : ''; }
+                if (data.programId) { const r = await supabaseClient.from('vw_public_programs').select('name').eq('id', data.programId).maybeSingle(); prog = r.data ? r.data.name : ''; }
+            } catch (e) { /* views appear with the Phase A migration */ }
+            const line = [dept, prog].filter(Boolean).join(' · ') + (data.rollCode ? ' · Roll Code: ' + data.rollCode : '');
+            const host = $('student-idcard-section');
+            if (host && line && !document.getElementById('stu-academic-line')) {
+                const card = host.querySelector('.card');
+                const div = document.createElement('div');
+                div.id = 'stu-academic-line';
+                div.style.cssText = 'margin:0 0 12px; color:#0d9488; font-weight:700; font-size:13px;';
+                div.innerText = line;
+                card.insertBefore(div, card.children[2] || null);
+            }
+        } catch (e) { console.error('Phase A student enrichment failed:', e); }
+    })();
+
     const logo = $('student-school-logo');
     const logoUrl = currentStudentSchoolDoc?.schoolLogoUrl || currentStudentSchoolDoc?.logoUrl;
     if (logo && logoUrl) {
