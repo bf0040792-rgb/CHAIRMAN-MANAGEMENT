@@ -324,11 +324,11 @@ create policy pa_levels_write on public.academic_levels for all to authenticated
 using ("schoolId" = (select school_id from public.pa_user_context())
        and ((select role from public.pa_user_context()) = 'chairman'
             or ((select staff_role from public.pa_user_context()) = 'HOD'
-                and coalesce("departmentId", '') in (select coalesce(public.pa_caller_department_ids(), '')))))
+                and "departmentId" in (select public.pa_caller_department_ids()))))
 with check ("schoolId" = (select school_id from public.pa_user_context())
        and ((select role from public.pa_user_context()) = 'chairman'
             or ((select staff_role from public.pa_user_context()) = 'HOD'
-                and coalesce("departmentId", '') in (select coalesce(public.pa_caller_department_ids(), '')))));
+                and "departmentId" in (select public.pa_caller_department_ids()))));
 
 drop policy if exists pa_sections_select on public.sections;
 create policy pa_sections_select on public.sections for select to authenticated
@@ -349,7 +349,7 @@ using ("schoolId" = (select school_id from public.pa_user_context())
          "userId" = (select auth.uid())::text
          or (select role from public.pa_user_context()) = 'chairman'
          or ((select staff_role from public.pa_user_context()) = 'HOD'
-             and coalesce("departmentId", '') in (select coalesce(public.pa_caller_department_ids(), '')))
+             and "departmentId" in (select public.pa_caller_department_ids()))
        ));
 drop policy if exists pa_staff_assign_write on public.staff_assignments;
 create policy pa_staff_assign_write on public.staff_assignments for all to authenticated
@@ -357,13 +357,13 @@ using ("schoolId" = (select school_id from public.pa_user_context())
        and (
          (select role from public.pa_user_context()) = 'chairman'
          or ((select staff_role from public.pa_user_context()) = 'HOD'
-             and coalesce("departmentId", '') in (select coalesce(public.pa_caller_department_ids(), '')))
+             and "departmentId" in (select public.pa_caller_department_ids()))
        ))
 with check ("schoolId" = (select school_id from public.pa_user_context())
        and (
          (select role from public.pa_user_context()) = 'chairman'
          or ((select staff_role from public.pa_user_context()) = 'HOD'
-             and coalesce("departmentId", '') in (select coalesce(public.pa_caller_department_ids(), ''))
+             and "departmentId" in (select public.pa_caller_department_ids())
              and "roleId" in ('teacher', 'staff'))
        ));
 
@@ -375,7 +375,7 @@ using ("schoolId" = (select school_id from public.pa_user_context())
          "userId" = (select auth.uid())::text
          or (select role from public.pa_user_context()) = 'chairman'
          or ((select staff_role from public.pa_user_context()) = 'HOD'
-             and coalesce("departmentId", '') in (select coalesce(public.pa_caller_department_ids(), '')))
+             and "departmentId" in (select public.pa_caller_department_ids()))
        ));
 drop policy if exists pa_teaching_write on public.teaching_assignments;
 create policy pa_teaching_write on public.teaching_assignments for all to authenticated
@@ -384,13 +384,13 @@ using ("schoolId" = (select school_id from public.pa_user_context())
          (select role from public.pa_user_context()) = 'chairman'
          or "userId" = (select auth.uid())::text
          or ((select staff_role from public.pa_user_context()) = 'HOD'
-             and coalesce("departmentId", '') in (select coalesce(public.pa_caller_department_ids(), '')))
+             and "departmentId" in (select public.pa_caller_department_ids()))
        ))
 with check ("schoolId" = (select school_id from public.pa_user_context())
        and (
          (select role from public.pa_user_context()) = 'chairman'
          or ((select staff_role from public.pa_user_context()) = 'HOD'
-             and coalesce("departmentId", '') in (select coalesce(public.pa_caller_department_ids(), '')))
+             and "departmentId" in (select public.pa_caller_department_ids()))
        ));
 
 
