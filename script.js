@@ -368,6 +368,7 @@ supabaseClient.auth.onAuthStateChange(async (event, session) => {
                 }
 
                 currentSchoolId = data.schoolId; currentSchoolName = data.schoolName;
+                window.applyInstitutionMode && window.applyInstitutionMode();
                 await syncSchoolFeatureSettings(currentSchoolId);
                 listenToFeatureSettings();
 
@@ -442,6 +443,7 @@ supabaseClient.auth.onAuthStateChange(async (event, session) => {
                     await supabaseClient.auth.signOut(); showLoginScreen("Account Blocked."); return;
                 }
                 currentSchoolId = data.schoolId; currentSchoolName = data.schoolName;
+                window.applyInstitutionMode && window.applyInstitutionMode();
                 await syncSchoolFeatureSettings(currentSchoolId);
                 listenToFeatureSettings();
 
@@ -2478,7 +2480,7 @@ function renderStudentsTable(className, searchTerm = null, statusFilter = null) 
             <button class="action-btn btn-blue" data-id="${safeId}" onclick="showIDCard(this.dataset.id)"><i class="fas fa-id-card"></i> ID</button>
             <button class="action-btn" style="background:#3b82f6; color:white;" data-id="${safeId}" data-name="${safeNameAttr}" onclick="window.openDirectMessageModal(this.dataset.id, this.dataset.name)"><i class="fas fa-comment-dots"></i> Message</button>
             <button class="action-btn btn-purple" data-id="${safeId}" onclick="openStudentModal(this.dataset.id)"><i class="fas fa-edit"></i> Edit</button>
-            ${lockBtn}`;
+            ${institutionIsCollege() ? `<button class="action-btn" style="background:#0d9488;color:white;" data-id="${safeId}" title="Academic Placement" onclick="window.openStudentPlacement(this.dataset.id)"><i class="fas fa-sitemap"></i></button>` : ''}${lockBtn}`;
 
         html += `<tr class="${locked ? 'locked-row' : ''}">
             <td style="text-align:center;"><input type="checkbox" class="student-select-checkbox" data-id="${safeId}" onchange="window.toggleStudentSelection(this.dataset.id, this.checked)" ${window.selectedStudentIds.has(dt.id) ? 'checked' : ''}></td>
@@ -4633,8 +4635,9 @@ function staffRenderCalendar() {
         <table><thead><tr><th>Su</th><th>Mo</th><th>Tu</th><th>We</th><th>Th</th><th>Fr</th><th>Sa</th></tr></thead><tbody>${body}</tbody></table>`;
 }
 
-window.initStaffPortal = (data) => {
+window.initStaffPortal = async (data) => {
     currentStaffDoc = data;
+    await paInitStaffScope();
     const avatar = document.getElementById('staff-avatar');
     if (avatar) avatar.src = data.photoUrl || 'https://via.placeholder.com/100';
     const avName = document.getElementById('staff-avatar-name');
@@ -4658,7 +4661,7 @@ async function loadStaffHome() {
     for (let i = 7; i >= 0; i--) { const d = new Date(now.getFullYear(), now.getMonth() - i, 1); monthKeys.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`); }
     const rangeStart = monthKeys[0] + '-01';
     const [stuRes, usrRes, attTodayRes, attRangeRes, mkRes, ntRes, hwRes] = await Promise.all([
-        supabaseClient.from('students').select('id, class, status').eq('schoolId', currentSchoolId),
+        (() => { let q = supabaseClient.from('students').select('id, class, status, departmentId').eq('schoolId', currentSchoolId); if (institutionIsCollege() && !staffIsManagement() && window.staffDeptIds.length) q = q.in('departmentId', window.staffDeptIds); return q; })(),
         supabaseClient.from('users').select('id, name, staffRole, status, email, photoUrl').eq('schoolId', currentSchoolId).eq('role', 'staff'),
         supabaseClient.from('attendance').select('class, date, records').eq('schoolId', currentSchoolId).eq('date', today),
         supabaseClient.from('attendance').select('date, records').eq('schoolId', currentSchoolId).gte('date', rangeStart),
@@ -4761,6 +4764,7 @@ window.viewStaffApprovalDetail = (markId) => {
 window.onStaffTabOpen = (targetId) => {
     if (!currentStaffDoc) return;
     if (targetId === 'staff-tab-home') return loadStaffHome();
+    if (targetId === 'staff-tab-department') return loadMyDepartment();
     if (targetId === 'staff-tab-attendance') { const d = document.getElementById('staff_att_date'); if (d && !d.value) d.value = staffTodayStr(); return; }
     if (targetId === 'staff-tab-marks') { const d = document.getElementById('staff_mk_date'); if (d && !d.value) d.value = staffTodayStr(); return; }
     if (targetId === 'staff-tab-homework') return loadStaffHomeworkList();
@@ -4998,6 +5002,384 @@ window.loadStaffTeachers = async () => {
 };
 
 // =============================================================================================
+// =============================================================================================
+// ============================== PHASE A — INSTITUTION ARCHITECTURE ===========================
+// =============================================================================================
+// Multi-tenant extension: schools = institutions (school|college), departments /
+// programs / academic_sessions / academic_levels / sections / staff_assignments.
+// Tenant key stays schools.id ("schoolId"); department scope comes from
+// staff_assignments so one user may serve several departments. RLS in
+// supabase/migrations/20261002140000_phase_a_institution_architecture.sql
+// enforces the same boundaries at the database level.
+// =============================================================================================
+let currentInstitutionType = 'school';
+let phaseACache = { departments: [], programs: [], sessions: [], levels: [], sections: [], assignments: [] };
+window.staffDeptIds = [];
+const institutionIsCollege = () => currentInstitutionType === 'college';
+const paFind = (arr, id) => (arr || []).find(x => x.id === id);
+const paName = (arr, id) => { const r = paFind(arr, id); return r ? r.name : '—'; };
+
+window.applyInstitutionMode = async () => {
+    if (!currentSchoolId) return;
+    const { data } = await supabaseClient.from('schools').select('institution_type').eq('id', currentSchoolId).maybeSingle();
+    currentInstitutionType = (data && data.institution_type) || 'school';
+    const college = institutionIsCollege();
+    ['departments', 'programs', 'sessions', 'sections'].forEach(k => {
+        const el = document.getElementById('pa-menu-' + k);
+        if (el) el.style.display = college ? '' : 'none';
+    });
+    const ap = document.getElementById('pa-assign-panel');
+    if (ap) ap.style.display = college ? '' : 'none';
+    if (college) { await paLoadCache(); paRenderAll(); }
+};
+
+async function paLoadCache() {
+    const q = (t) => supabaseClient.from(t).select('*').eq('schoolId', currentSchoolId);
+    const [d, p, se, l, sec, as] = await Promise.all([
+        q('departments'), q('programs'), q('academic_sessions'), q('academic_levels'), q('sections'), q('staff_assignments')
+    ]);
+    phaseACache = {
+        departments: d.data || [], programs: p.data || [], sessions: se.data || [],
+        levels: l.data || [], sections: sec.data || [], assignments: as.data || []
+    };
+}
+
+function paFillSelect(id, rows, placeholder, extra) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = `<option value="">${placeholder || '—'}</option>` + (rows || []).map(r =>
+        `<option value="${r.id}">${staffEsc(r.name)}${r.code ? ' (' + staffEsc(r.code) + ')' : ''}</option>`).join('') + (extra || '');
+}
+
+function paRenderAll() {
+    paFillSelect('pa_prog_dept', phaseACache.departments, 'Select department');
+    paFillSelect('pa_level_prog', phaseACache.programs, '— Institution-wide —');
+    paFillSelect('pa_sec_prog', phaseACache.programs, '—');
+    paFillSelect('pa_sec_level', phaseACache.levels, '—');
+    paFillSelect('pa_sec_session', phaseACache.sessions, '—');
+
+    const db = document.getElementById('pa-dept-body');
+    if (db) db.innerHTML = phaseACache.departments.length ? phaseACache.departments.map(d => {
+        const progs = phaseACache.programs.filter(p => p.departmentId === d.id).length;
+        const active = d.status === 'active';
+        return `<tr style="border-bottom:1px solid #e2e8f0;">
+            <td style="padding:8px;"><strong>${staffEsc(d.name)}</strong></td>
+            <td style="padding:8px;">${staffEsc(d.code)}</td>
+            <td style="padding:8px;">${progs}</td>
+            <td style="padding:8px;">${active ? '<span style="color:#16a34a;font-weight:bold;">Active</span>' : '<span style="color:#dc2626;font-weight:bold;">Inactive</span>'}</td>
+            <td style="padding:8px;"><button class="action-btn btn-blue" onclick="window.paSetDepartmentStatus('${d.id}', ${active ? "'inactive'" : "'active'"})">${active ? 'Deactivate' : 'Activate'}</button></td>
+        </tr>`;
+    }).join('') : '<tr><td colspan="5" style="padding:14px;text-align:center;color:#888;">No departments yet.</td></tr>';
+
+    const pb = document.getElementById('pa-prog-body');
+    if (pb) pb.innerHTML = phaseACache.programs.length ? phaseACache.programs.map(p => `<tr style="border-bottom:1px solid #e2e8f0;">
+        <td style="padding:8px;"><strong>${staffEsc(p.name)}</strong> (${staffEsc(p.code)})</td>
+        <td style="padding:8px;">${staffEsc(paName(phaseACache.departments, p.departmentId))}</td>
+        <td style="padding:8px;">${staffEsc(p.levelType)}</td>
+        <td style="padding:8px;">${p.status === 'active' ? '<span style="color:#16a34a;font-weight:bold;">Active</span>' : '<span style="color:#dc2626;font-weight:bold;">Inactive</span>'}</td>
+        <td style="padding:8px;"><button class="action-btn btn-blue" onclick="window.paSetProgramStatus('${p.id}', ${p.status === 'active' ? "'inactive'" : "'active'"})">${p.status === 'active' ? 'Deactivate' : 'Activate'}</button></td>
+    </tr>`).join('') : '<tr><td colspan="5" style="padding:14px;text-align:center;color:#888;">No programs yet.</td></tr>';
+
+    const sb = document.getElementById('pa-session-body');
+    if (sb) sb.innerHTML = phaseACache.sessions.length ? phaseACache.sessions.map(s => `<tr style="border-bottom:1px solid #e2e8f0;">
+        <td style="padding:8px;"><strong>${staffEsc(s.name)}</strong></td>
+        <td style="padding:8px;">${staffEsc(s.startDate || '—')} → ${staffEsc(s.endDate || '—')}</td>
+        <td style="padding:8px;">${s.isCurrent ? '<span style="color:#16a34a;font-weight:bold;">Current</span>' : '—'}</td>
+        <td style="padding:8px;">${s.isCurrent ? '' : `<button class="action-btn btn-blue" onclick="window.paSetCurrentSession('${s.id}')">Mark Current</button>`}</td>
+    </tr>`).join('') : '<tr><td colspan="4" style="padding:14px;text-align:center;color:#888;">No sessions yet.</td></tr>';
+
+    const lb = document.getElementById('pa-level-body');
+    if (lb) lb.innerHTML = phaseACache.levels.map(l => `<tr style="border-bottom:1px solid #e2e8f0;">
+        <td style="padding:8px;">${staffEsc(l.name)}</td><td style="padding:8px;">${staffEsc(l.code)}</td>
+        <td style="padding:8px;">${staffEsc(l.kind)}</td><td style="padding:8px;">${staffEsc(paName(phaseACache.programs, l.programId))}</td>
+    </tr>`).join('') || '<tr><td colspan="4" style="padding:14px;text-align:center;color:#888;">No levels yet.</td></tr>';
+
+    const scb = document.getElementById('pa-section-body');
+    if (scb) scb.innerHTML = phaseACache.sections.map(sc => `<tr style="border-bottom:1px solid #e2e8f0;">
+        <td style="padding:8px;"><strong>${staffEsc(sc.name)}</strong></td><td style="padding:8px;">${staffEsc(sc.class || '—')}</td>
+        <td style="padding:8px;">${staffEsc(paName(phaseACache.programs, sc.programId))} / ${staffEsc(paName(phaseACache.levels, sc.levelId))}</td>
+        <td style="padding:8px;">${staffEsc(paName(phaseACache.sessions, sc.academicSessionId))}</td>
+    </tr>`).join('') || '<tr><td colspan="4" style="padding:14px;text-align:center;color:#888;">No sections yet.</td></tr>';
+
+    paRenderAssignPanel();
+}
+
+window.paSaveDepartment = async () => {
+    const name = document.getElementById('pa_dept_name').value.trim();
+    const code = document.getElementById('pa_dept_code').value.trim().toUpperCase();
+    if (!name || !code) return alert('Fill department name and code.');
+    if (phaseACache.departments.some(d => d.code.toUpperCase() === code)) return alert('Code already used in this institution.');
+    const { error } = await supabaseClient.from('departments').insert({ schoolId: currentSchoolId, name, code });
+    if (error) return alert('Error saving department: ' + error.message);
+    document.getElementById('pa_dept_name').value = ''; document.getElementById('pa_dept_code').value = '';
+    alert('Department saved.');
+    await paLoadCache(); paRenderAll();
+};
+
+window.paSetDepartmentStatus = async (id, status) => {
+    const { error } = await supabaseClient.from('departments').update({ status }).eq('id', id);
+    if (error) return alert('Error: ' + error.message);
+    await paLoadCache(); paRenderAll();
+};
+
+window.paSaveProgram = async (withLevels) => {
+    const departmentId = document.getElementById('pa_prog_dept').value;
+    const name = document.getElementById('pa_prog_name').value.trim();
+    const code = document.getElementById('pa_prog_code').value.trim().toUpperCase();
+    const levelType = document.getElementById('pa_prog_leveltype').value;
+    const duration = Number(document.getElementById('pa_prog_duration').value || 0);
+    if (!departmentId || !name || !code) return alert('Select department and fill program name/code.');
+    if (phaseACache.programs.some(p => p.code.toUpperCase() === code)) return alert('Program code already used in this institution.');
+    const { data, error } = await supabaseClient.from('programs').insert({ schoolId: currentSchoolId, departmentId, name, code, levelType, duration: duration || null }).select().single();
+    if (error) return alert('Error saving program: ' + error.message);
+    if (withLevels && duration > 0) {
+        const unit = levelType === 'semester' ? 'Semester' : levelType === 'year' ? 'Year' : levelType === 'trimester' ? 'Trimester' : 'Level';
+        const rows = [];
+        for (let i = 1; i <= duration; i++) rows.push({
+            schoolId: currentSchoolId, departmentId, programId: data.id,
+            name: `${unit} ${i}`, code: `${code}-${unit.slice(0, 3).toUpperCase()}${i}`, kind: levelType === 'custom' ? 'custom' : levelType, sortOrder: i
+        });
+        const { error: le } = await supabaseClient.from('academic_levels').insert(rows);
+        if (le) return alert('Program saved but levels failed: ' + le.message);
+    }
+    document.getElementById('pa_prog_name').value = ''; document.getElementById('pa_prog_code').value = '';
+    alert('Program saved.');
+    await paLoadCache(); paRenderAll();
+};
+
+window.paSetProgramStatus = async (id, status) => {
+    const { error } = await supabaseClient.from('programs').update({ status }).eq('id', id);
+    if (error) return alert('Error: ' + error.message);
+    await paLoadCache(); paRenderAll();
+};
+
+window.paSaveSession = async () => {
+    const name = document.getElementById('pa_sess_name').value.trim();
+    if (!name) return alert('Session name required.');
+    const start = document.getElementById('pa_sess_start').value || null;
+    const end = document.getElementById('pa_sess_end').value || null;
+    const { error } = await supabaseClient.from('academic_sessions').insert({ schoolId: currentSchoolId, name, startDate: start, endDate: end });
+    if (error) return alert('Error saving session: ' + error.message);
+    alert('Session saved.');
+    await paLoadCache(); paRenderAll();
+};
+
+window.paSetCurrentSession = async (id) => {
+    const { error: e1 } = await supabaseClient.from('academic_sessions').update({ isCurrent: false }).eq('schoolId', currentSchoolId);
+    if (e1) return alert('Error: ' + e1.message);
+    const { error: e2 } = await supabaseClient.from('academic_sessions').update({ isCurrent: true }).eq('id', id);
+    if (e2) return alert('Error: ' + e2.message);
+    await paLoadCache(); paRenderAll();
+};
+
+window.paSaveLevel = async () => {
+    const name = document.getElementById('pa_level_name').value.trim();
+    const code = document.getElementById('pa_level_code').value.trim().toUpperCase();
+    const kind = document.getElementById('pa_level_kind').value;
+    const programId = document.getElementById('pa_level_prog').value || null;
+    if (!name || !code) return alert('Level name and code required.');
+    const prog = paFind(phaseACache.programs, programId);
+    const { error } = await supabaseClient.from('academic_levels').insert({
+        schoolId: currentSchoolId, programId, departmentId: prog ? prog.departmentId : null, name, code, kind
+    });
+    if (error) return alert('Error saving level: ' + error.message);
+    alert('Level saved.');
+    await paLoadCache(); paRenderAll();
+};
+
+window.paSaveSection = async () => {
+    const name = document.getElementById('pa_sec_name').value.trim();
+    const cls = document.getElementById('pa_sec_class').value.trim();
+    const programId = document.getElementById('pa_sec_prog').value || null;
+    const levelId = document.getElementById('pa_sec_level').value || null;
+    const sessionId = document.getElementById('pa_sec_session').value || null;
+    if (!name) return alert('Section name required.');
+    if (!cls && !programId) return alert('Provide a class (school) or program (college).');
+    const { error } = await supabaseClient.from('sections').insert({
+        schoolId: currentSchoolId, class: cls || null, programId, levelId, name, academicSessionId: sessionId
+    });
+    if (error) return alert('Error saving section: ' + error.message);
+    alert('Section saved.');
+    await paLoadCache(); paRenderAll();
+};
+
+// ---- staff <-> department assignments (many-to-many) ----
+async function paRenderAssignPanel() {
+    const body = document.getElementById('pa-assign-body');
+    if (!body || !institutionIsCollege()) return;
+    const { data } = await supabaseClient.from('users').select('id, name, staffRole, email').eq('schoolId', currentSchoolId).eq('role', 'staff');
+    const staff = data || [];
+    body.innerHTML = staff.length ? staff.map(st => {
+        const mine = phaseACache.assignments.filter(a => a.userId === st.id);
+        const role = mine.length ? mine[0].roleId : (st.staffRole === 'HOD' ? 'hod' : 'teacher');
+        return `<tr style="border-bottom:1px solid #e2e8f0;">
+            <td style="padding:8px;"><strong>${staffEsc(st.name)}</strong><br><small>${staffEsc(st.email)}</small></td>
+            <td style="padding:8px;">
+                <select id="pa_as_role_${st.id}" class="input-premium" style="min-width:110px;">
+                    <option value="hod" ${role === 'hod' ? 'selected' : ''}>HOD</option>
+                    <option value="teacher" ${role === 'teacher' ? 'selected' : ''}>Teacher</option>
+                    <option value="staff" ${role === 'staff' ? 'selected' : ''}>Staff</option>
+                </select>
+            </td>
+            <td style="padding:8px;">${phaseACache.departments.map(d => {
+                const on = mine.some(a => a.departmentId === d.id);
+                return `<label style="margin-right:10px;white-space:nowrap;"><input type="checkbox" id="pa_as_${st.id}_${d.id}" ${on ? 'checked' : ''}> ${staffEsc(d.code)}</label>`;
+            }).join('') || '<small>No departments yet</small>'}</td>
+            <td style="padding:8px;"><button class="action-btn btn-green" onclick="window.paSaveStaffAssignments('${st.id}')"><i class="fas fa-save"></i></button></td>
+        </tr>`;
+    }).join('') : '<tr><td colspan="4" style="padding:14px;text-align:center;color:#888;">No staff yet.</td></tr>';
+}
+
+window.paSaveStaffAssignments = async (userId) => {
+    const roleSel = document.getElementById('pa_as_role_' + userId);
+    const roleId = roleSel ? roleSel.value : 'teacher';
+    const wanted = phaseACache.departments.filter(d => {
+        const cb = document.getElementById(`pa_as_${userId}_${d.id}`);
+        return cb && cb.checked;
+    }).map(d => d.id);
+    const current = phaseACache.assignments.filter(a => a.userId === userId);
+    const removeIds = current.filter(a => a.departmentId && !wanted.includes(a.departmentId)).map(a => a.id);
+    const addIds = wanted.filter(w => !current.some(a => a.departmentId === w));
+    if (removeIds.length) {
+        const { error } = await supabaseClient.from('staff_assignments').delete().in('id', removeIds);
+        if (error) return alert('Error removing assignments: ' + error.message);
+    }
+    if (addIds.length) {
+        const rows = addIds.map((depId, i) => ({
+            schoolId: currentSchoolId, userId, departmentId: depId, roleId, isPrimary: i === 0
+        }));
+        const { error } = await supabaseClient.from('staff_assignments').insert(rows);
+        if (error) return alert('Error adding assignments: ' + error.message);
+    }
+    if (roleId === 'hod') {
+        await supabaseClient.from('users').update({ staffRole: 'HOD' }).eq('id', userId);
+    }
+    alert('Assignments saved.');
+    await paLoadCache(); paRenderAssignPanel();
+};
+
+// ---- student academic placement (college) ----
+let paPlacementStudentId = null;
+window.openStudentPlacement = async (studentId) => {
+    paPlacementStudentId = studentId;
+    const { data } = await supabaseClient.from('students').select('*').eq('id', studentId).maybeSingle();
+    if (!data) return alert('Student not found.');
+    const row = data.data ? { ...data, ...data.data } : data;
+    if (!phaseACache.departments.length) await paLoadCache();
+    document.getElementById('pa_pl_student').innerText = `${row.name || 'Student'} (${row.class ? 'Class ' + row.class : 'College'})`;
+    paFillSelect('pa_pl_dept', phaseACache.departments);
+    paFillSelect('pa_pl_prog', phaseACache.programs);
+    paFillSelect('pa_pl_level', phaseACache.levels);
+    paFillSelect('pa_pl_section', phaseACache.sections);
+    paFillSelect('pa_pl_session', phaseACache.sessions);
+    document.getElementById('pa_pl_dept').value = row.departmentId || '';
+    window.paPlacementCascade();
+    document.getElementById('pa_pl_prog').value = row.programId || '';
+    document.getElementById('pa_pl_level').value = row.levelId || '';
+    document.getElementById('pa_pl_section').value = row.sectionId || '';
+    document.getElementById('pa_pl_session').value = row.academicSessionId || '';
+    document.getElementById('pa_pl_roll').value = row.rollCode || '';
+    document.getElementById('pa-placement-modal').style.display = 'flex';
+};
+
+window.paPlacementCascade = () => {
+    const dept = document.getElementById('pa_pl_dept').value;
+    const progs = phaseACache.programs.filter(p => !dept || p.departmentId === dept);
+    paFillSelect('pa_pl_prog', progs);
+    const prog = document.getElementById('pa_pl_prog').value;
+    paFillSelect('pa_pl_level', phaseACache.levels.filter(l => !prog || l.programId === prog));
+    const level = document.getElementById('pa_pl_level').value;
+    paFillSelect('pa_pl_section', phaseACache.sections.filter(sc => (!prog || sc.programId === prog) && (!level || sc.levelId === level)));
+};
+
+window.paAutoRoll = async () => {
+    if (!paPlacementStudentId) return;
+    const sessionId = document.getElementById('pa_pl_session').value || null;
+    const progId = document.getElementById('pa_pl_prog').value || null;
+    const levelId = document.getElementById('pa_pl_level').value || null;
+    const sectionId = document.getElementById('pa_pl_section').value || null;
+    const { data: st } = await supabaseClient.from('students').select('class').eq('id', paPlacementStudentId).maybeSingle();
+    const cls = institutionIsCollege() ? null : (st && st.class) || null;
+    const { data: num, error } = await supabaseClient.rpc('next_roll_code', {
+        p_school_id: currentSchoolId, p_session_id: sessionId, p_program_id: progId, p_class: cls, p_section_id: sectionId
+    });
+    if (error) return alert('Roll code RPC unavailable until the Phase A migration is executed: ' + error.message);
+    const prog = paFind(phaseACache.programs, progId);
+    const level = paFind(phaseACache.levels, levelId);
+    const sec = paFind(phaseACache.sections, sectionId);
+    const parts = institutionIsCollege()
+        ? [prog && prog.code, level && level.code, sec && sec.name]
+        : ['CLASS', (st && st.class) || '', sec && sec.name];
+    const prefix = parts.filter(Boolean).join('-');
+    document.getElementById('pa_pl_roll').value = (prefix ? prefix + '-' : '') + num;
+};
+
+window.paSavePlacement = async () => {
+    if (!paPlacementStudentId) return;
+    const payload = {
+        departmentId: document.getElementById('pa_pl_dept').value || null,
+        programId: document.getElementById('pa_pl_prog').value || null,
+        levelId: document.getElementById('pa_pl_level').value || null,
+        sectionId: document.getElementById('pa_pl_section').value || null,
+        academicSessionId: document.getElementById('pa_pl_session').value || null,
+        rollCode: document.getElementById('pa_pl_roll').value.trim() || null
+    };
+    const { error } = await supabaseClient.from('students').update(payload).eq('id', paPlacementStudentId);
+    if (error) return alert('Error saving placement: ' + error.message);
+    document.getElementById('pa-placement-modal').style.display = 'none';
+    alert('Academic placement saved.');
+    if (window.loadStudents) window.loadStudents();
+};
+
+// ---- staff portal: department scope + My Department tab ----
+async function paInitStaffScope() {
+    window.staffDeptIds = [];
+    const menu = document.getElementById('staff-menu-department');
+    if (!currentStaffDoc) return;
+    const { data } = await supabaseClient.from('schools').select('institution_type').eq('id', currentSchoolId).maybeSingle();
+    currentInstitutionType = (data && data.institution_type) || 'school';
+    if (!institutionIsCollege()) { if (menu) menu.style.display = 'none'; return; }
+    const { data: as } = await supabaseClient.from('staff_assignments').select('*').eq('userId', currentStaffDoc.id);
+    const rows = as || [];
+    window.staffDeptIds = rows.filter(r => r.departmentId).map(r => r.departmentId);
+    if (menu) menu.style.display = window.staffDeptIds.length ? '' : 'none';
+}
+
+async function loadMyDepartment() {
+    const ov = document.getElementById('staff-dept-overview');
+    const stb = document.getElementById('staff-dept-staff');
+    const sub = document.getElementById('staff-dept-students');
+    if (!ov || !window.staffDeptIds.length) { if (ov) ov.innerHTML = '<div style="color:#64748b;padding:12px;">No department assigned.</div>'; return; }
+    const [dRes, pRes, sRes, uRes, asRes] = await Promise.all([
+        supabaseClient.from('departments').select('*').eq('schoolId', currentSchoolId),
+        supabaseClient.from('programs').select('*').in('departmentId', window.staffDeptIds),
+        supabaseClient.from('students').select('id, name, rollNo, class, programId, levelId, status, departmentId').in('departmentId', window.staffDeptIds).eq('schoolId', currentSchoolId),
+        supabaseClient.from('users').select('id, name, staffRole, email').eq('schoolId', currentSchoolId).eq('role', 'staff'),
+        supabaseClient.from('staff_assignments').select('*').in('departmentId', window.staffDeptIds)
+    ]);
+    const depts = (dRes.data || []).filter(d => window.staffDeptIds.includes(d.id));
+    const progs = pRes.data || [];
+    const students = sRes.data || [];
+    const staffIds = new Set((asRes.data || []).map(a => a.userId));
+    const deptStaff = (uRes.data || []).filter(u => staffIds.has(u.id));
+    ov.innerHTML = depts.map(d => {
+        const dProgs = progs.filter(p => p.departmentId === d.id);
+        const dStu = students.filter(s => s.departmentId === d.id).length;
+        return `<div style="border:1px solid #1f3050;background:#0f1a30;border-radius:10px;padding:12px;margin-bottom:10px;">
+            <div style="font-weight:800;color:#e2e8f0;">${staffEsc(d.name)} <span style="color:#64748b;font-size:11px;">(${staffEsc(d.code)})</span></div>
+            <div style="font-size:12px;color:#8fa3bf;margin-top:6px;">${dProgs.length} programs · ${dStu} students</div>
+            <div style="margin-top:6px;">${dProgs.map(p => `<span style="display:inline-block;background:rgba(16,185,129,0.12);color:#34d399;border-radius:10px;padding:2px 10px;font-size:11px;margin:2px 4px 2px 0;">${staffEsc(p.code)}</span>`).join('')}</div>
+        </div>`;
+    }).join('') || '<div style="color:#64748b;padding:12px;">Department data unavailable.</div>';
+    stb.innerHTML = deptStaff.map(u => `<div style="display:flex;justify-content:space-between;padding:8px 2px;border-bottom:1px solid #1c2c47;color:#dbe4f0;font-size:13px;"><span>${staffEsc(u.name)}</span><span style="color:#8fa3bf;">${staffEsc(u.staffRole)}</span></div>`).join('') || '<div style="color:#64748b;padding:12px;">No staff assigned.</div>';
+    sub.innerHTML = students.length ? students.map(s => `<tr>
+        <td>${staffEsc(s.rollCode || s.rollNo || '—')}</td><td>${staffEsc(s.name)}</td>
+        <td>${staffEsc(paName(progs, s.programId))}</td>
+        <td>${staffEsc(paName(phaseACache.levels, s.levelId))} ${s.class ? '/ ' + staffEsc(s.class) : ''}</td>
+        <td>${staffEsc(s.status || 'Approved')}</td>
+    </tr>`).join('') : '<tr><td colspan="5" style="padding:14px;text-align:center;color:#64748b;">No students placed in your department yet.</td></tr>';
+}
+
 // ============================== STUDENT PORTAL (MERGED) ======================================
 // =============================================================================================
 
