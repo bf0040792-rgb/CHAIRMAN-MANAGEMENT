@@ -516,16 +516,51 @@ supabaseClient.auth.onAuthStateChange(async (event, session) => {
 });
 
 document.getElementById("doLoginBtn").addEventListener("click", async () => {
-    const email = document.getElementById("loginId").value.trim(); const pass = document.getElementById("loginPassword").value.trim(); const btn = document.getElementById("doLoginBtn");
+    const email = document.getElementById("loginId").value.trim();
+    // IMPORTANT: never trim a password. Spaces can be valid password characters.
+    const pass = document.getElementById("loginPassword").value;
+    const btn = document.getElementById("doLoginBtn");
+
     if (!email || !pass) return showLoginScreen("Enter Username and Password");
+
     btn.innerText = "Verifying...";
+    btn.disabled = true;
+
     try {
         // Session persistence + auto token refresh are configured on the client itself.
-        const { error: signInError } = await supabaseClient.auth.signInWithPassword({ email, password: pass });
+        const { error: signInError } = await supabaseClient.auth.signInWithPassword({
+            email,
+            password: pass
+        });
+
         if (signInError) throw signInError;
     } catch (e) {
-        btn.innerText = "Login"; showLoginScreen("Invalid Credentials!");
+        console.error("SUPABASE LOGIN ERROR:", {
+            message: e?.message || "Unknown authentication error",
+            status: e?.status || null,
+            code: e?.code || null
+        });
+
+        let message = "Login failed. Please verify your email and password.";
+
+        if (e?.code === "invalid_credentials" || /invalid login credentials/i.test(e?.message || "")) {
+            message = "Email/password incorrect. Please enter the exact password from your authentication email.";
+        } else if (/email not confirmed/i.test(e?.message || "")) {
+            message = "Email is not verified yet. Please verify the authentication email and try again.";
+        } else if (e?.status === 429) {
+            message = "Too many login attempts. Please wait a few minutes and try again.";
+        } else if (e?.message) {
+            message = "Login failed: " + e.message;
+        }
+
+        btn.innerText = "Login";
+        btn.disabled = false;
+        showLoginScreen(message);
+        return;
     }
+
+    btn.innerText = "Login";
+    btn.disabled = false;
 });
 
 window.doLogout = () => {
