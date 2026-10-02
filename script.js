@@ -353,6 +353,20 @@ supabaseClient.auth.onAuthStateChange(async (event, session) => {
     // A refreshed access token does not change who is signed in - skip the bootstrap.
     if (event === 'TOKEN_REFRESHED') return;
 
+    // Supabase sends PASSWORD_RECOVERY after the user opens the reset email.
+    // Do not bootstrap the dashboard until the new password has been saved.
+    if (event === 'PASSWORD_RECOVERY') {
+        overlay.style.display = 'none';
+        dashboardWrapper.style.display = 'none';
+        loginWrapper.style.display = 'flex';
+        document.getElementById('admin-login-fields').style.display = 'none';
+        document.getElementById('student-login-fields').style.display = 'none';
+        document.getElementById('password-reset-fields').style.display = 'block';
+        document.getElementById('loginErrorMsg').style.display = 'none';
+        document.querySelector('.glass-login-title').innerText = 'set new password';
+        return;
+    }
+
     const user = session?.user ? { uid: session.user.id, email: session.user.email } : null;
     currentUserId = user ? user.uid : null;
 
@@ -561,6 +575,80 @@ document.getElementById("doLoginBtn").addEventListener("click", async () => {
 
     btn.innerText = "Login";
     btn.disabled = false;
+});
+
+// ================= SECURE PASSWORD RECOVERY =================
+document.getElementById("forgotPasswordBtn")?.addEventListener("click", async () => {
+    const email = document.getElementById("loginId").value.trim();
+    const errBox = document.getElementById("loginErrorMsg");
+
+    if (!email) {
+        showLoginScreen("Pehle apna registered email enter karein, phir Forgot Password dabayein.");
+        return;
+    }
+
+    const btn = document.getElementById("forgotPasswordBtn");
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending reset email...';
+
+    try {
+        const redirectTo = window.location.origin + window.location.pathname;
+        const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo });
+        if (error) throw error;
+
+        showLoginScreen("Password reset email bhej di gayi hai. Gmail inbox/spam check karke link open karein.");
+    } catch (e) {
+        console.error("PASSWORD RESET ERROR:", {
+            message: e?.message || "Unknown error",
+            status: e?.status || null,
+            code: e?.code || null
+        });
+        showLoginScreen("Password reset request failed: " + (e?.message || "Please try again."));
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-key"></i> Forgot Password?';
+    }
+});
+
+document.getElementById("updatePasswordBtn")?.addEventListener("click", async () => {
+    const password = document.getElementById("newLoginPassword").value;
+    const confirm = document.getElementById("confirmLoginPassword").value;
+    const btn = document.getElementById("updatePasswordBtn");
+
+    if (password.length < 8) {
+        showLoginScreen("New password kam se kam 8 characters ka hona chahiye.");
+        return;
+    }
+    if (password !== confirm) {
+        showLoginScreen("New password aur confirmation match nahi karte.");
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerText = "Updating...";
+
+    try {
+        const { error } = await supabaseClient.auth.updateUser({ password });
+        if (error) throw error;
+
+        await supabaseClient.auth.signOut();
+        document.getElementById("password-reset-fields").style.display = "none";
+        document.getElementById("admin-login-fields").style.display = "block";
+        document.querySelector('.glass-login-title').innerText = 'login';
+        document.getElementById("newLoginPassword").value = "";
+        document.getElementById("confirmLoginPassword").value = "";
+        showLoginScreen("Password successfully changed. Ab ab naye password se login karein.");
+    } catch (e) {
+        console.error("PASSWORD UPDATE ERROR:", {
+            message: e?.message || "Unknown error",
+            status: e?.status || null,
+            code: e?.code || null
+        });
+        showLoginScreen("Password update failed: " + (e?.message || "Please reopen the reset email and try again."));
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>Set New Password</span> <i class="fas fa-check"></i>';
+    }
 });
 
 window.doLogout = () => {
