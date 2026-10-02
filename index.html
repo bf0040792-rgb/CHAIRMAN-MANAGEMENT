@@ -229,6 +229,31 @@
                 </button>
             </div>
 
+                <button type="button" id="forgotPasswordBtn"
+                    style="width:100%; margin-top:12px; padding:10px; border:1px solid rgba(14,246,204,0.2); border-radius:10px; background:rgba(255,255,255,0.03); color:rgba(255,255,255,0.65); cursor:pointer; font-family:'JetBrains Mono',monospace; font-size:11px;">
+                    <i class="fas fa-key"></i> Forgot Password?
+                </button>
+            </div>
+
+            <!-- Password Recovery Fields -->
+            <div id="password-reset-fields" style="display:none;">
+                <div class="glass-input-group">
+                    <div class="input-wrapper">
+                        <input type="password" id="newLoginPassword" placeholder="New Password" autocomplete="new-password">
+                        <i class="fas fa-lock pro-input-icon"></i>
+                    </div>
+                </div>
+                <div class="glass-input-group">
+                    <div class="input-wrapper">
+                        <input type="password" id="confirmLoginPassword" placeholder="Confirm New Password" autocomplete="new-password">
+                        <i class="fas fa-lock pro-input-icon"></i>
+                    </div>
+                </div>
+                <button class="glass-login-btn" id="updatePasswordBtn">
+                    <span>Set New Password</span> <i class="fas fa-check"></i>
+                </button>
+            </div>
+
             <!-- Student Login Fields -->
             <div id="student-login-fields" style="display:none;">
                 <div class="glass-input-group">
