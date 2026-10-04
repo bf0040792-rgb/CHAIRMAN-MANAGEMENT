@@ -960,7 +960,7 @@ function loadAllData() { loadStudents(); loadStaff(); loadNotices(); loadInbox()
 window.fetchedStudentTransfers = [];
 window.fetchedIncomingTransfers = [];
 
-const TRANSFER_CLASS_LIST = institutionIsCollege() ? ["1st Semester", "2nd Semester", "3rd Semester", "4th Semester", "5th Semester", "6th Semester"] : ["Nursery", "LKG", "UKG", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th"];
+const TRANSFER_CLASS_LIST = ["Nursery", "LKG", "UKG", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th"];
 
 function populateTransferClassFilters() {
     const histFilter = document.getElementById("transfer_history_class_filter");
@@ -6590,6 +6590,7 @@ window.replyToMailThread = async () => {
     }
     btn.innerHTML = "<i class='fas fa-reply'></i> Reply"; btn.disabled = false;
 };
+
 
 
 
