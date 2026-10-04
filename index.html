@@ -3662,26 +3662,26 @@
 
     <script src="script.js?v=20261005"></script>
 <!-- STUDENT SUBJECTS MODAL (HOD) -->
-<div id="hod-subjects-modal" class="custom-modal">
-    <div class="custom-modal-content" style="max-width: 500px;">
+<div id="hod-subjects-modal" class="modal" style="display:none; align-items:center; justify-content:center; z-index: 10000;">
+    <div class="modal-content" style="max-width: 500px; width: 100%;">
         <span class="close-modal" onclick="document.getElementById('hod-subjects-modal').style.display='none'">&times;</span>
         <h2 style="margin-top:0; color:#1e3a8a;"><i class="fas fa-book"></i> Assign Subjects</h2>
         <input type="hidden" id="hod_sub_student_id">
         <div class="form-group">
             <label>Minor Subject</label>
-            <input type="text" id="hod_sub_minor" placeholder="e.g. Political Science" class="input-premium">
+            <input type="text" id="hod_sub_minor" placeholder="e.g. Political Science" class="input-premium" list="subjectsList">
         </div>
         <div class="form-group">
             <label>MDC (Multidisciplinary)</label>
-            <input type="text" id="hod_sub_mdc" placeholder="e.g. Environmental Science" class="input-premium">
+            <input type="text" id="hod_sub_mdc" placeholder="e.g. Environmental Science" class="input-premium" list="subjectsList">
         </div>
         <div class="form-group">
             <label>Skill Subject</label>
-            <input type="text" id="hod_sub_skill" placeholder="e.g. Communication Skills" class="input-premium">
+            <input type="text" id="hod_sub_skill" placeholder="e.g. Communication Skills" class="input-premium" list="subjectsList">
         </div>
         <div class="form-group">
             <label>Vocational Subject</label>
-            <input type="text" id="hod_sub_voc" placeholder="e.g. Web Development" class="input-premium">
+            <input type="text" id="hod_sub_voc" placeholder="e.g. Web Development" class="input-premium" list="subjectsList">
         </div>
         <div style="text-align:right; margin-top:20px;">
             <button class="action-btn btn-green" onclick="saveStudentSubjects()"><i class="fas fa-save"></i> Save Subjects</button>
@@ -3691,6 +3691,8 @@
 </body>
 
 </html>
+
+
 
 
 
