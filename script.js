@@ -5555,7 +5555,7 @@ async function loadMyDepartment() {
     sub.innerHTML = students.length ? students.map(s => `<tr>
         <td>${staffEsc(s.rollCode || s.rollNo || '—')}</td><td>${staffEsc(s.name)}</td>
         <td>${staffEsc(paName(progs, s.programId))}</td>
-        <td>${staffEsc(paName(phaseACache.levels, s.levelId))} ${s.class ? '/ ' + staffEsc(s.class) : '}</td>
+        <td>${staffEsc(paName(phaseACache.levels, s.levelId))} ${s.class ? '/ ' + staffEsc(s.class) : ''}</td>
         <td>${staffEsc(s.status || 'Approved')}</td>
         <td><button class="action-btn btn-blue" onclick="openStudentSubjectsModal('${s.id}')"><i class="fas fa-book"></i> Subjects</button></td>
     </tr>`).join('') : '<tr><td colspan="6" style="padding:14px;text-align:center;color:#64748b;">No students placed in your department yet.</td></tr>';
@@ -6669,6 +6669,7 @@ window.replyToMailThread = async () => {
     }
     btn.innerHTML = "<i class='fas fa-reply'></i> Reply"; btn.disabled = false;
 };
+
 
 
 
