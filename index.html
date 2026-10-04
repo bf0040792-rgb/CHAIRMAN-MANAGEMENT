@@ -871,7 +871,7 @@
                             <div class="form-group"><label>Email ID</label><input type="email" id="s_email"></div>
                             <div class="form-group"><label>Password</label><input type="text" id="s_pass"></div>
                             <div class="form-group"><label>Role</label>
-                                <select id="s_role">
+                                <select id="s_role" onchange="if(this.value==='HOD'){document.getElementById('s_dept_group').style.display='block';}else{document.getElementById('s_dept_group').style.display='none';}">
                                     <option value="Chairman">Chairman</option>
                                     <option value="Principal">Principal</option>
                                     <option value="Teacher">Teacher</option>
@@ -884,6 +884,7 @@
                                     <option value="Receptionist">Receptionist</option>
                                 </select>
                             </div>
+                            <div class="form-group" id="s_dept_group" style="display:none;"><label>Department (Major)</label><select id="s_dept"><option value="">-- Select --</option></select></div>
                         </div>
                         <button class="submit-btn" id="s_btn" onclick="saveStaff()"><i class="fas fa-save"></i> Add
                             Staff Member</button>
@@ -2776,7 +2777,7 @@
                     <div class="staff-card" style="margin-top:16px;">
                         <h3><i class="fas fa-user-graduate" style="color:#60a5fa;"></i> Department Students</h3>
                         <div style="overflow:auto;"><table class="staff-table">
-                            <thead><tr><th>Roll</th><th>Student</th><th>Program</th><th>Level / Class</th><th>Status</th></tr></thead>
+                            <thead><tr><th>Roll</th><th>Student</th><th>Program</th><th>Level / Class</th><th>Status</th><th>Actions</th></tr></thead>
                             <tbody id="staff-dept-students"></tbody>
                         </table></div>
                     </div>
@@ -3150,6 +3151,13 @@
                     </select>
                 </div>
             </div>
+            <div class="form-row" id="modal-student-subjects-group" style="display:none; background:#f0f9ff; padding:10px; border-radius:8px; margin-top:10px;">
+    <div style="width:100%;"><strong style="color:#0284c7; font-size:13px;"><i class="fas fa-book"></i> College Subjects (Assigned by HOD)</strong></div>
+    <div class="form-group"><label>Minor</label><input type="text" id="modal-student-minor"></div>
+    <div class="form-group"><label>MDC</label><input type="text" id="modal-student-mdc"></div>
+    <div class="form-group"><label>Skill</label><input type="text" id="modal-student-skill"></div>
+    <div class="form-group"><label>Vocational</label><input type="text" id="modal-student-voc"></div>
+</div>
             <div class="form-group"><label>Address</label><textarea id="modal-student-address" rows="2"></textarea>
             </div>
             <div class="form-row">
@@ -3653,6 +3661,37 @@
     </div>
 
     <script src="script.js?v=20261005"></script>
+<!-- STUDENT SUBJECTS MODAL (HOD) -->
+<div id="hod-subjects-modal" class="custom-modal">
+    <div class="custom-modal-content" style="max-width: 500px;">
+        <span class="close-modal" onclick="document.getElementById('hod-subjects-modal').style.display='none'">&times;</span>
+        <h2 style="margin-top:0; color:#1e3a8a;"><i class="fas fa-book"></i> Assign Subjects</h2>
+        <input type="hidden" id="hod_sub_student_id">
+        <div class="form-group">
+            <label>Minor Subject</label>
+            <input type="text" id="hod_sub_minor" placeholder="e.g. Political Science" class="input-premium">
+        </div>
+        <div class="form-group">
+            <label>MDC (Multidisciplinary)</label>
+            <input type="text" id="hod_sub_mdc" placeholder="e.g. Environmental Science" class="input-premium">
+        </div>
+        <div class="form-group">
+            <label>Skill Subject</label>
+            <input type="text" id="hod_sub_skill" placeholder="e.g. Communication Skills" class="input-premium">
+        </div>
+        <div class="form-group">
+            <label>Vocational Subject</label>
+            <input type="text" id="hod_sub_voc" placeholder="e.g. Web Development" class="input-premium">
+        </div>
+        <div style="text-align:right; margin-top:20px;">
+            <button class="action-btn btn-green" onclick="saveStudentSubjects()"><i class="fas fa-save"></i> Save Subjects</button>
+        </div>
+    </div>
+</div>
 </body>
 
 </html>
+
+
+
+

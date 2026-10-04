@@ -3173,6 +3173,14 @@ window.openStudentModal = (id = null) => {
         document.getElementById("modal-student-mobile").value = st.mobile || "";
         document.getElementById("modal-student-emergency").value = st.emergencyNo || "";
         document.getElementById("modal-student-photo-url").value = st.photoUrl || "";
+        
+        if (institutionIsCollege()) {
+            document.getElementById("modal-student-subjects-group").style.display = "flex";
+            document.getElementById("modal-student-minor").value = st.minorSubject || "";
+            document.getElementById("modal-student-mdc").value = st.mdcSubject || "";
+            document.getElementById("modal-student-skill").value = st.skillSubject || "";
+            document.getElementById("modal-student-voc").value = st.vocationalSubject || "";
+        }
         if (st.photoUrl) {
             document.getElementById("modal-student-photo-preview").src = st.photoUrl;
             document.getElementById("modal-student-photo-preview").style.display = "block";
@@ -3192,6 +3200,10 @@ window.openStudentModal = (id = null) => {
         document.getElementById("modal-student-mobile").value = "";
         document.getElementById("modal-student-emergency").value = "";
         document.getElementById("modal-student-photo-url").value = "";
+        document.getElementById("modal-student-minor").value = "";
+        document.getElementById("modal-student-mdc").value = "";
+        document.getElementById("modal-student-skill").value = "";
+        document.getElementById("modal-student-voc").value = "";
         document.getElementById("modal-student-photo-preview").style.display = "none";
     }
 };
@@ -3256,6 +3268,10 @@ window.saveStudentModal = async () => {
         regNo: document.getElementById("modal-student-regNo").value.trim(),
         mobile: document.getElementById("modal-student-mobile").value.trim(),
         emergencyNo: document.getElementById("modal-student-emergency").value.trim(),
+        minorSubject: document.getElementById("modal-student-minor").value.trim(),
+        mdcSubject: document.getElementById("modal-student-mdc").value.trim(),
+        skillSubject: document.getElementById("modal-student-skill").value.trim(),
+        vocationalSubject: document.getElementById("modal-student-voc").value.trim(),
         photoUrl: photoUrl.trim(),
         schoolId: currentSchoolId
     };
@@ -3457,13 +3473,34 @@ window.saveStaff = async () => {
         // Step 2: staff profile row (RLS requires the chairman policy added in
         // supabase/2026-10-02_staff_portal_rls.sql; the error is surfaced verbatim otherwise).
         const { error } = await supabaseClient.from("users").upsert({ id: newStaffId, name, email, role: "staff", staffRole: role, plainPassword: pass, photoUrl: photoUrl, schoolId: currentSchoolId, status: "active", privileges: { attendance: true, marks: true, finance: false, notices: false, admissions: false, certs: false, exams: false, settings: false, view_finance: false, delete: false } });
-        if (error) throw new Error("Staff profile could not be saved (" + error.message + "). If this mentions row-level security, run the staff RLS migration in supabase/2026-10-02_staff_portal_rls.sql.");
+        if (error) throw new Error("Staff profile could not be saved (" + error.message + ").");
+        
+        if (role === "HOD" && institutionIsCollege()) {
+            const deptId = document.getElementById("s_dept")?.value;
+            if (deptId) {
+                await supabaseClient.from("staff_assignments").insert({
+                    userId: newStaffId,
+                    schoolId: currentSchoolId,
+                    departmentId: deptId,
+                    roleId: "hod",
+                    isPrimary: true
+                });
+            }
+        }
+        
         alert("Staff created successfully!"); document.getElementById("s_name").value = ""; document.getElementById("s_email").value = ""; document.getElementById("s_pass").value = ""; loadStaff();
     } catch (e) { alert("Error: " + e.message); } finally { await staffAuthClient.auth.signOut().catch(() => { }); }
 };
 
 async function loadStaff() {
     try {
+        if (institutionIsCollege()) {
+            const { data: depts } = await supabaseClient.from("departments").select("id, name, code").eq("schoolId", currentSchoolId);
+            let sDept = document.getElementById("s_dept");
+            if (sDept) {
+                sDept.innerHTML = "<option value=\"\">-- Select --</option>" + (depts || []).map(d => `<option value="${d.id}">${d.name} (${d.code})</option>`).join("");
+            }
+        }
         const { data: staffRows, error } = await supabaseClient.from("users").select("*").eq("schoolId", currentSchoolId).eq("role", "staff");
         if (error) throw error;
         window.fetchedStaff = []; let html = ""; document.getElementById("count-staff").innerText = (staffRows || []).length; let staffOpts = "<option value=''>-- Select Staff --</option>";
@@ -5141,7 +5178,7 @@ window.loadStaffTeachers = async () => {
             <td>${staffEsc(st.email)}</td>
             <td>${staffEsc(st.status || 'active')}</td>
             <td>${staffPill(mkRows.some(m => m.enteredBy === st.id), 'Submitted', 'Pending')}</td>
-        </tr>`).join('') : '<tr><td colspan="5" style="padding:14px; text-align:center; color:#64748b;">No staff found.</td></tr>';
+        </tr>`).join('') : '<tr><td colspan="6" style="padding:14px; text-align:center; color:#64748b;">No staff found.</td></tr>';
 };
 
 // =============================================================================================
@@ -5212,7 +5249,7 @@ function paRenderAll() {
             <td style="padding:8px;">${active ? '<span style="color:#16a34a;font-weight:bold;">Active</span>' : '<span style="color:#dc2626;font-weight:bold;">Inactive</span>'}</td>
             <td style="padding:8px;"><button class="action-btn btn-blue" onclick="window.paSetDepartmentStatus('${d.id}', ${active ? "'inactive'" : "'active'"})">${active ? 'Deactivate' : 'Activate'}</button></td>
         </tr>`;
-    }).join('') : '<tr><td colspan="5" style="padding:14px;text-align:center;color:#888;">No departments yet.</td></tr>';
+    }).join('') : '<tr><td colspan="6" style="padding:14px;text-align:center;color:#888;">No departments yet.</td></tr>';
 
     const pb = document.getElementById('pa-prog-body');
     if (pb) pb.innerHTML = phaseACache.programs.length ? phaseACache.programs.map(p => `<tr style="border-bottom:1px solid #e2e8f0;">
@@ -5221,7 +5258,7 @@ function paRenderAll() {
         <td style="padding:8px;">${staffEsc(p.levelType)}</td>
         <td style="padding:8px;">${p.status === 'active' ? '<span style="color:#16a34a;font-weight:bold;">Active</span>' : '<span style="color:#dc2626;font-weight:bold;">Inactive</span>'}</td>
         <td style="padding:8px;"><button class="action-btn btn-blue" onclick="window.paSetProgramStatus('${p.id}', ${p.status === 'active' ? "'inactive'" : "'active'"})">${p.status === 'active' ? 'Deactivate' : 'Activate'}</button></td>
-    </tr>`).join('') : '<tr><td colspan="5" style="padding:14px;text-align:center;color:#888;">No programs yet.</td></tr>';
+    </tr>`).join('') : '<tr><td colspan="6" style="padding:14px;text-align:center;color:#888;">No programs yet.</td></tr>';
 
     const sb = document.getElementById('pa-session-body');
     if (sb) sb.innerHTML = phaseACache.sessions.length ? phaseACache.sessions.map(s => `<tr style="border-bottom:1px solid #e2e8f0;">
@@ -5518,12 +5555,54 @@ async function loadMyDepartment() {
     sub.innerHTML = students.length ? students.map(s => `<tr>
         <td>${staffEsc(s.rollCode || s.rollNo || '—')}</td><td>${staffEsc(s.name)}</td>
         <td>${staffEsc(paName(progs, s.programId))}</td>
-        <td>${staffEsc(paName(phaseACache.levels, s.levelId))} ${s.class ? '/ ' + staffEsc(s.class) : ''}</td>
+        <td>${staffEsc(paName(phaseACache.levels, s.levelId))} ${s.class ? '/ ' + staffEsc(s.class) : '}</td>
         <td>${staffEsc(s.status || 'Approved')}</td>
-    </tr>`).join('') : '<tr><td colspan="5" style="padding:14px;text-align:center;color:#64748b;">No students placed in your department yet.</td></tr>';
+        <td><button class="action-btn btn-blue" onclick="openStudentSubjectsModal('${s.id}')"><i class="fas fa-book"></i> Subjects</button></td>
+    </tr>`).join('') : '<tr><td colspan="6" style="padding:14px;text-align:center;color:#64748b;">No students placed in your department yet.</td></tr>';
 }
 
-// ============================== STUDENT PORTAL (MERGED) ======================================
+window.openStudentSubjectsModal = async (studentId) => {
+    document.getElementById("hod_sub_student_id").value = studentId;
+    document.getElementById("hod_sub_minor").value = "Loading...";
+    document.getElementById("hod_sub_mdc").value = "Loading...";
+    document.getElementById("hod_sub_skill").value = "Loading...";
+    document.getElementById("hod_sub_voc").value = "Loading...";
+    document.getElementById("hod-subjects-modal").style.display = "flex";
+
+    const { data, error } = await supabaseClient.from("students").select("data").eq("id", studentId).maybeSingle();
+    if (!error && data && data.data) {
+        document.getElementById("hod_sub_minor").value = data.data.minorSubject || "";
+        document.getElementById("hod_sub_mdc").value = data.data.mdcSubject || "";
+        document.getElementById("hod_sub_skill").value = data.data.skillSubject || "";
+        document.getElementById("hod_sub_voc").value = data.data.vocationalSubject || "";
+    } else {
+        document.getElementById("hod_sub_minor").value = "";
+        document.getElementById("hod_sub_mdc").value = "";
+        document.getElementById("hod_sub_skill").value = "";
+        document.getElementById("hod_sub_voc").value = "";
+    }
+};
+
+window.saveStudentSubjects = async () => {
+    const studentId = document.getElementById("hod_sub_student_id").value;
+    if (!studentId) return;
+    const payload = {
+        minorSubject: document.getElementById("hod_sub_minor").value.trim(),
+        mdcSubject: document.getElementById("hod_sub_mdc").value.trim(),
+        skillSubject: document.getElementById("hod_sub_skill").value.trim(),
+        vocationalSubject: document.getElementById("hod_sub_voc").value.trim()
+    };
+    try {
+        const { error } = await supabaseClient.rpc("update_student", { p_student_id: studentId, p_payload: payload });
+        if (error) throw error;
+        alert("Subjects assigned successfully!");
+        document.getElementById("hod-subjects-modal").style.display = "none";
+    } catch (e) {
+        alert("Error saving subjects: " + e.message);
+    }
+};
+
+  // ============================== STUDENT PORTAL (MERGED) ======================================
 // =============================================================================================
 
 let currentStudentUser = null;
@@ -6590,6 +6669,11 @@ window.replyToMailThread = async () => {
     }
     btn.innerHTML = "<i class='fas fa-reply'></i> Reply"; btn.disabled = false;
 };
+
+
+
+
+
 
 
 
