@@ -404,7 +404,7 @@ supabaseClient.auth.onAuthStateChange(async (event, session) => {
 
                 document.getElementById('top-school-name').innerText = data.schoolName;
                 setRoleBadge('dashboard-role-badge', data.staffRole || 'Chairman');
-                document.getElementById('req_old_pass').value = data.plainPassword || '******';
+                const reqOp = document.getElementById('req_old_pass'); if(reqOp) reqOp.value = data.plainPassword || '******';
 
                 const initials = data.schoolName.split(' ').map(word => word.charAt(0).toUpperCase()).join('');
                 document.getElementById('top-school-name-mobile').innerText = initials;
@@ -436,7 +436,9 @@ supabaseClient.auth.onAuthStateChange(async (event, session) => {
                 checkAdmissionStatus(); listenToTicker(); loadAllData();
 
                 const today = new Date().toISOString().split('T')[0];
-                document.getElementById("fee_date").value = today; document.getElementById("salary_date").value = today; document.getElementById("exp_date").value = today;
+                const fd = document.getElementById("fee_date"); if(fd) fd.value = today;
+                const sd = document.getElementById("salary_date"); if(sd) sd.value = today;
+                const ed = document.getElementById("exp_date"); if(ed) ed.value = today;
 
                 populateClassDropdowns();
 
@@ -6716,6 +6718,8 @@ window.replyToMailThread = async () => {
     }
     btn.innerHTML = "<i class='fas fa-reply'></i> Reply"; btn.disabled = false;
 };
+
+
 
 
 

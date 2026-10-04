@@ -42,7 +42,7 @@ let collegeChoice = null;
 
     try {
         const { data: schoolData, error } = await supabaseClient
-            .from('schools')
+            .from('vw_public_schools')
             .select('schoolName, logoUrl, institution_type, admissionOpen')
             .eq('id', currentSchoolId)
             .maybeSingle();
@@ -255,4 +255,5 @@ form.addEventListener("submit", async (e) => {
 
 
 initializeForm();
+
 
