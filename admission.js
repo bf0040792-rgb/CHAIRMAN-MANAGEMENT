@@ -30,7 +30,14 @@ const submitBtn = document.getElementById("submit-btn");
 
 let currentSchoolId = "";
 let currentInstitutionType = "school";
-let collegeChoice = null; // { departmentId, programId, label }
+let collegeChoice = null;
+    let selectedSubjects = [];
+    if (currentInstitutionType === "college") {
+        const subSelect = document.getElementById("student-subjects");
+        if (subSelect) {
+            selectedSubjects = Array.from(subSelect.selectedOptions).map(opt => opt.value);
+        }
+    }
 
 // Helper to show message
 function showMessage(title, text, type) {
@@ -127,34 +134,33 @@ async function loadCollegeStructure() {
     const classSelect = document.getElementById("student-class");
     if (!classSelect) return;
     try {
-        const [dRes, pRes, lRes] = await Promise.all([
-            supabaseClient.from("vw_public_departments").select("*").eq("schoolId", currentSchoolId),
-            supabaseClient.from("vw_public_programs").select("*").eq("schoolId", currentSchoolId),
-            supabaseClient.from("vw_public_levels").select("*").eq("schoolId", currentSchoolId)
-        ]);
-        const depts = dRes.data || [];
-        const progs = pRes.data || [];
-        const levels = lRes.data || [];
-        const options = [];
-        window.collegeOptionsMap = {};
-        progs.forEach(pg => {
-            const dept = depts.find(d => d.id === pg.departmentId);
-            const pLevels = levels.filter(l => l.programId === pg.id).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
-            if (pLevels.length) {
-                pLevels.forEach(lv => {
-                    const value = pg.id + "|" + lv.id;
-                    window.collegeOptionsMap[value] = { departmentId: pg.departmentId, programId: pg.id, label: pg.code + " — " + lv.name };
-                    options.push(`<option value="${value}">${dept ? dept.name + " / " : ""}${pg.name} — ${lv.name}</option>`);
-                });
-            } else {
-                const value = pg.id + "|";
-                window.collegeOptionsMap[value] = { departmentId: pg.departmentId, programId: pg.id, label: pg.code };
-                options.push(`<option value="${value}">${dept ? dept.name + " / " : ""}${pg.name}</option>`);
-            }
-        });
-        if (options.length) {
-            classSelect.innerHTML = `<option value="">Select Course / Semester</option>` + options.join("");
+        const semesters = ["1st Semester", "2nd Semester", "3rd Semester", "4th Semester", "5th Semester", "6th Semester"];
+        let options = `<option value="">-- Select Semester --</option>`;
+        semesters.forEach(s => options += `<option value="${s}">${s}</option>`);
+        classSelect.innerHTML = options;
+
+        // Fetch subjects from vw_public_schools
+        const { data: schoolData } = await supabaseClient.from("vw_public_schools").select("examSubjects").eq("id", currentSchoolId).maybeSingle();
+        let subjects = ["English", "Mathematics", "Science"]; // default fallback
+        if (schoolData && schoolData.examSubjects && Array.isArray(schoolData.examSubjects) && schoolData.examSubjects.length > 0) {
+            subjects = schoolData.examSubjects;
         }
+
+        // Add Subject Selection Dropdown after class select
+        let classGroup = classSelect.closest(".form-group");
+        let subjectHtml = `<div class="form-group" id="subject-selection-group" style="margin-top: 15px;">
+            <label for="student-subjects">Select Subjects (Hold Ctrl/Cmd to select multiple) *</label>
+            <select id="student-subjects" multiple required style="width:100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; background: #f9f9f9;">
+        `;
+        subjects.forEach(sub => {
+            subjectHtml += `<option value="${sub}">${sub}</option>`;
+        });
+        subjectHtml += `</select></div>`;
+        
+        if (!document.getElementById("subject-selection-group")) {
+            classGroup.insertAdjacentHTML("afterend", subjectHtml);
+        }
+
     } catch (e) {
         console.error("College structure load failed:", e);
     }
@@ -200,9 +206,12 @@ form.addEventListener("submit", async (e) => {
     const classRaw = document.getElementById("student-class").value;
     let studentClass = classRaw;
     collegeChoice = null;
-    if (currentInstitutionType === "college" && window.collegeOptionsMap && window.collegeOptionsMap[classRaw]) {
-        collegeChoice = window.collegeOptionsMap[classRaw];
-        studentClass = collegeChoice.label;
+    let selectedSubjects = [];
+    if (currentInstitutionType === "college") {
+        const subSelect = document.getElementById("student-subjects");
+        if (subSelect) {
+            selectedSubjects = Array.from(subSelect.selectedOptions).map(opt => opt.value);
+        }
     }
     const parentage = document.getElementById("parentage").value.trim();
     const motherName = document.getElementById("mother-name").value.trim();
@@ -229,6 +238,7 @@ form.addEventListener("submit", async (e) => {
 
         // Use secure RPC for admission submission
         const payload = {
+            subjects: selectedSubjects,
             name: name,
             dob: dob,
             rollNo: rollNo,
@@ -274,4 +284,6 @@ form.addEventListener("submit", async (e) => {
         submitBtn.innerHTML = "<i class='fas fa-paper-plane'></i> Submit Application";
     }
 });
+
+
 

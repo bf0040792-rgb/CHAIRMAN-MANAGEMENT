@@ -694,10 +694,28 @@ window.copyToClipboard = () => {
 };
 
 function populateClassDropdowns() {
-    const classes = ["Nursery", "LKG", "UKG", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th"];
+    const classes = institutionIsCollege() ? ["1st Semester", "2nd Semester", "3rd Semester", "4th Semester", "5th Semester", "6th Semester"] : ["Nursery", "LKG", "UKG", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th"];
     let feeClsOpts = '<option value="">-- Select --</option>';
     classes.forEach(c => feeClsOpts += `<option value="${c}">${c}</option>`);
-    document.getElementById("fee_class").innerHTML = feeClsOpts;
+    if(document.getElementById("fee_class")) document.getElementById("fee_class").innerHTML = feeClsOpts;
+    
+    // Auto-update all other class dropdowns in index.html
+    document.querySelectorAll("select").forEach(select => {
+        let has1st = false;
+        let hasAll = false;
+        Array.from(select.options).forEach(opt => {
+            if (opt.value === "1st") has1st = true;
+            if (opt.value === "All" || opt.value === "all") hasAll = true;
+        });
+        if (has1st) {
+            let html = "";
+            if (hasAll) html += `<option value="All">All Classes</option>`;
+            else if (select.options[0].value === "") html += `<option value="">${select.options[0].text}</option>`;
+            
+            classes.forEach(c => html += `<option value="${c}">${c}</option>`);
+            select.innerHTML = html;
+        }
+    });
 }
 
 async function checkAdmissionStatus() {
@@ -746,6 +764,7 @@ async function checkAdmissionStatus() {
             window.examSubjects = [...(window.factoryDefaultSubjects || [])];
         }
 
+        populateClassDropdowns();
         if (data.themeColor) { currentThemeColor = data.themeColor; document.getElementById("school_theme_color").value = currentThemeColor; document.documentElement.style.setProperty('--theme-color', currentThemeColor); }
         if (data.schoolNameColor) { currentSchoolNameColor = data.schoolNameColor; if (document.getElementById("idSchoolNameColor")) document.getElementById("idSchoolNameColor").value = currentSchoolNameColor; }
         if (data.studentNameColor) { currentStudentNameColor = data.studentNameColor; if (document.getElementById("idStudentNameColor")) document.getElementById("idStudentNameColor").value = currentStudentNameColor; }
@@ -941,14 +960,14 @@ function loadAllData() { loadStudents(); loadStaff(); loadNotices(); loadInbox()
 window.fetchedStudentTransfers = [];
 window.fetchedIncomingTransfers = [];
 
-const TRANSFER_CLASS_LIST = ["Nursery", "LKG", "UKG", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th"];
+const TRANSFER_CLASS_LIST = institutionIsCollege() ? ["1st Semester", "2nd Semester", "3rd Semester", "4th Semester", "5th Semester", "6th Semester"] : ["Nursery", "LKG", "UKG", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th"];
 
 function populateTransferClassFilters() {
     const histFilter = document.getElementById("transfer_history_class_filter");
     if (histFilter) {
         const selectedClass = histFilter.value || "All";
         let html = "<option value='All'>All Classes</option>";
-        TRANSFER_CLASS_LIST.forEach(c => html += `<option value="${c}">${c}</option>`);
+        (institutionIsCollege() ? ["1st Semester", "2nd Semester", "3rd Semester", "4th Semester", "5th Semester", "6th Semester"] : ["Nursery", "LKG", "UKG", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th"]).forEach(c => html += `<option value="${c}">${c}</option>`);
         histFilter.innerHTML = html;
         histFilter.value = selectedClass;
     }
@@ -2524,7 +2543,7 @@ async function loadStudents() {
 }
 
 function renderClassFilters() {
-    const classes = ["Nursery", "LKG", "UKG", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th"];
+    const classes = institutionIsCollege() ? ["1st Semester", "2nd Semester", "3rd Semester", "4th Semester", "5th Semester", "6th Semester"] : ["Nursery", "LKG", "UKG", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th"];
     let html = `<button class="filter-btn active" onclick="filterStudents('All', this)">All</button>`;
     classes.forEach(c => html += `<button class="filter-btn" onclick="filterStudents('${c}', this)">${c}</button>`);
     document.getElementById("class-filters").innerHTML = html;
@@ -2611,7 +2630,7 @@ function renderStudentsTable(className, searchTerm = null, statusFilter = null) 
             <td><img src="${safePhoto}" class="img-circle"></td>
             <td><strong style="display:block; font-size:13px;">${safeName} ${locked ? '<i class="fas fa-lock" style="color:#e53e3e"></i>' : ''}</strong><small style="color:#7f8c8d;">${safeMobile === 'N/A' ? 'No Mobile' : safeMobile}</small></td>
             <td><span style="font-weight:bold; font-size:13px; color:#333;">${safeRollNo}</span></td>
-            <td><span style="background:#eaf4ff; color:#2c7be5; padding:3px 8px; border-radius:12px; font-size:12px; font-weight:bold;">Class: ${safeClass}</span></td>
+            <td><span style="background:#eaf4ff; color:#2c7be5; padding:3px 8px; border-radius:12px; font-size:12px; font-weight:bold;">Class: ${safeClass}</span>${dt.subjects && dt.subjects.length > 0 ? `<br><small style="color:#64748b; font-size:10px;">` + escapeHtml(dt.subjects.join(", ")) + `</small>` : ""}</td>
             <td><span style="font-size:12px; display:block;"><b>P:</b> ${safeParentage}</span><span style="font-size:12px; display:block;"><b>M:</b> ${safeMother}</span></td>
             <td><div style="font-size:11px; font-weight:bold; padding:2px 6px; border-radius:4px; display:inline-block; border:1px solid ${statusColor}; color:${statusColor};">${statusIcon} ${safeStatus}</div><br><span style="font-size:11px; color:#7f8c8d;">Due: ₹${feeDueNum.toLocaleString('en-IN')}</span></td>
             <td><div class="action-btn-group">${actionBtns} <button class="action-btn btn-red" data-id="${safeId}" onclick="deleteStudent(this.dataset.id)"><i class="fas fa-trash"></i></button></div></td>
@@ -3166,7 +3185,7 @@ window.openStudentModal = (id = null) => {
         document.getElementById("modal-student-name").value = "";
         document.getElementById("modal-student-father").value = "";
         document.getElementById("dob").value = "";
-        document.getElementById("modal-student-class").value = "1st";
+        document.getElementById("modal-student-class").value = institutionIsCollege() ? "1st Semester" : "1st";
         document.getElementById("modal-student-address").value = "";
         document.getElementById("modal-student-rollNo").value = "";
         document.getElementById("modal-student-regNo").value = "";
@@ -4235,7 +4254,7 @@ window.saveExamSchedule = async () => {
 
     try {
         if (cls === "All") {
-            const allClasses = ["Nursery", "LKG", "UKG", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th"];
+            const allClasses = institutionIsCollege() ? ["1st Semester", "2nd Semester", "3rd Semester", "4th Semester", "5th Semester", "6th Semester"] : ["Nursery", "LKG", "UKG", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th"];
             const scheduleMap = {};
             allClasses.forEach(c => { scheduleMap["examSchedule_" + c] = schedule; });
             const { error } = await supabaseClient.from("schools").update(scheduleMap).eq("id", currentSchoolId);
@@ -6432,7 +6451,8 @@ window.loadAllSchools = async () => {
         window.allSchoolsCache = [];
         (rows || []).forEach(school => {
             window.allSchoolsCache.push(school);
-            if (school.id !== currentSchoolId) html += `<option value="${school.id}">${school.schoolName || school.name || school.id}</option>`;
+            let sType = school.institution_type || "school";
+            if (sType === currentInstitutionType && school.id !== currentSchoolId) html += `<option value="${school.id}">${school.schoolName || school.name || school.id}</option>`;
         });
         const mailSelect = document.getElementById("mail_specific_school");
         if (mailSelect) mailSelect.innerHTML = html;
@@ -6570,3 +6590,13 @@ window.replyToMailThread = async () => {
     }
     btn.innerHTML = "<i class='fas fa-reply'></i> Reply"; btn.disabled = false;
 };
+
+
+
+
+
+
+
+
+
+
