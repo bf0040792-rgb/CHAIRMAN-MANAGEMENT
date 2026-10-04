@@ -17,7 +17,8 @@ const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey, {
     auth: {
         persistSession: true,
         autoRefreshToken: true,
-        detectSessionInUrl: true
+        detectSessionInUrl: true,
+        storageKey: 'coreedu-school-auth'
     }
 });
 
