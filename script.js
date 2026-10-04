@@ -261,18 +261,17 @@ function initializeChairmanNavigation() {
 initializeChairmanNavigation();
 
 function showLoginScreen(errorText = "") {
-    overlay.style.display = "none";
-    dashboardWrapper.style.display = "none";
-    document.getElementById("pin-wrapper").style.display = "none";
-    document.getElementById("staff-dashboard-wrapper").style.display = "none";
-    document.getElementById("student-dashboard-wrapper").style.display = "none";
-    licenseLockScreen.style.display = "none";
-    loginWrapper.style.display = "flex";
+    if(overlay) overlay.style.display = "none";
+    if(dashboardWrapper) dashboardWrapper.style.display = "none";
+    const pw = document.getElementById("pin-wrapper"); if(pw) pw.style.display = "none";
+    const stfw = document.getElementById("staff-dashboard-wrapper"); if(stfw) stfw.style.display = "none";
+    const stdw = document.getElementById("student-dashboard-wrapper"); if(stdw) stdw.style.display = "none";
+    if(licenseLockScreen) licenseLockScreen.style.display = "none";
+    if(loginWrapper) loginWrapper.style.display = "flex";
 
     if (errorText) {
         const errBox = document.getElementById('loginErrorMsg');
-        errBox.innerText = errorText; errBox.style.display = 'block';
-        setTimeout(() => errBox.style.display = 'none', 5000);
+        if (errBox) { errBox.innerText = errorText; errBox.style.display = 'block'; setTimeout(() => errBox.style.display = 'none', 5000); }
     }
 }
 
@@ -6255,7 +6254,8 @@ window.showStudentPaymentSection = () => {
 };
 
 // Student Payment Verification Submit
-document.getElementById("student-verification-form").addEventListener("submit", async (e) => {
+const svForm = document.getElementById("student-verification-form");
+if (svForm) svForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     const amount = document.getElementById("stu-pay-amount").value.trim();
     const utr = document.getElementById("stu-pay-utr").value.trim();
@@ -6716,6 +6716,8 @@ window.replyToMailThread = async () => {
     }
     btn.innerHTML = "<i class='fas fa-reply'></i> Reply"; btn.disabled = false;
 };
+
+
 
 
 

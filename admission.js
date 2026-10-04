@@ -43,7 +43,7 @@ let collegeChoice = null;
     try {
         const { data: schoolData, error } = await supabaseClient
             .from('schools')
-            .select('name, logo, institution_type, "admissionStatus"')
+            .select('schoolName, logoUrl, institution_type, admissionOpen')
             .eq('id', currentSchoolId)
             .maybeSingle();
 
@@ -53,16 +53,16 @@ let collegeChoice = null;
         }
 
         currentInstitutionType = schoolData.institution_type || "school";
-        schoolNameEl.innerText = schoolData.name || "School Admission";
+        schoolNameEl.innerText = schoolData.schoolName || "School Admission";
         
-        if (schoolData.logo) {
-            schoolLogoEl.src = schoolData.logo;
+        if (schoolData.logoUrl) {
+            schoolLogoEl.src = schoolData.logoUrl;
             schoolLogoEl.style.display = "block";
         }
         
-        document.title = (schoolData.name || "Admission Form") + " - Admission Form";
+        document.title = (schoolData.schoolName || "Admission Form") + " - Admission Form";
 
-        if (schoolData.admissionStatus === "Closed") {
+        if (schoolData.admissionOpen === false) {
             showError("Admissions Closed", "Admissions are currently closed for this institution.");
             return;
         }
@@ -255,3 +255,4 @@ form.addEventListener("submit", async (e) => {
 
 
 initializeForm();
+
