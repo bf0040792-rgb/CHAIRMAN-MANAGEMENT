@@ -31,6 +31,146 @@ const submitBtn = document.getElementById("submit-btn");
 let currentSchoolId = "";
 let currentInstitutionType = "school";
 let collegeChoice = null;
+    async function initializeForm() {
+    const urlParams = new URLSearchParams(window.location.search);
+    currentSchoolId = urlParams.get('school');
+
+    if (!currentSchoolId) {
+        showError("Invalid Link", "School ID is missing in the URL.");
+        return;
+    }
+
+    try {
+        const { data: schoolData, error } = await supabaseClient
+            .from('schools')
+            .select('name, logo, institution_type, "admissionStatus"')
+            .eq('id', currentSchoolId)
+            .maybeSingle();
+
+        if (error || !schoolData) {
+            showError("School Not Found", "The requested school could not be found.");
+            return;
+        }
+
+        currentInstitutionType = schoolData.institution_type || "school";
+        schoolNameEl.innerText = schoolData.name || "School Admission";
+        
+        if (schoolData.logo) {
+            schoolLogoEl.src = schoolData.logo;
+            schoolLogoEl.style.display = "block";
+        }
+        
+        document.title = (schoolData.name || "Admission Form") + " - Admission Form";
+
+        if (schoolData.admissionStatus === "Closed") {
+            showError("Admissions Closed", "Admissions are currently closed for this institution.");
+            return;
+        }
+
+        if (currentInstitutionType === "college") {
+            await loadCollegeStructure();
+        } else {
+            const classSelect = document.getElementById("student-class");
+            if (classSelect) {
+                const classes = ["Nursery", "LKG", "UKG", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th"];
+                let html = "<option value=''>-- Select Class --</option>";
+                classes.forEach(c => html += `<option value="${c}">${c}</option>`);
+                classSelect.innerHTML = html;
+            }
+        }
+
+        container.style.display = "none";
+        form.style.display = "block";
+
+    } catch (err) {
+        showError("Error", "Failed to load admission form.");
+    }
+}
+
+function showError(title, message) {
+    container.style.display = "block";
+    form.style.display = "none";
+    msgBox.style.display = "block";
+    msgIcon.className = "fas fa-exclamation-circle error-icon";
+    msgTitle.innerText = title;
+    msgTitle.className = "error-title";
+    msgText.innerText = message;
+}
+
+function showMessage(title, message, type="success") {
+    container.style.display = "block";
+    form.style.display = "none";
+    msgBox.style.display = "block";
+    msgIcon.className = type === "success" ? "fas fa-check-circle success-icon" : "fas fa-exclamation-circle error-icon";
+    msgTitle.innerText = title;
+    msgTitle.className = type === "success" ? "success-title" : "error-title";
+    msgText.innerText = message;
+}
+
+async function uploadToCloudinary(file) {
+    if (!file) return null;
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", "coreedu");
+    formData.append("cloud_name", "dffaw6gys");
+
+    try {
+        const res = await fetch("https://api.cloudinary.com/v1_1/dffaw6gys/image/upload", {
+            method: "POST",
+            body: formData,
+        });
+        const data = await res.json();
+        return data.secure_url;
+    } catch (err) {
+        console.error("Cloudinary error:", err);
+        return null;
+    }
+}
+
+async function loadCollegeStructure() {
+    const classSelect = document.getElementById("student-class");
+    if (!classSelect) return;
+    try {
+        const semesters = ["1st Semester", "2nd Semester", "3rd Semester", "4th Semester", "5th Semester", "6th Semester"];
+        let options = `<option value="">-- Select Semester --</option>`;
+        semesters.forEach(s => options += `<option value="${s}">${s}</option>`);
+        classSelect.innerHTML = options;
+
+        const { data: deptsData } = await supabaseClient.from("vw_public_departments").select("id, name, code").eq("schoolId", currentSchoolId);
+        let depts = deptsData || [];
+
+        const oldGroup = document.getElementById("department-selection-group");
+        if (oldGroup) oldGroup.remove();
+        const oldSubjectGroup = document.getElementById("subject-selection-group");
+        if (oldSubjectGroup) oldSubjectGroup.remove();
+
+        let classGroup = classSelect.closest(".form-group");
+        let deptHtml = `<div class="form-group" id="department-selection-group" style="margin-top: 15px;">
+            <label for="student-department">Major Subject (Department) *</label>
+            <select id="student-department" required style="width:100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; background: #f9f9f9;">
+                <option value="">-- Select Major --</option>
+        `;
+        depts.forEach(d => {
+            deptHtml += `<option value="${d.id}">${d.name} (${d.code})</option>`;
+        });
+        deptHtml += `</select></div>`;
+        
+        classGroup.insertAdjacentHTML("afterend", deptHtml);
+    } catch (e) {
+        console.error("Failed to load college structure for admission:", e);
+    }
+}
+
+// 3. Form Submission
+form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const name = document.getElementById("student-name").value.trim();
+    const dob = document.getElementById("student-dob").value;
+    const rollNo = document.getElementById("roll-no").value.trim();
+    const studentClass = document.getElementById("student-class").value;
+    collegeChoice = null;
+    let selectedSubjects = [];
     let departmentId = null;
     if (currentInstitutionType === "college") {
         const deptSelect = document.getElementById("student-department");
@@ -112,3 +252,6 @@ let collegeChoice = null;
 
 
 
+
+
+initializeForm();

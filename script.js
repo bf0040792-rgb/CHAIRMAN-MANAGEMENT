@@ -3570,14 +3570,38 @@ window.downloadGlobalStaffCSV = async (evt = null) => {
     }
 };
 
-window.editStaff = (id) => {
+window.editStaff = async (id) => {
     const st = window.fetchedStaff.find(s => s.id === id); if (!st) return; currentEditStaffId = id;
     const resolvedSchoolName = st.schoolName || currentSchoolName || "";
     document.getElementById("edit_s_school_name").value = resolvedSchoolName;
     document.getElementById("edit_s_name").value = st.name || "";
     document.getElementById("edit_s_email").value = st.email || "";
     document.getElementById("edit_s_pass").value = st.plainPassword || "";
-    document.getElementById("edit_s_role").value = ["Chairman", "Principal"].includes(st.staffRole) ? st.staffRole : "Principal";
+    
+    // Set role
+    const roleSelect = document.getElementById("edit_s_role");
+    if (roleSelect) {
+        roleSelect.value = st.staffRole || "Teacher";
+    }
+
+    if (institutionIsCollege()) {
+        const { data: depts } = await supabaseClient.from("departments").select("id, name, code").eq("schoolId", currentSchoolId);
+        let eDept = document.getElementById("edit_s_dept");
+        if (eDept) {
+            eDept.innerHTML = "<option value=\"\">-- Select --</option>" + (depts || []).map(d => `<option value="${d.id}">${d.name} (${d.code})</option>`).join("");
+        }
+
+        if (st.staffRole === "HOD") {
+            document.getElementById("edit_s_dept_group").style.display = "block";
+            const { data: assign } = await supabaseClient.from("staff_assignments").select("departmentId").eq("userId", id).maybeSingle();
+            if (assign && assign.departmentId) {
+                eDept.value = assign.departmentId;
+            }
+        } else {
+            document.getElementById("edit_s_dept_group").style.display = "none";
+        }
+    }
+
     document.getElementById("edit_s_status").value = (st.status || "active").toUpperCase();
     let p = st.privileges || {};
     document.getElementById("priv_attendance").checked = p.attendance === true;
@@ -3591,7 +3615,7 @@ window.editStaff = (id) => {
     document.getElementById("priv_view_finance").checked = p.view_finance === true;
     document.getElementById("priv_delete").checked = p.delete === true;
     document.getElementById("edit-staff-modal").style.display = "flex";
-};
+};;
 
 window.saveStaffEdits = async () => {
     const schoolName = document.getElementById("edit_s_school_name").value.trim();
@@ -3620,8 +3644,31 @@ window.saveStaffEdits = async () => {
         if (p) updatePayload.plainPassword = p;
         const { error } = await supabaseClient.from("users").update(updatePayload).eq("id", currentEditStaffId);
         if (error) throw error;
-        alert("Node, Chairman details aur privileges updated successfully!"); document.getElementById("edit-staff-modal").style.display = "none"; loadStaff();
-    } catch (e) { console.error(e); alert("Error saving node details."); }
+
+        // Update HOD department if applicable
+        if (institutionIsCollege() && r === "HOD") {
+            const deptId = document.getElementById("edit_s_dept").value;
+            if (deptId) {
+                const { data: existing } = await supabaseClient.from("staff_assignments").select("id").eq("userId", currentEditStaffId).maybeSingle();
+                if (existing) {
+                    await supabaseClient.from("staff_assignments").update({ departmentId: deptId }).eq("id", existing.id);
+                } else {
+                    await supabaseClient.from("staff_assignments").insert({
+                        userId: currentEditStaffId,
+                        roleId: "hod",
+                        departmentId: deptId,
+                        schoolId: currentSchoolId
+                    });
+                }
+            }
+        } else if (institutionIsCollege()) {
+            await supabaseClient.from("staff_assignments").delete().eq("userId", currentEditStaffId);
+        }
+
+        alert("Staff details updated successfully!"); 
+        document.getElementById("edit-staff-modal").style.display = "none"; 
+        loadStaff();
+    } catch (e) { console.error(e); alert("Error saving staff details."); }
 };
 
 window.updateStaffStatus = async (uid, newStatus) => {
@@ -6669,6 +6716,8 @@ window.replyToMailThread = async () => {
     }
     btn.innerHTML = "<i class='fas fa-reply'></i> Reply"; btn.disabled = false;
 };
+
+
 
 
 
