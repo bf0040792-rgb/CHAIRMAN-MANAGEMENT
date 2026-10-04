@@ -79,8 +79,7 @@ let collegeChoice = null;
             }
         }
 
-        container.style.display = "none";
-        form.style.display = "block";
+        container.style.display = "block"; form.style.display = "block"; msgBox.style.display = "none";
 
     } catch (err) {
         showError("Error", "Failed to load admission form.");
@@ -255,5 +254,6 @@ form.addEventListener("submit", async (e) => {
 
 
 initializeForm();
+
 
 
