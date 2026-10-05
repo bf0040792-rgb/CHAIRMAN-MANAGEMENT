@@ -2191,8 +2191,11 @@
             </div>
         </div>
 
-        <div id="role-footer">System Access: CHAIRMAN AUTHORITY</div>
+                    </div>
+        </div>
+        <div id="role-footer" style="text-align:center; padding:10px; background:var(--m-panel); border-top:1px solid var(--m-line); font-size:11px; color:var(--m-muted); font-weight:bold; letter-spacing:1px;">System Access: CHAIRMAN AUTHORITY</div>
     </div>
+</div>
     <!-- ========================================== -->
     <!-- 🧑‍🏫 STAFF / TEACHER DASHBOARD WRAPPER -->
     <!-- ========================================== -->
@@ -3620,9 +3623,48 @@
         </div>
     </div>
 </div>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    // Admin Sidebar
+    const toggleBtn = document.getElementById('sidebar-toggle');
+    const sidebar = document.getElementById('main-sidebar');
+
+    if (toggleBtn && sidebar) {
+        toggleBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                sidebar.classList.add('translate-x-0');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                sidebar.classList.remove('translate-x-0');
+            }
+        });
+    }
+
+    // Staff Sidebar
+    const staffToggleBtn = document.getElementById('staff-sidebar-toggle');
+    const staffSidebar = document.getElementById('staff-main-sidebar');
+
+    if (staffToggleBtn && staffSidebar) {
+        staffToggleBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (staffSidebar.classList.contains('-translate-x-full')) {
+                staffSidebar.classList.remove('-translate-x-full');
+                staffSidebar.classList.add('translate-x-0');
+            } else {
+                staffSidebar.classList.add('-translate-x-full');
+                staffSidebar.classList.remove('translate-x-0');
+            }
+        });
+    }
+});
+</script>
 </body>
 
 </html>
+
+
 
 
 
