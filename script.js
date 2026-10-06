@@ -693,7 +693,7 @@ document.querySelectorAll('.menu-item').forEach(item => {
 });
 
 window.generateRegistrationLink = () => {
-    const liveDomain = "https://bf0040792-rgb.github.io/CHAIRMAN-MANAGEMENT/admission.html"; const link = `${liveDomain}?school=${currentSchoolId}`;
+    const liveDomain = "https://bf0040792-rgb.github.io/SCHOOL.COLLAGE.STAFF.STUDENT.PROTAL/admission.html"; const link = `${liveDomain}?school=${currentSchoolId}`;
     document.getElementById("short-link-input").value = link; document.getElementById("link-display-box").style.display = "flex";
 };
 
@@ -6737,6 +6737,7 @@ window.replyToMailThread = async () => {
     }
     btn.innerHTML = "<i class='fas fa-reply'></i> Reply"; btn.disabled = false;
 };
+
 
 
 
