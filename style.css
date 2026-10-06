@@ -2634,3 +2634,13 @@ body.light-theme .ops-concept {
   --m-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
 }
 
+
+/* Scrollbar styles for the new horizontal navigation */
+.custom-scrollbar::-webkit-scrollbar { height: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.3); border-radius: 4px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.6); }
+
+/* Ensure active menu items in new navigation look clear */
+.nav-scroll .menu-item.active { background: rgba(168, 85, 247, 0.15) !important; color: #fff !important; font-weight: bold; border-radius: 8px; border: 1px solid rgba(168, 85, 247, 0.3); }
+.nav-scroll .menu-item:hover { background: rgba(148, 163, 184, 0.1); border-radius: 8px; }
