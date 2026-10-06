@@ -407,11 +407,11 @@ supabaseClient.auth.onAuthStateChange(async (event, session) => {
                 const reqOp = document.getElementById('req_old_pass'); if(reqOp) reqOp.value = data.plainPassword || '******';
 
                 const initials = data.schoolName.split(' ').map(word => word.charAt(0).toUpperCase()).join('');
-                document.getElementById('top-school-name-mobile').innerText = initials;
+                const mEl = document.getElementById('top-school-name-mobile'); if(mEl) mEl.innerText = initials;
 
                 if (data.logoUrl) {
-                    document.getElementById('top-school-logo').src = data.logoUrl; document.getElementById('top-school-logo').style.display = 'block';
-                    document.getElementById('print_school_logo').src = data.logoUrl; document.getElementById('print_school_logo').style.display = 'block';
+                    const tsl = document.getElementById('top-school-logo'); if(tsl) { tsl.src = data.logoUrl; tsl.style.display = 'block'; }
+                    const psl = document.getElementById('print_school_logo'); if(psl) { psl.src = data.logoUrl; psl.style.display = 'block'; }
                 }
 
                 overlay.style.display = "none"; loginWrapper.style.display = "none";
@@ -6718,6 +6718,8 @@ window.replyToMailThread = async () => {
     }
     btn.innerHTML = "<i class='fas fa-reply'></i> Reply"; btn.disabled = false;
 };
+
+
 
 
 
