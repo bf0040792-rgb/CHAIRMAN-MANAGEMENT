@@ -3770,7 +3770,7 @@ function parseUserAgent(ua) {
 }
 
 // AUTO LOGIN FOR SUPER ADMIN IMPERSONATION
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('impersonate') === 'true') {
         sessionStorage.setItem("is_impersonating", "true");
@@ -3778,13 +3778,22 @@ window.addEventListener('DOMContentLoaded', () => {
         const impPass = urlParams.get('pass');
 
         if (impEmail && impPass) {
+            document.getElementById('auth-overlay').innerHTML = '<i class="fas fa-fingerprint fa-pulse" style="font-size:3rem; margin-bottom:15px;"></i><div>Authenticating Super Admin...</div>';
+            document.getElementById('auth-overlay').style.display = 'flex';
+            
+            // Wait for existing session check, then forcefully sign out
+            const sessionResp = await supabaseClient.auth.getSession();
+            if (sessionResp.data.session) {
+                await supabaseClient.auth.signOut();
+            }
+
             setTimeout(() => {
                 document.getElementById("loginId").value = decodeURIComponent(impEmail);
                 document.getElementById("loginPassword").value = decodeURIComponent(impPass);
                 document.getElementById("doLoginBtn").click();
 
                 window.history.replaceState({}, document.title, window.location.pathname);
-            }, 800);
+            }, 500);
         }
     }
 });
@@ -6718,6 +6727,9 @@ window.replyToMailThread = async () => {
     }
     btn.innerHTML = "<i class='fas fa-reply'></i> Reply"; btn.disabled = false;
 };
+
+
+
 
 
 
