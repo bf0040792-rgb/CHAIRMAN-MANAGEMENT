@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -29,6 +29,41 @@
         }, 8000);
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+.crmx-theme {
+    --m-bg: #f4f7fe;
+    --m-panel: #ffffff;
+    --m-ink: #1e293b;
+    --m-muted: #64748b;
+    --m-line: #e2e8f0;
+    --sidebar-bg: #0b1121;
+    --sidebar-text: #8a98bc;
+    --sidebar-active-bg: #ffffff;
+    --sidebar-active-text: #2563eb;
+}
+.crmx-theme .mock-topbar { background: #ffffff !important; box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important; border-bottom: none !important; }
+.crmx-theme .mock-logo-text { color: white !important; }
+.crmx-theme .mock-logo-text small { color: #8a98bc !important; }
+.crmx-theme .hamb { color: #1e293b !important; }
+.crmx-theme .stat-card { background: var(--m-panel) !important; border: none !important; box-shadow: 0 4px 15px rgba(0,0,0,0.03) !important; border-radius: 12px !important; color: var(--m-ink) !important; }
+.crmx-theme .stat-card h3 { color: var(--m-muted) !important; font-weight: 600 !important; }
+.crmx-theme .stat-card h2 { color: var(--m-ink) !important; }
+.crmx-theme .stat-card small { color: #94a3b8 !important; }
+.crmx-theme .nav-scroll { flex-direction: column !important; align-items: stretch !important; overflow-y: auto !important; padding-top: 20px !important; display: flex !important; width: 100% !important; white-space: normal !important; }
+.crmx-theme .menu-item { padding: 12px 16px !important; margin: 4px 16px !important; border-radius: 8px !important; font-size: 13.5px !important; color: var(--sidebar-text) !important; font-weight: 500 !important; display: flex !important; align-items: center !important; }
+.crmx-theme .menu-item:hover { color: #ffffff !important; background: rgba(255,255,255,0.05) !important; }
+.crmx-theme .menu-item.active { background: var(--sidebar-active-bg) !important; color: var(--sidebar-active-text) !important; font-weight: 600 !important; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+.crmx-theme .menu-item.active .nav-glyph { color: var(--sidebar-active-text) !important; }
+.crmx-theme .nav-glyph { width: 24px; text-align: center; margin-right: 12px !important; font-size: 14px !important; }
+.crmx-theme .tab-content { color: var(--m-ink) !important; }
+.crmx-theme .data-table th { background: #f8fafc !important; color: #475569 !important; border-bottom: 1px solid #e2e8f0 !important; }
+.crmx-theme .data-table td { border-bottom: 1px solid #e2e8f0 !important; color: #334155 !important; }
+.crmx-theme .panel { background: #ffffff !important; border: 1px solid #e2e8f0 !important; box-shadow: 0 2px 8px rgba(0,0,0,0.02) !important; }
+.crmx-theme .header-title h1 { color: #0f172a !important; font-weight: 700 !important; }
+.crmx-theme .header-tools i { color: #64748b !important; }
+</style>
+
 </head>
 
 <body>
@@ -401,19 +436,16 @@
     </div>
 
     <!-- DASHBOARD SECTION -->
-    <div id="dashboard-wrapper" class="hidden-el h-screen w-full flex flex-col overflow-hidden relative mock-screen ops-concept top-navigation">
+    <div id="dashboard-wrapper" class="hidden-el h-screen w-full flex flex-row overflow-hidden relative ops-concept crmx-theme side-navigation">
     <div class="absolute inset-0 pointer-events-none z-0" style="background: radial-gradient(ellipse at 8% 0%, rgba(167,139,250,.08), transparent 35%), var(--m-bg);"></div>
-    <div class="mock-main relative z-10 flex flex-col h-full w-full" style="background: var(--m-bg);">
-        <div class="mock-topbar flex justify-between items-center w-full relative z-30" style="background: color-mix(in srgb, var(--m-bg) 84%, white 16%); border-bottom: 1px solid var(--m-line); padding: 16px 20px; min-height: 70px;">
-            <div class="flex items-center gap-4">
-                <span class="hamb cursor-pointer px-2" id="sidebar-toggle" style="color: var(--m-muted); font-size: 20px;"><i class="fas fa-bars"></i></span>
+    
+        <aside class="w-64 h-full flex flex-col shrink-0 z-50 transition-all duration-300" style="background: var(--sidebar-bg); border-right: 1px solid rgba(255,255,255,0.05);">
+            <div class="h-[70px] flex items-center justify-center border-b border-white/5">
                 <div class="mock-logo flex items-center gap-2" style="border: none; padding: 0;">
                     <img src="" id="top-school-logo" class="school-logo" style="display:none; width:25px; height:25px; border-radius: 8px;">
                     <span class="mock-logo-text font-bold" style="color: var(--m-ink); font-size: 18px;"><span id="top-school-name">School Name</span><small style="display: block; color: var(--m-muted); font-size: 10px; font-weight: 600; letter-spacing: .08em; line-height:1;"><span id="dashboard-role-badge">Role: Chairman</span></small></span>
                 </div>
-            </div>
-
-            <div class="nav-scroll flex items-center gap-2 flex-1 px-2 md:px-8 overflow-x-auto whitespace-nowrap custom-scrollbar" style="max-width: 100%;">
+            </div><div class="nav-scroll flex items-center gap-2 flex-1 px-2 md:px-8 overflow-x-auto whitespace-nowrap custom-scrollbar" style="max-width: 100%;">
                 
                     <div    data-target="tab-dashboard" class="menu-item active nav-item cursor-pointer text-coolLight hover:text-white" style="min-height: 28px; padding: 5px 8px; font-size: 11px; transition: color 0.2s;"><span class="nav-glyph text-teal-400" style="font-size:12px; margin-right:4px;"><i class="fas fa-home"></i></span><span class="nav-label">Dashboard</span></div>
                     <div    data-target="tab-students" class="menu-item nav-item cursor-pointer text-coolLight hover:text-white" style="min-height: 28px; padding: 5px 8px; font-size: 11px; transition: color 0.2s;"><span class="nav-glyph text-teal-400" style="font-size:12px; margin-right:4px;"><i class="fas fa-user-graduate"></i></span><span class="nav-label">Students &
@@ -457,7 +489,24 @@
                         Portal
                         Features</span></div>
                     <div    data-target="tab-settings" class="menu-item nav-item cursor-pointer text-coolLight hover:text-white" style="min-height: 28px; padding: 5px 8px; font-size: 11px; transition: color 0.2s;"><span class="nav-glyph text-teal-400" style="font-size:12px; margin-right:4px;"><i class="fas fa-cogs"></i></span><span class="nav-label">School Settings</span></div>
-                    <div class="logout-btn" id="logoutBtn" onclick="doLogout()"><i class="fas fa-power-off"></i> Secure Logout</div></div><div class="flex items-center gap-4 mock-top-tools">
+                    <div class="logout-btn" id="logoutBtn" onclick="doLogout()"><i class="fas fa-power-off"></i> Secure Logout</div>
+        </aside>
+
+<div class="mock-main relative z-10 flex flex-col h-full w-full" style="background: var(--m-bg);">
+        <div class="mock-topbar flex justify-between items-center w-full relative z-30" style="background: color-mix(in srgb, var(--m-bg) 84%, white 16%); border-bottom: 1px solid var(--m-line); padding: 16px 20px; min-height: 70px;">
+            <div class="flex items-center gap-4">
+                <span class="hamb cursor-pointer px-2" id="sidebar-toggle" style="color: var(--m-muted); font-size: 20px;"><i class="fas fa-bars"></i></span>
+
+        <div class="flex-1 px-8 flex items-center hidden md:flex">
+            <div class="relative w-full max-w-md">
+                <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                <input type="text" placeholder="Search..." class="w-full bg-slate-100 border-none rounded-full py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-700">
+            </div>
+        </div>
+
+                
+
+            </div><div class="flex items-center gap-4 mock-top-tools">
                 <div class="mock-user bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" style="width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; font-weight: bold; cursor:pointer;" onclick="doLogout()"><i class="fas fa-power-off"></i></div>
             </div>
         </div>
@@ -2584,10 +2633,7 @@
                 <div class="mock-logo flex items-center gap-2" style="border: none; padding: 0;">
                     <span class="mock-logo-mark" style="width: 25px; height: 25px; display: grid; place-items: center; border-radius: 8px; color: #eff9ff; font-size: 14px; background: linear-gradient(145deg, #d946ef, #9333ea);"><i class="fas fa-graduation-cap"></i></span>
                     <span class="mock-logo-text font-bold" style="color: var(--m-ink); font-size: 18px;"><span id="staff-school-name">School Name</span><small style="display: block; color: var(--m-muted); font-size: 10px; font-weight: 600; letter-spacing: .08em; line-height:1;">STAFF PORTAL</small></span>
-                </div>
-            </div>
-
-            <div class="nav-scroll flex items-center gap-2 flex-1 px-2 md:px-8 overflow-x-auto whitespace-nowrap custom-scrollbar" style="max-width: 100%;">
+                </div><div class="nav-scroll flex items-center gap-2 flex-1 px-2 md:px-8 overflow-x-auto whitespace-nowrap custom-scrollbar" style="max-width: 100%;">
 <div class="menu-item active nav-item cursor-pointer text-coolLight hover:text-white" data-target="staff-tab-home" id="staff-menu-home" style="min-height: 28px; padding: 5px 8px; font-size: 11px; transition: color 0.2s;"><span class="nav-glyph text-fuchsia-400" style="font-size:12px; margin-right:4px;"><i class="fas fa-home"></i></span><span class="nav-label">Dashboard</span></div>
 <div class="menu-item nav-item cursor-pointer text-coolLight hover:text-white" data-target="staff-tab-department" id="staff-menu-department" style="display:none; min-height: 28px; padding: 5px 8px; font-size: 11px; transition: color 0.2s;"><span class="nav-glyph text-fuchsia-400" style="font-size:12px; margin-right:4px;"><i class="fas fa-building"></i></span><span class="nav-label">My Department</span></div>
 <div class="menu-item nav-item cursor-pointer text-coolLight hover:text-white" data-target="staff-tab-attendance" id="staff-menu-attendance" style="min-height: 28px; padding: 5px 8px; font-size: 11px; transition: color 0.2s;"><span class="nav-glyph text-fuchsia-400" style="font-size:12px; margin-right:4px;"><i class="fas fa-clipboard-list"></i></span><span class="nav-label">Daily Attendance</span></div>
@@ -3626,6 +3672,8 @@
         <div style="text-align:right; margin-top:20px;">
             <button class="action-btn btn-green" onclick="saveStudentSubjects()"><i class="fas fa-save"></i> Save Subjects</button>
         </div>
+    
+
 <script>
 document.addEventListener("DOMContentLoaded", () => {
     // Admin Sidebar
@@ -3664,4 +3712,24 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 </script>
 </body>
+
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
