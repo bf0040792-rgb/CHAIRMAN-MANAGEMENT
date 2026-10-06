@@ -457,17 +457,13 @@
                         Portal
                         Features</span></div>
                     <div    data-target="tab-settings" class="menu-item nav-item cursor-pointer text-coolLight hover:text-white" style="min-height: 28px; padding: 5px 8px; font-size: 11px; transition: color 0.2s;"><span class="nav-glyph text-teal-400" style="font-size:12px; margin-right:4px;"><i class="fas fa-cogs"></i></span><span class="nav-label">School Settings</span></div>
-                    <div class="logout-btn" id="logoutBtn" onclick="doLogout()"><i class="fas fa-power-off"></i> Secure
-                        Logout
-            </div>
-
-            <div class="flex items-center gap-4 mock-top-tools">
+                    <div class="logout-btn" id="logoutBtn" onclick="doLogout()"><i class="fas fa-power-off"></i> Secure Logout</div></div><div class="flex items-center gap-4 mock-top-tools">
                 <div class="mock-user bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" style="width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; font-weight: bold; cursor:pointer;" onclick="doLogout()"><i class="fas fa-power-off"></i></div>
             </div>
         </div>
 
         <div class="flex-1 flex overflow-hidden relative">
-            <div id="main-sidebar" class="mock-sidebar mini-sidebar transition-all duration-300" style="width: 260px; background: color-mix(in srgb, var(--m-bg) 95%, black 5%); border-right: 1px solid var(--m-line); display: flex; flex-direction: column;">
+            <div id="main-sidebar" class="mock-sidebar transition-all duration-300" style="display:none; width: 260px; background: color-mix(in srgb, var(--m-bg) 95%, black 5%); border-right: 1px solid var(--m-line); display: flex; flex-direction: column;">
                 <div style="padding:15px; color:var(--m-muted); font-size:11px; text-align:center;">
                     <label class="device-toggle" style="cursor:pointer;"><input type="checkbox" id="deviceModeToggle"> PC Mode</label>
                 </div>
@@ -2611,7 +2607,7 @@
         </div>
 
         <div class="flex-1 flex overflow-hidden relative">
-            <div id="staff-main-sidebar" class="mock-sidebar mini-sidebar transition-all duration-300" style="width: 260px; background: color-mix(in srgb, var(--m-bg) 95%, black 5%); border-right: 1px solid var(--m-line); display: flex; flex-direction: column;">
+            <div id="staff-main-sidebar" class="mock-sidebar transition-all duration-300" style="display:none; width: 260px; background: color-mix(in srgb, var(--m-bg) 95%, black 5%); border-right: 1px solid var(--m-line); display: flex; flex-direction: column;">
                 <!-- Additional sidebar features if needed -->
             </div>
 
@@ -3630,7 +3626,7 @@
         <div style="text-align:right; margin-top:20px;">
             <button class="action-btn btn-green" onclick="saveStudentSubjects()"><i class="fas fa-save"></i> Save Subjects</button>
         </div>
-    </div>
+    
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
@@ -3672,6 +3668,10 @@ document.addEventListener("DOMContentLoaded", () => {
 </body>
 
 </html>
+
+
+
+
 
 
 
