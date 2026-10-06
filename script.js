@@ -377,6 +377,10 @@ supabaseClient.auth.onAuthStateChange(async (event, session) => {
             if (!data) { await supabaseClient.auth.signOut(); showLoginScreen("Account not found."); return; }
 
             if (data.role === "chairman") {
+                // Ensure other dashboards are hidden
+                document.getElementById("staff-dashboard-wrapper").style.display = "none";
+                document.getElementById("student-dashboard-wrapper").style.display = "none";
+                
                 if (data.status === "blocked") {
                     await supabaseClient.auth.signOut(); showLoginScreen("Account Blocked. Reason: " + (data.blockReason || "Contact Super Admin")); return;
                 }
@@ -455,6 +459,10 @@ supabaseClient.auth.onAuthStateChange(async (event, session) => {
                 }
 
             } else if (data.role === "staff") {
+                // Ensure other dashboards are hidden
+                document.getElementById("dashboard-wrapper").style.display = "none";
+                document.getElementById("student-dashboard-wrapper").style.display = "none";
+                
                 if (data.status === "blocked") {
                     await supabaseClient.auth.signOut(); showLoginScreen("Account Blocked."); return;
                 }
@@ -6116,6 +6124,8 @@ if (studentLoginBtn) studentLoginBtn.addEventListener("click", async () => {
 async function loadStudentDashboard() {
     overlay.style.display = "none";
     loginWrapper.style.display = "none";
+    document.getElementById("dashboard-wrapper").style.display = "none";
+    document.getElementById("staff-dashboard-wrapper").style.display = "none";
     document.getElementById("student-dashboard-wrapper").style.display = "block";
 
     document.getElementById("student-dash-school-name").innerText = currentStudentSchoolDoc.schoolName || "Portal";
@@ -6727,6 +6737,8 @@ window.replyToMailThread = async () => {
     }
     btn.innerHTML = "<i class='fas fa-reply'></i> Reply"; btn.disabled = false;
 };
+
+
 
 
 
