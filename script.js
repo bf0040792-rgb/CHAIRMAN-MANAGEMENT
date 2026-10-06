@@ -1,4 +1,4 @@
-// ============================================================================
+﻿// ============================================================================
 // CHAIRMAN SCHOOL PORTAL - NATIVE SUPABASE SDK v2 (@supabase/supabase-js)
 // ----------------------------------------------------------------------------
 // The legacy Firebase / Firestore adapter layer is gone. Everything below talks
@@ -693,7 +693,7 @@ document.querySelectorAll('.menu-item').forEach(item => {
 });
 
 window.generateRegistrationLink = () => {
-    const liveDomain = "https://bf0040792-rgb.github.io/CHAIRMAN-MANAGEMENT/admission.html"; const link = `${liveDomain}?school=${currentSchoolId}`;
+    const liveDomain = "https://bf0040792-rgb.github.io/SCHOOL.COLLAGE.STAFF.STUDENT.PROTAL/admission.html"; const link = `${liveDomain}?school=${currentSchoolId}`;
     document.getElementById("short-link-input").value = link; document.getElementById("link-display-box").style.display = "flex";
 };
 
@@ -6766,3 +6766,12 @@ window.replyToMailThread = async () => {
 
 
 
+
+
+window.toggleTheme = () => {
+    document.body.classList.toggle('light-theme');
+    localStorage.setItem('school_theme', document.body.classList.contains('light-theme') ? 'light' : 'dark');
+};
+if (localStorage.getItem('school_theme') === 'light') {
+    document.body.classList.add('light-theme');
+}
