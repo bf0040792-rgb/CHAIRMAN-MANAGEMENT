@@ -3902,36 +3902,36 @@ window.triggerBulkAction = () => {
           
           let stampCircleHtml = '<div style="position: absolute; top: -50px; left: -20px; width: 100px; height: 100px; border: 2px solid #4762a4; border-radius: 50%; opacity: 0.3; pointer-events: none; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #4762a4; text-align: center; transform: rotate(-15deg);"><span>OFFICIAL<br>SEAL</span></div>';
 
-          printWrapper.innerHTML = 
+          printWrapper.innerHTML = `
            <div style="border: 2px solid #4762a4; padding: 15mm; height: 100%; box-sizing: border-box; position: relative;">
                <div style="position: absolute; top: 10px; left: 10px; bottom: 10px; right: 10px; border: 1px solid #4762a4; pointer-events: none;"></div>
                <div style="text-align: center; margin-bottom: 25px;">
-                   <h1 style="color: #2b3b7a; font-size: 34px; font-weight: bold; margin: 0; text-transform: uppercase; font-family: 'Arial', sans-serif;"> + (currentSchoolName || "XYZ SCHOOL") + </h1>
-                    + (logoSrc ? <img src=" + logoSrc + " style="width: 100px; height: 100px; margin: 15px 0; object-fit: contain;"> : <div style="height: 100px; width: 100px; margin: 15px auto; border-radius: 50%; border: 1px solid #ccc; line-height: 100px;">LOGO</div>) + 
+                   <h1 style="color: #2b3b7a; font-size: 34px; font-weight: bold; margin: 0; text-transform: uppercase; font-family: 'Arial', sans-serif;">${currentSchoolName || "XYZ SCHOOL"}</h1>
+                   ${logoSrc ? \`<img src="${logoSrc}" style="width: 100px; height: 100px; margin: 15px 0; object-fit: contain;">\` : \`<div style="height: 100px; width: 100px; margin: 15px auto; border-radius: 50%; border: 1px solid #ccc; line-height: 100px;">LOGO</div>\`}
                    <div style="color: #2b3b7a; font-size: 16px; font-weight: bold; margin-bottom: 10px;">(NAAC ACCREDITED GRADE 'A')</div>
                    <div style="background: #4762a4; color: white; display: inline-block; padding: 10px 40px; font-size: 24px; font-weight: bold; border-radius: 6px; letter-spacing: 1px;">BONAFIDE CERTIFICATE</div>
                </div>
         
                <div style="display: flex; justify-content: space-between; margin-bottom: 35px; font-size: 18px; font-weight: bold; color: #333;">
-                   <div>No: <span style="border-bottom: 1px solid #000; padding: 0 40px; color: #d32f2f;"> + Math.floor(Math.random() * 900 + 100) + </span></div>
-                   <div>Date <span style="border-bottom: 1px solid #000; padding: 0 20px; color: #2b3b7a;"> + new Date().toLocaleDateString() + </span></div>
+                   <div>No: <span style="border-bottom: 1px solid #000; padding: 0 40px; color: #d32f2f;">${Math.floor(Math.random() * 900 + 100)}</span></div>
+                   <div>Date <span style="border-bottom: 1px solid #000; padding: 0 20px; color: #2b3b7a;">${new Date().toLocaleDateString()}</span></div>
                </div>
         
                <div style="font-size: 22px; line-height: 2.5; color: #222; margin-top: 40px; padding: 0 10px;">
                    <div style="margin-bottom: 20px;">
-                       This is to Certify that <span style="display: inline-block; min-width: 300px; border-bottom: 1px solid #333; text-align: center; font-weight: bold; color: #2b3b7a; font-style: italic;"> <span style="color: #d32f2f">-</span>  + (st.name || "N/A").toUpperCase() +  <span style="color: #d32f2f">-</span></span>
+                       This is to Certify that <span style="display: inline-block; min-width: 300px; border-bottom: 1px solid #333; text-align: center; font-weight: bold; color: #2b3b7a; font-style: italic;"> <span style="color: #d32f2f">-</span> ${(st.name || "N/A").toUpperCase()} <span style="color: #d32f2f">-</span></span>
                    </div>
                    <div style="margin-bottom: 20px;">
-                       S/o, D/o <span style="display: inline-block; width: 75%; border-bottom: 1px solid #333; text-align: center; font-weight: bold; color: #2b3b7a; font-style: italic;"><span style="color: #d32f2f">-</span>  + ((st.parentage || st.fatherName) || "N/A").toUpperCase() +  <span style="color: #d32f2f">-</span></span>
+                       S/o, D/o <span style="display: inline-block; width: 75%; border-bottom: 1px solid #333; text-align: center; font-weight: bold; color: #2b3b7a; font-style: italic;"><span style="color: #d32f2f">-</span> ${((st.parentage || st.fatherName) || "N/A").toUpperCase()} <span style="color: #d32f2f">-</span></span>
                    </div>
                    <div style="margin-bottom: 20px;">
-                       R/o <span style="display: inline-block; width: 80%; border-bottom: 1px solid #333; text-align: center; font-weight: bold; color: #2b3b7a; font-style: italic;"><span style="color: #d32f2f">-</span>  + (st.address || "RECORD NOT FOUND").toUpperCase() +  <span style="color: #d32f2f">-</span></span>
+                       R/o <span style="display: inline-block; width: 80%; border-bottom: 1px solid #333; text-align: center; font-weight: bold; color: #2b3b7a; font-style: italic;"><span style="color: #d32f2f">-</span> ${(st.address || "RECORD NOT FOUND").toUpperCase()} <span style="color: #d32f2f">-</span></span>
                    </div>
                    <div style="margin-bottom: 20px;">
-                       Is a bonafide student of this college under class Roll No. <span style="display: inline-block; min-width: 150px; border-bottom: 1px solid #333; text-align: center; font-weight: bold; color: #2b3b7a; font-style: italic;"><span style="color: #d32f2f">-</span>  + (st.rollNo || st.rollCode || "N/A") +  <span style="color: #d32f2f">-</span></span>
+                       Is a bonafide student of this college under class Roll No. <span style="display: inline-block; min-width: 150px; border-bottom: 1px solid #333; text-align: center; font-weight: bold; color: #2b3b7a; font-style: italic;"><span style="color: #d32f2f">-</span> ${(st.rollNo || st.rollCode || "N/A")} <span style="color: #d32f2f">-</span></span>
                    </div>
                    <div style="margin-bottom: 20px;">
-                       of BG <span style="display: inline-block; min-width: 100px; border-bottom: 1px solid #333; text-align: center; font-weight: bold; color: #2b3b7a; font-style: italic;"><span style="color: #d32f2f">-</span>  + (st.class || "N/A") +  <span style="color: #d32f2f">-</span></span> Semester Session <span style="display: inline-block; min-width: 100px; border-bottom: 1px solid #333; text-align: center; font-weight: bold; color: #2b3b7a; font-style: italic;"><span style="color: #d32f2f">-</span>  + new Date().getFullYear() +  <span style="color: #d32f2f">-</span></span>
+                       of BG <span style="display: inline-block; min-width: 100px; border-bottom: 1px solid #333; text-align: center; font-weight: bold; color: #2b3b7a; font-style: italic;"><span style="color: #d32f2f">-</span> ${(st.class || "N/A")} <span style="color: #d32f2f">-</span></span> Semester Session <span style="display: inline-block; min-width: 100px; border-bottom: 1px solid #333; text-align: center; font-weight: bold; color: #2b3b7a; font-style: italic;"><span style="color: #d32f2f">-</span> ${new Date().getFullYear()} <span style="color: #d32f2f">-</span></span>
                    </div>
                </div>
         
@@ -3941,14 +3941,14 @@ window.triggerBulkAction = () => {
                        <div style="font-weight: bold; font-size: 18px; color: #222;">I/c Admission</div>
                    </div>
                    <div style="text-align: center; position: relative;">
-                        + stampCircleHtml + 
-                       <img id="bonafide_sig_" src="" style="width: 140px; display: none; mix-blend-mode: multiply; position: relative; z-index: 10;">
+                       ${stampCircleHtml}
+                       <img id="bonafide_sig_${st.id}" src="" style="width: 140px; display: none; mix-blend-mode: multiply; position: relative; z-index: 10;">
                        <div style="border-top: 1px solid #333; width: 150px; margin-top: 60px; margin-bottom: 10px;"></div>
                        <div style="font-weight: bold; font-size: 18px; color: #222;">Principal</div>
                    </div>
                </div>
            </div>
-          ;
+          `;
 
           if (currentSignatureUrl && (!window.currentSigSettings || window.currentSigSettings.bonafide !== false)) {
               try {
@@ -3997,52 +3997,7 @@ window.triggerBulkAction = () => {
       } else {
           alert("No valid students found.");
       }
-  };window.triggerGlobalBonafideBatch = async () => {
-    const checked = document.querySelectorAll(".bonafide-checkbox:checked");
-    if (checked.length === 0) return alert("Please select at least one student.");
-
-    document.getElementById("global-bonafide-modal").style.display = "none";
-    document.getElementById("cert-modal").style.display = "flex";
-    document.getElementById("cert-printable").style.display = "none";
-    document.getElementById("cert-actions").style.display = "none";
-    document.getElementById("cert-generating-text").style.display = "block";
-    document.getElementById("cert-generating-text").innerText = "Compiling Batch Bonafide PDF...";
-
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF('l', 'mm', 'a4'); // Using landscape for certificates
-
-    let pageCount = 0;
-
-    for (let cb of checked) {
-        const id = cb.value;
-        const st = window.fetchedStudents.find(s => s.id === id);
-        if (!st) continue;
-
-        document.getElementById("cert-school-name").innerText = currentSchoolName;
-        document.getElementById("cert-school-name").style.color = currentThemeColor;
-        document.getElementById("cert-title").innerText = "BONAFIDE CERTIFICATE";
-        document.getElementById("cert-date").innerText = new Date().toLocaleDateString();
-
-        let bodyText = `This is to certify that <strong>${st.name}</strong>, son/daughter of <strong>${(st.parentage || st.fatherName)}</strong>, is a bona fide student of this institution, currently studying in class <strong>${st.class}</strong> during the current academic session.`;
-        document.getElementById("cert-body").innerHTML = bodyText;
-
-        // Wait for render
-        document.getElementById("cert-printable").style.display = "flex";
-
-        const canvas = await html2canvas(document.getElementById("cert-printable"), { useCORS: true, scale: 2 });
-        const imgData = canvas.toDataURL("image/jpeg", 0.9);
-
-        document.getElementById("cert-printable").style.display = "none";
-
-        if (pageCount > 0) pdf.addPage();
-        pdf.addImage(imgData, 'JPEG', 10, 10, 277, 190);
-        pageCount++;
-    }
-
-    pdf.save("Batch_Bonafide_Certificates.pdf");
-    document.getElementById("cert-modal").style.display = "none";
-};
-
+  };
 // ================= PHASE 2: TRANSPORT MANAGER =================
 window.loadTransportRoutes = async () => {
     try {
