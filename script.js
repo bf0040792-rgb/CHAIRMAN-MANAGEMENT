@@ -3877,635 +3877,127 @@ window.triggerBulkAction = () => {
     }
 };
 
-window.triggerBulkBonafide = async (students) => {
-    document.getElementById("cert-modal").style.display = "flex";
-    if (document.getElementById("cert-printable")) document.getElementById("cert-printable").style.display = "none";
-    if (document.getElementById("cert-preview-frame")) document.getElementById("cert-preview-frame").style.display = "none";
-    if (document.getElementById("cert-actions")) document.getElementById("cert-actions").style.display = "none";
-    document.getElementById("cert-generating-text").style.display = "block";
-    document.getElementById("cert-generating-text").innerText = "Compiling Batch Bonafide PDF...";
-
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF('l', 'mm', 'a4');
-    let pageCount = 0;
-
-    for (let st of students) {
-        document.getElementById("cert-school-name").innerText = currentSchoolName;
-        document.getElementById("cert-school-name").style.color = currentThemeColor;
-        document.getElementById("cert-title").innerText = "BONAFIDE CERTIFICATE";
-        document.getElementById("cert-date").innerText = new Date().toLocaleDateString();
-        document.getElementById("cert-body").innerHTML = `This is to certify that <strong>${st.name}</strong>, son/daughter of <strong>${(st.parentage || st.fatherName) || 'N/A'}</strong>, is a bona fide student of this institution, currently studying in class <strong>${st.class}</strong> during the current academic session.`;
-
-        if (currentSignatureUrl && (!window.currentSigSettings || window.currentSigSettings.bonafide !== false)) {
-            const finalSigSrc = await getTransparentSignature(currentSignatureUrl);
-            document.getElementById("cert_sig").src = finalSigSrc;
-            document.getElementById("cert_sig").style.mixBlendMode = "normal"; // override inline CSS
-            document.getElementById("cert_sig").style.display = "block";
-        } else {
-            document.getElementById("cert_sig").style.display = "none";
-        }
-
-        document.getElementById("cert-printable").style.display = "flex";
-
-        await new Promise(r => setTimeout(r, 500));
-
-        const canvas = await html2canvas(document.getElementById("cert-printable"), { useCORS: true, scale: 2 });
-        const imgData = canvas.toDataURL("image/jpeg", 0.9);
-        document.getElementById("cert-printable").style.display = "none";
-
-        if (pageCount > 0) pdf.addPage();
-        pdf.addImage(imgData, 'JPEG', 10, 10, 277, 190);
-        pageCount++;
-    }
-
-    if (pageCount > 0) {
-        window.currentGeneratedPDF = pdf;
-        window.currentGeneratedFileName = "Batch_Bonafide_Certificates.pdf";
-        const blobUrl = pdf.output('bloburl');
-        document.getElementById("cert-preview-frame").src = blobUrl;
-        document.getElementById("cert-preview-frame").style.display = "block";
-        document.getElementById("cert-generating-text").style.display = "none";
-        document.getElementById("cert-actions").style.display = "flex";
-    } else {
-        closeCustomModal("cert-modal");
-    }
-};
-
-window.downloadCertPDF = () => {
-    if (window.currentGeneratedPDF) {
-        window.currentGeneratedPDF.save(window.currentGeneratedFileName || "Document.pdf");
-    }
-};
-
-window.downloadAllIdsAsPDF = () => {
-    const images = document.getElementById("bulk-id-grid").querySelectorAll("img");
-    if (images.length === 0) return alert("No ID cards generated yet.");
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    images.forEach((img, index) => {
-        if (index > 0) pdf.addPage();
-        pdf.addImage(img.src, 'PNG', 10, 10, 54, 86);
-    });
-    pdf.save("Batch_ID_Cards.pdf");
-};
-
-async function getTransparentAdmitPhoto(imageUrl) {
-    if (!imageUrl) return null;
-    try {
-        const response = await fetch('https://school-backend-zlgy.onrender.com/api/remove-bg', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ imageUrl: imageUrl })
-        });
-        const data = await response.json();
-        if (data.success && data.base64) return data.base64;
-        return imageUrl;
-    } catch (e) {
-        console.error("Admit Card BG Removal failed:", e);
-        return imageUrl;
-    }
-}
-
-// ================= BULK ADMIT CARDS =================
-window.proceedAdmitCards = async (mode) => {
-    document.getElementById("defaulter-admit-modal").style.display = "none";
-    let students = window.pendingAdmitCardStudents;
-
-    if (mode === 'disable') {
-        students = students.filter(st => !(st.dueBalance && st.dueBalance > 0));
-        if (students.length === 0) return alert("No paid students available to generate admit cards.");
-    }
-
-    document.getElementById("bulk-id-modal").style.display = "block";
-    document.getElementById("bulk-generating-text").style.display = "block";
-    document.getElementById("bulk-generating-text").innerText = "Generating Admit Cards... Please wait";
-    document.getElementById("bulk-id-grid").innerHTML = "";
-
-    let schoolName = currentSchoolName || document.getElementById('school-name')?.innerText || "SCHOOL NAME";
-    let logoUrl = document.getElementById('school-logo')?.src || "";
-
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const template = document.getElementById("admit-card-template");
-
-    document.getElementById("admit-school").innerText = schoolName.toUpperCase();
-    if (logoUrl) document.getElementById("admit-logo").src = logoUrl;
-
-    if (currentSignatureUrl && window.currentSigSettings && window.currentSigSettings.admit !== false) {
-        const finalSigSrc = await getTransparentSignature(currentSignatureUrl);
-        document.getElementById("admit-sig").src = finalSigSrc;
-        document.getElementById("admit-sig").style.mixBlendMode = "normal"; // override inline CSS
-        document.getElementById("admit-sig").style.display = "block";
-    } else {
-        document.getElementById("admit-sig").style.display = "none";
-    }
-
-    const uniqueClasses = [...new Set(students.map(st => st.class))];
-    const classSchedules = {};
-    const { data: schoolRow, error: schoolError } = await supabaseClient.from("schools").select("*").eq("id", currentSchoolId).maybeSingle();
-    if (schoolError) throw schoolError;
-    const schoolData = schoolRow || {};
-    for (let cls of uniqueClasses) {
-        if (cls) {
-            const fieldKey = "examSchedule_" + cls;
-            // Per-class schedule column first, the shared `schedule` column as fallback.
-            classSchedules[cls] = Array.isArray(schoolData[fieldKey]) ? schoolData[fieldKey] : (schoolData.schedule || []);
-        }
-    }
-
-    try {
-        for (let i = 0; i < students.length; i++) {
-            const st = students[i];
-            document.getElementById("admit-name").innerText = st.name || "N/A";
-            document.getElementById("admit-class").innerText = st.class || "N/A";
-            document.getElementById("admit-roll").innerText = st.rollNo || "N/A";
-            document.getElementById("admit-fname").innerText = (st.parentage || st.fatherName) || "N/A";
-            document.getElementById("admit-mname").innerText = st.motherName || "N/A";
-            document.getElementById("admit-dob").innerText = st.dob || "N/A";
-
-            const fallbackImg = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
-
-            // Process photo via Hugging Face AI before rendering the card
-            const admitPhotoEl = document.getElementById("admit-photo");
-
-            // Apply the dynamic school settings background color
-            admitPhotoEl.style.backgroundColor = currentPhotoBgColor || "#ffffff";
-
-            let finalPhotoSrc = fallbackImg;
-            if (st.photoUrl) {
-                finalPhotoSrc = await getTransparentAdmitPhoto(st.photoUrl);
-            }
-
-            await new Promise((resolve) => {
-                admitPhotoEl.onload = resolve;
-                admitPhotoEl.onerror = resolve;
-                admitPhotoEl.src = finalPhotoSrc;
-            });
-
-            const watermark = document.getElementById("admit-watermark");
-            if (mode === 'enable' && st.dueBalance && st.dueBalance > 0) {
-                watermark.style.display = "block";
-            } else {
-                watermark.style.display = "none";
-            }
-
-            const schedRows = document.getElementById("admit-card-tbody").querySelectorAll("tr");
-            const sched = classSchedules[st.class] || [];
-            for (let j = 0; j < 6; j++) {
-                const tds = schedRows[j].querySelectorAll("td");
-                let dStr = sched[j]?.date || "";
-                if (dStr && dStr.includes("-")) {
-                    let parts = dStr.split("-");
-                    if (parts.length === 3) dStr = parts[2] + '/' + parts[1] + '/' + parts[0];
-                }
-                tds[0].innerText = dStr;
-                tds[1].innerText = sched[j]?.subject || "";
-                tds[2].innerText = sched[j]?.timing || "";
-            }
-
-            await new Promise(r => setTimeout(r, 200));
-
-            const canvas = await html2canvas(template, { useCORS: true, scale: 2 });
-            const imgData = canvas.toDataURL("image/jpeg");
-
-            if (i > 0) pdf.addPage();
-            pdf.addImage(imgData, 'JPEG', 10, 10, 190, 260);
-
-            const imgElement = document.createElement("img");
-            imgElement.src = imgData;
-            imgElement.style.width = "100%";
-            imgElement.style.borderRadius = "8px";
-            imgElement.style.boxShadow = "0 4px 6px rgba(0,0,0,0.1)";
-            document.getElementById("bulk-id-grid").appendChild(imgElement);
-        }
-
-        document.getElementById("bulk-generating-text").style.display = "none";
-        pdf.save("Batch_Admit_Cards.pdf");
-
-    } catch (e) {
-        document.getElementById("bulk-generating-text").style.display = "none";
-        alert("Failed to generate Admit Cards. Error: " + e.message);
-    }
-};
-
-window.generateBatchIDCards = async (students) => {
-    document.getElementById("bulk-id-modal").style.display = "block";
-    document.getElementById("bulk-generating-text").style.display = "block";
-    document.getElementById("bulk-generating-text").innerText = "Generating ID Cards...";
-    document.getElementById("bulk-id-grid").innerHTML = "";
-
-    try {
-        let schoolName = currentSchoolName || document.getElementById('school-name')?.innerText || "ABC SCHOOL NAME";
-        const templateStyle = currentTemplateStyle || "wave";
-        const fallbackImg = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
-
-        const response = await fetch("https://school-backend-zlgy.onrender.com/api/bulk-generate-id-cards", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                themeColor: currentThemeColor || "#1e3c72",
-                secondaryColor: currentSecondaryColor || "#ffffff",
-                templateStyle: templateStyle,
-                schoolName: schoolName,
-                schoolEmergency: document.getElementById("school_emergency").value || "N/A",
-                emergencyMobile: document.getElementById("school_emergency_mobile")?.value || "N/A",
-                signatureUrl: (window.currentSigSettings && window.currentSigSettings.idCard === false) ? "" : (currentSignatureUrl || ""),
-                schoolLogoUrl: document.getElementById('print_school_logo')?.src || document.getElementById('school-logo')?.src || "",
-                schoolNameColor: document.getElementById('idSchoolNameColor')?.value || currentSchoolNameColor || "#ffffff",
-                studentNameColor: document.getElementById('idStudentNameColor')?.value || currentStudentNameColor || "#d32f2f",
-                detailsColor: document.getElementById('idDetailsColor')?.value || currentDetailsColor || "#333333",
-                photoBgColor: document.getElementById('idPhotoBgColor')?.value || currentPhotoBgColor || "#ffffff",
-                students: students.map(st => ({
-                    id: st.id || st.regNo,
-                    regNo: st.regNo || "N/A",
-                    rollNo: st.rollNo || "N/A",
-                    name: st.name,
-                    class: st.class,
-                    dob: st.dob || "N/A",
-                    parentage: (st.parentage || st.fatherName) || "N/A",
-                    mobile: st.mobile || "N/A",
-                    address: st.address || "N/A",
-                    photoUrl: st.photoUrl || fallbackImg
-                }))
-            })
-        });
-
-        const data = await response.json();
-        if (data.success && data.images) {
-            const { jsPDF } = window.jspdf;
-
-            const paperSizeEl = document.getElementById("bulk-paper-size");
-            let pFormat = 'a4';
-            if (paperSizeEl && paperSizeEl.value) { pFormat = paperSizeEl.value; }
-
-            const pdf = new jsPDF('p', 'mm', pFormat);
-
-            const pageWidth = pdf.internal.pageSize.getWidth();
-            const pageHeight = pdf.internal.pageSize.getHeight();
-
-            // Standard ID Card dimensions in mm
-            const cardW = 54;
-            const cardH = 86;
-            const marginX = 10;
-            const marginY = 10;
-            const gap = 5;
-
-            const cols = Math.floor((pageWidth - 2 * marginX + gap) / (cardW + gap));
-            const rows = Math.floor((pageHeight - 2 * marginY + gap) / (cardH + gap));
-            const cardsPerPage = cols * rows;
-
-            let currentCardInPage = 0;
-
-            data.images.forEach((imgBase64, index) => {
-                if (index > 0 && currentCardInPage >= cardsPerPage) {
-                    pdf.addPage();
-                    currentCardInPage = 0;
-                }
-
-                const colIdx = currentCardInPage % cols;
-                const rowIdx = Math.floor(currentCardInPage / cols);
-
-                const xPos = marginX + colIdx * (cardW + gap);
-                const yPos = marginY + rowIdx * (cardH + gap);
-
-                pdf.addImage(imgBase64, 'PNG', xPos, yPos, cardW, cardH);
-
-                currentCardInPage++;
-
-                const imgElement = document.createElement("img");
-                imgElement.src = imgBase64;
-                imgElement.style.width = "100%";
-                imgElement.style.borderRadius = "8px";
-                document.getElementById("bulk-id-grid").appendChild(imgElement);
-            });
-
-            pdf.save("Batch_ID_Cards.pdf");
-        } else {
-            alert("API Error: " + data.error);
-        }
-    } catch (e) {
-        alert("Failed to generate ID Cards. Error: " + e.message);
-    } finally {
-        document.getElementById("bulk-generating-text").style.display = "none";
-    }
-};
-// ==========================================
-// ZERO-COMMISSION FEE APPROVAL MODULE
-// ==========================================
-
-window.loadFeeVerifications = async () => {
-    try {
-        const { data: rows, error } = await supabaseClient.from("fee_verifications").select("*").eq("schoolId", currentSchoolId);
-        if (error) throw error;
-        let html = "";
-        const now = new Date();
-
-        let verifications = rows || [];
-
-        // Sort by newest first
-        verifications.sort((a, b) => toEpochMillis(b.createdAt) - toEpochMillis(a.createdAt));
-
-        verifications.forEach(data => {
-            const createdAt = data.createdAt ? new Date(data.createdAt) : null;
-            // Auto-hide successful verifications older than 24 hours
-            if (data.status === "Successful") {
-                const ageHours = createdAt ? (now - createdAt) / (1000 * 60 * 60) : 0;
-                if (ageHours > 24) return;
-            }
-
-            const isPending = data.status === "Pending";
-            const statusClass = isPending ? "color: #d97706;" : "color: #059669;";
-            const btnHtml = isPending ?
-                `<button class="action-btn" style="background:#059669; padding: 5px 10px; font-size:12px;" onclick="approveFeeVerification('${data.id}', '${data.studentId}', '${data.studentName}', ${data.amount})"><i class="fas fa-check"></i> Approve & Record</button>` :
-                `<span style="color:#059669; font-weight:bold;"><i class="fas fa-check-circle"></i> Approved</span>`;
-
-            html += `<tr>
-                <td>${createdAt ? createdAt.toLocaleString() : 'N/A'}</td>
-                <td><strong>${data.studentName}</strong><br><small>Reg: ${data.regNo}</small></td>
-                <td style="font-family: monospace;">${data.utr}</td>
-                <td><strong>Rs. ${data.amount}</strong></td>
-                <td><a href="${data.screenshotUrl}" target="_blank" style="color:#3182ce; text-decoration:none;"><i class="fas fa-image"></i> View Proof</a></td>
-                <td style="${statusClass}">${btnHtml}</td>
-            </tr>`;
-        });
-
-        document.getElementById("fee-verifications-body").innerHTML = html || '<tr><td colspan="6" style="text-align:center;">No pending fee verifications.</td></tr>';
-    } catch (e) {
-        console.error("Fee verification load error:", e);
-    }
-};
-
-window.approveFeeVerification = async (verificationId, studentId, studentName, amount) => {
-    if (!confirm(`Approve Rs.${amount} fee payment for ${studentName}? This will update the student's balance and ledger.`)) return;
-
-    try {
-        // 1. Mark verification successful
-        const { error: verificationError } = await supabaseClient.from("fee_verifications")
-            .update({ status: "Successful", updatedAt: new Date().toISOString() })
-            .eq("id", verificationId);
-        if (verificationError) throw verificationError;
-
-        // 2. Add to transaction ledger
-        const { error: ledgerError } = await supabaseClient.from("transactions").insert({
-            schoolId: currentSchoolId,
-            type: "Fee",
-            personId: studentId,
-            personName: studentName,
-            amount: Number(amount),
-            mode: "UPI Manual QR",
-            date: new Date().toISOString().split('T')[0],
-            createdAt: new Date().toISOString()
-        });
-        if (ledgerError) throw ledgerError;
-
-        // 3. Decrease the due balance held on the student row
-        const { data: studentRow, error: studentReadError } = await supabaseClient.from("students").select("*").eq("id", studentId).maybeSingle();
-        if (studentReadError) throw studentReadError;
-        const updatedDueBalance = Number(studentRow?.dueBalance || 0) - Number(amount);
-        const { error: studentError } = await supabaseClient.from("students")
-            .update({ dueBalance: updatedDueBalance })
-            .eq("id", studentId);
-        if (studentError) throw studentError;
-        alert("Payment Approved! Ledger updated and student balance reduced.");
-        loadFeeVerifications();
-        loadTransactions();
-    } catch (e) {
-        alert("Error approving payment: " + e.message);
-    }
-};
-window.openExamScheduler = () => {
-    document.getElementById("exam-scheduler-modal").style.display = "flex";
-    window.loadExamSchedule();
-};
-
-window.lastExamScheduleCache = null;
-
-window.loadExamSchedule = async () => {
-    const cls = document.getElementById("scheduler-class-select").value;
-    const targetClass = (cls === "All") ? "Nursery" : cls;
-    try {
-        const { data: schoolData, error } = await supabaseClient.from("schools").select("*").eq("id", currentSchoolId).maybeSingle();
-        if (error) throw error;
-        const fieldKey = "examSchedule_" + targetClass;
-        if (schoolData && Array.isArray(schoolData[fieldKey])) {
-            populateSchedulerTable(schoolData[fieldKey]);
-            window.lastExamScheduleCache = schoolData[fieldKey];
-            return;
-        }
-        if (schoolData) {
-            const data = schoolData.schedule || [];
-            populateSchedulerTable(data);
-            window.lastExamScheduleCache = data;
-        } else if (window.lastExamScheduleCache) {
-            populateSchedulerTable(window.lastExamScheduleCache);
-        } else {
-            populateSchedulerTable([]);
-        }
-    } catch (e) { console.error(e); }
-};
-
-window.populateSchedulerTable = (data) => {
-    const dates = document.querySelectorAll(".sched-date");
-    const subjs = document.querySelectorAll(".sched-subj");
-    const times = document.querySelectorAll(".sched-time");
-    for (let i = 0; i < 6; i++) {
-        dates[i].value = data[i]?.date || "";
-        subjs[i].value = data[i]?.subject || "";
-        times[i].value = data[i]?.timing || "";
-    }
-};
-
-window.updateSchedulerDatalists = () => {
-    const subjects = new Set(window.examSubjects || []);
-    const timings = new Set();
-    document.querySelectorAll(".sched-subj").forEach(el => {
-        if (el.value.trim()) subjects.add(el.value.trim().toUpperCase());
-    });
-    document.querySelectorAll(".sched-time").forEach(el => {
-        if (el.value.trim()) timings.add(el.value.trim());
-    });
-
-    const subjList = document.getElementById("subjectsList");
-    if (subjList) {
-        subjList.innerHTML = "";
-        subjects.forEach(val => subjList.innerHTML += `<option value="${val}"></option>`);
-    }
-
-    const timeList = document.getElementById("timingsList");
-    if (timeList) {
-        timeList.innerHTML = "";
-        timings.forEach(val => timeList.innerHTML += `<option value="${val}"></option>`);
-    }
-};
-window.saveExamSchedule = async () => {
-    const cls = document.getElementById("scheduler-class-select").value;
-    if (!currentSchoolId) return alert("School ID not found. Please re-login.");
-
-    const dates = document.querySelectorAll(".sched-date");
-    const subjs = document.querySelectorAll(".sched-subj");
-    const times = document.querySelectorAll(".sched-time");
-
-    const schedule = [];
-    for (let i = 0; i < 6; i++) {
-        schedule.push({
-            date: dates[i].value.trim(),
-            subject: subjs[i].value.trim(),
-            timing: times[i].value.trim()
-        });
-    }
-
-    try {
-        if (cls === "All") {
-            const allClasses = institutionIsCollege() ? ["1st Semester", "2nd Semester", "3rd Semester", "4th Semester", "5th Semester", "6th Semester"] : ["Nursery", "LKG", "UKG", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th"];
-            const scheduleMap = {};
-            allClasses.forEach(c => { scheduleMap["examSchedule_" + c] = schedule; });
-            const { error } = await supabaseClient.from("schools").update(scheduleMap).eq("id", currentSchoolId);
-            if (error) throw error;
-            alert("Schedule saved for ALL Classes!");
-        } else {
-            const fieldKey = "examSchedule_" + cls;
-            const { error } = await supabaseClient.from("schools").update({ [fieldKey]: schedule }).eq("id", currentSchoolId);
-            if (error) throw error;
-            alert("Schedule saved for Class " + cls);
-        }
-        window.lastExamScheduleCache = schedule;
-    } catch (e) {
-        console.error("Schedule save error:", e);
-        alert("Error: " + e.message);
-    }
-};
-
-window.openGlobalBonafideModal = () => {
-    const sel = document.getElementById("global-bonafide-student");
-    sel.innerHTML = '<option value="">-- Select a Student --</option>';
-    window.fetchedStudents.forEach(st => {
-        sel.innerHTML += `<option value="${st.id}">${st.name} (${st.class})</option>`;
-    });
-    document.getElementById("global-bonafide-modal").style.display = "flex";
-};
-
-window.triggerGlobalBonafide = () => {
-    const studentId = document.getElementById("global-bonafide-student").value;
-    if (!studentId) return alert("Please select a student first.");
-    closeCustomModal("global-bonafide-modal");
-    window.generateCertificate(studentId, 'bonafide');
-};
-
-let currentDMStudentId = null;
-window.openDirectMessageModal = (id, name) => {
-    currentDMStudentId = id;
-    document.getElementById("dm-student-name").innerText = name;
-    document.getElementById("dm-message-body").value = "";
-    document.getElementById("direct-message-modal").style.display = "flex";
-};
-
-window.sendDirectMessage = async () => {
-    const msg = document.getElementById("dm-message-body").value.trim();
-    if (!msg) return alert("Please type a message.");
-    try {
-        const { error } = await supabaseClient.from("direct_messages").insert({
-            schoolId: currentSchoolId,
-            studentId: currentDMStudentId,
-            message: msg,
-            sender: "Chairman",
-            timestamp: new Date().toISOString(),
-            read: false
-        });
-        if (error) throw error;
-        alert("Message sent successfully!");
-        closeCustomModal("direct-message-modal");
-    } catch (e) {
-        alert("Failed to send message: " + e.message);
-    }
-};
-
-// --- EXAM SCHEDULER: MASTER SUBJECTS ---
-window.factoryDefaultSubjects = ["ENGLISH", "MATHS", "SCIENCE", "SOCIAL SCIENCE", "HINDI", "URDU", "COMPUTER", "GENERAL KNOWLEDGE", "DRAWING"];
-window.examSubjects = [];
-
-window.toggleSubjectSettings = () => {
-    const panel = document.getElementById("subject-settings-panel");
-    panel.style.display = panel.style.display === "none" ? "block" : "none";
-    if (panel.style.display === "block") window.renderMasterSubjects();
-};
-
-window.renderMasterSubjects = () => {
-    const list = document.getElementById("master-subjects-list");
-    list.innerHTML = "";
-    window.examSubjects.forEach((sub, i) => {
-        list.innerHTML += `<div style="background:#e2e8f0; padding:5px 10px; border-radius:15px; font-size:12px; display:flex; align-items:center; gap:5px;">
-            ${sub} <i class="fas fa-times" style="color:#ef4444; cursor:pointer;" onclick="window.deleteMasterSubject(${i})"></i>
-        </div>`;
-    });
-};
-
-window.addMasterSubject = async () => {
-    const val = document.getElementById("new-custom-subject").value.trim().toUpperCase();
-    if (!val) return;
-    if (window.examSubjects.includes(val)) return alert("Subject already exists!");
-    window.examSubjects.push(val);
-    document.getElementById("new-custom-subject").value = "";
-    window.renderMasterSubjects();
-    window.updateSchedulerDatalists();
-    const { error } = await supabaseClient.from("schools").update({ examSubjects: window.examSubjects }).eq("id", currentSchoolId);
-    if (error) throw error;
-};
-
-window.deleteMasterSubject = async (index) => {
-    window.examSubjects.splice(index, 1);
-    window.renderMasterSubjects();
-    window.updateSchedulerDatalists();
-    const { error } = await supabaseClient.from("schools").update({ examSubjects: window.examSubjects }).eq("id", currentSchoolId);
-    if (error) throw error;
-};
-
-window.resetMasterSubjects = async () => {
-    if (!confirm("Reset to factory defaults? All custom subjects will be lost.")) return;
-    window.examSubjects = [...window.factoryDefaultSubjects];
-    window.renderMasterSubjects();
-    window.updateSchedulerDatalists();
-    const { error } = await supabaseClient.from("schools").update({ examSubjects: window.examSubjects }).eq("id", currentSchoolId);
-    if (error) throw error;
-};
-
-
-
-// --- GLOBAL BONAFIDE BATCH LOGIC ---
-window.renderGlobalBonafideStudents = () => {
-    const cls = document.getElementById("global-bonafide-class").value;
-    const tbody = document.getElementById("global-bonafide-tbody");
-    tbody.innerHTML = "";
-
-    let filtered = window.fetchedStudents.filter(s => s.status === 'Approved');
-    if (cls !== "All") filtered = filtered.filter(s => s.class === cls);
-
-    if (filtered.length === 0) {
-        tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; padding:10px;'>No approved students found.</td></tr>";
-        return;
-    }
-
-    filtered.forEach(st => {
-        tbody.innerHTML += `<tr>
-            <td style="padding: 10px;"><input type="checkbox" class="bonafide-checkbox" value="${st.id}"></td>
-            <td style="padding: 10px;">${st.name}</td>
-            <td style="padding: 10px;">${st.class}</td>
-            <td style="padding: 10px;">${st.rollNo || 'N/A'}</td>
-        </tr>`;
-    });
-};
-
-window.toggleAllBonafideStudents = (el) => {
-    document.querySelectorAll(".bonafide-checkbox").forEach(cb => cb.checked = el.checked);
-};
-
-window.openGlobalBonafideModal = () => {
-    document.getElementById("global-bonafide-class").value = "All";
-    document.getElementById("global-bonafide-select-all").checked = false;
-    window.renderGlobalBonafideStudents();
-    document.getElementById("global-bonafide-modal").style.display = "flex";
-};
-
-window.triggerGlobalBonafideBatch = async () => {
+  window.triggerBulkBonafide = async (students) => {
+      document.getElementById("cert-modal").style.display = "flex";
+      if (document.getElementById("cert-printable")) document.getElementById("cert-printable").style.display = "none";
+      if (document.getElementById("cert-preview-frame")) document.getElementById("cert-preview-frame").style.display = "none";
+      if (document.getElementById("cert-actions")) document.getElementById("cert-actions").style.display = "none";
+      document.getElementById("cert-generating-text").style.display = "block";
+      document.getElementById("cert-generating-text").innerText = "Compiling Batch Bonafide PDF...";
+
+      let printWrapper = document.getElementById("bonafide-printable");
+      if (!printWrapper) {
+          printWrapper = document.createElement("div");
+          printWrapper.id = "bonafide-printable";
+          printWrapper.style.cssText = "width: 210mm; height: 297mm; padding: 15mm; background: white; font-family: 'Times New Roman', serif; position: absolute; left:-9999px; top:-9999px; color: #000; box-sizing: border-box;";
+          document.body.appendChild(printWrapper);
+      }
+
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      let pageCount = 0;
+
+      for (let st of students) {
+          let logoSrc = document.getElementById('top-school-logo') ? document.getElementById('top-school-logo').src : '';
+          
+          let stampCircleHtml = '<div style="position: absolute; top: -50px; left: -20px; width: 100px; height: 100px; border: 2px solid #4762a4; border-radius: 50%; opacity: 0.3; pointer-events: none; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #4762a4; text-align: center; transform: rotate(-15deg);"><span>OFFICIAL<br>SEAL</span></div>';
+
+          printWrapper.innerHTML = 
+           <div style="border: 2px solid #4762a4; padding: 15mm; height: 100%; box-sizing: border-box; position: relative;">
+               <div style="position: absolute; top: 10px; left: 10px; bottom: 10px; right: 10px; border: 1px solid #4762a4; pointer-events: none;"></div>
+               <div style="text-align: center; margin-bottom: 25px;">
+                   <h1 style="color: #2b3b7a; font-size: 34px; font-weight: bold; margin: 0; text-transform: uppercase; font-family: 'Arial', sans-serif;"> + (currentSchoolName || "XYZ SCHOOL") + </h1>
+                    + (logoSrc ? <img src=" + logoSrc + " style="width: 100px; height: 100px; margin: 15px 0; object-fit: contain;"> : <div style="height: 100px; width: 100px; margin: 15px auto; border-radius: 50%; border: 1px solid #ccc; line-height: 100px;">LOGO</div>) + 
+                   <div style="color: #2b3b7a; font-size: 16px; font-weight: bold; margin-bottom: 10px;">(NAAC ACCREDITED GRADE 'A')</div>
+                   <div style="background: #4762a4; color: white; display: inline-block; padding: 10px 40px; font-size: 24px; font-weight: bold; border-radius: 6px; letter-spacing: 1px;">BONAFIDE CERTIFICATE</div>
+               </div>
+        
+               <div style="display: flex; justify-content: space-between; margin-bottom: 35px; font-size: 18px; font-weight: bold; color: #333;">
+                   <div>No: <span style="border-bottom: 1px solid #000; padding: 0 40px; color: #d32f2f;"> + Math.floor(Math.random() * 900 + 100) + </span></div>
+                   <div>Date <span style="border-bottom: 1px solid #000; padding: 0 20px; color: #2b3b7a;"> + new Date().toLocaleDateString() + </span></div>
+               </div>
+        
+               <div style="font-size: 22px; line-height: 2.5; color: #222; margin-top: 40px; padding: 0 10px;">
+                   <div style="margin-bottom: 20px;">
+                       This is to Certify that <span style="display: inline-block; min-width: 300px; border-bottom: 1px solid #333; text-align: center; font-weight: bold; color: #2b3b7a; font-style: italic;"> <span style="color: #d32f2f">-</span>  + (st.name || "N/A").toUpperCase() +  <span style="color: #d32f2f">-</span></span>
+                   </div>
+                   <div style="margin-bottom: 20px;">
+                       S/o, D/o <span style="display: inline-block; width: 75%; border-bottom: 1px solid #333; text-align: center; font-weight: bold; color: #2b3b7a; font-style: italic;"><span style="color: #d32f2f">-</span>  + ((st.parentage || st.fatherName) || "N/A").toUpperCase() +  <span style="color: #d32f2f">-</span></span>
+                   </div>
+                   <div style="margin-bottom: 20px;">
+                       R/o <span style="display: inline-block; width: 80%; border-bottom: 1px solid #333; text-align: center; font-weight: bold; color: #2b3b7a; font-style: italic;"><span style="color: #d32f2f">-</span>  + (st.address || "RECORD NOT FOUND").toUpperCase() +  <span style="color: #d32f2f">-</span></span>
+                   </div>
+                   <div style="margin-bottom: 20px;">
+                       Is a bonafide student of this college under class Roll No. <span style="display: inline-block; min-width: 150px; border-bottom: 1px solid #333; text-align: center; font-weight: bold; color: #2b3b7a; font-style: italic;"><span style="color: #d32f2f">-</span>  + (st.rollNo || st.rollCode || "N/A") +  <span style="color: #d32f2f">-</span></span>
+                   </div>
+                   <div style="margin-bottom: 20px;">
+                       of BG <span style="display: inline-block; min-width: 100px; border-bottom: 1px solid #333; text-align: center; font-weight: bold; color: #2b3b7a; font-style: italic;"><span style="color: #d32f2f">-</span>  + (st.class || "N/A") +  <span style="color: #d32f2f">-</span></span> Semester Session <span style="display: inline-block; min-width: 100px; border-bottom: 1px solid #333; text-align: center; font-weight: bold; color: #2b3b7a; font-style: italic;"><span style="color: #d32f2f">-</span>  + new Date().getFullYear() +  <span style="color: #d32f2f">-</span></span>
+                   </div>
+               </div>
+        
+               <div style="position: absolute; bottom: 25mm; left: 15mm; right: 15mm; display: flex; justify-content: space-between; align-items: flex-end;">
+                   <div style="text-align: center;">
+                       <div style="width: 150px; border-bottom: 1px solid #333; margin-bottom: 10px;"></div>
+                       <div style="font-weight: bold; font-size: 18px; color: #222;">I/c Admission</div>
+                   </div>
+                   <div style="text-align: center; position: relative;">
+                        + stampCircleHtml + 
+                       <img id="bonafide_sig_" src="" style="width: 140px; display: none; mix-blend-mode: multiply; position: relative; z-index: 10;">
+                       <div style="border-top: 1px solid #333; width: 150px; margin-top: 60px; margin-bottom: 10px;"></div>
+                       <div style="font-weight: bold; font-size: 18px; color: #222;">Principal</div>
+                   </div>
+               </div>
+           </div>
+          ;
+
+          if (currentSignatureUrl && (!window.currentSigSettings || window.currentSigSettings.bonafide !== false)) {
+              try {
+                  const finalSigSrc = await getTransparentSignature(currentSignatureUrl);
+                  const sigImg = printWrapper.querySelector("#bonafide_sig_"+st.id);
+                  if(sigImg) {
+                      sigImg.src = finalSigSrc;
+                      sigImg.style.display = "block";
+                  }
+              } catch(e){}
+          }
+
+          // Render canvas
+          await new Promise(r => setTimeout(r, 500));
+          const canvas = await html2canvas(printWrapper, { useCORS: true, scale: 2, logging: false });
+          const imgData = canvas.toDataURL("image/jpeg", 0.95);
+
+          if (pageCount > 0) pdf.addPage();
+          pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+          pageCount++;
+      }
+
+      if (pageCount > 0) {
+          window.currentGeneratedPDF = pdf;
+          window.currentGeneratedFileName = "Batch_Bonafide_Certificates.pdf";
+          const blobUrl = pdf.output('bloburl');
+          document.getElementById("cert-preview-frame").src = blobUrl;
+          document.getElementById("cert-preview-frame").style.display = "block";
+          document.getElementById("cert-generating-text").style.display = "none";
+          document.getElementById("cert-actions").style.display = "flex";
+      }
+  };
+
+  window.triggerGlobalBonafideBatch = async () => {
+      const checked = document.querySelectorAll(".bonafide-checkbox:checked");
+      if (checked.length === 0) return alert("Please select at least one student.");
+      document.getElementById("global-bonafide-modal").style.display = "none";
+      
+      let stArr = [];
+      for (let cb of checked) {
+          const st = window.fetchedStudents.find(s => s.id === cb.value);
+          if (st) stArr.push(st);
+      }
+      if(stArr.length > 0) {
+          await window.triggerBulkBonafide(stArr);
+      } else {
+          alert("No valid students found.");
+      }
+  };window.triggerGlobalBonafideBatch = async () => {
     const checked = document.querySelectorAll(".bonafide-checkbox:checked");
     if (checked.length === 0) return alert("Please select at least one student.");
 
@@ -6737,6 +6229,7 @@ window.replyToMailThread = async () => {
     }
     btn.innerHTML = "<i class='fas fa-reply'></i> Reply"; btn.disabled = false;
 };
+
 
 
 
