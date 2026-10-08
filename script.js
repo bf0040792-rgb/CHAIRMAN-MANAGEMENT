@@ -3902,53 +3902,52 @@ window.triggerBulkAction = () => {
           
           let stampCircleHtml = '<div style="position: absolute; top: -50px; left: -20px; width: 100px; height: 100px; border: 2px solid #4762a4; border-radius: 50%; opacity: 0.3; pointer-events: none; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #4762a4; text-align: center; transform: rotate(-15deg);"><span>OFFICIAL<br>SEAL</span></div>';
 
-          printWrapper.innerHTML = `
-           <div style="border: 2px solid #4762a4; padding: 15mm; height: 100%; box-sizing: border-box; position: relative;">
-               <div style="position: absolute; top: 10px; left: 10px; bottom: 10px; right: 10px; border: 1px solid #4762a4; pointer-events: none;"></div>
-               <div style="text-align: center; margin-bottom: 25px;">
-                   <h1 style="color: #2b3b7a; font-size: 34px; font-weight: bold; margin: 0; text-transform: uppercase; font-family: 'Arial', sans-serif;">${currentSchoolName || "XYZ SCHOOL"}</h1>
-                   ${logoSrc ? `<img src="${logoSrc}" style="width: 100px; height: 100px; margin: 15px 0; object-fit: contain;">` : `<div style="height: 100px; width: 100px; margin: 15px auto; border-radius: 50%; border: 1px solid #ccc; line-height: 100px;">LOGO</div>`}
-                   <div style="color: #2b3b7a; font-size: 16px; font-weight: bold; margin-bottom: 10px;">(NAAC ACCREDITED GRADE 'A')</div>
-                   <div style="background: #4762a4; color: white; display: inline-block; padding: 10px 40px; font-size: 24px; font-weight: bold; border-radius: 6px; letter-spacing: 1px;">BONAFIDE CERTIFICATE</div>
+                  const sRow = window.allSchoolsCache ? window.allSchoolsCache.find(s => s.id === currentSchoolId) : null;
+        let affNo = "______";
+        if (sRow) {
+            affNo = sRow.affiliationNo || sRow.affiliation_no || affNo;
+        }
+
+        printWrapper.innerHTML = `
+           <div style="background: #f4fdf4; border: 3px double #2b3b7a; padding: 15mm; height: 100%; box-sizing: border-box; position: relative;">
+               <div style="text-align: center; margin-bottom: 20px;">
+                 <svg viewBox="0 0 800 120" style="width:100%; max-height:100px;">
+                     <path id="curve" d="M 50 100 Q 400 -20 750 100" fill="transparent" />
+                     <text width="800" style="font-family: 'Times New Roman', serif; font-size: 32px; font-weight: bold; fill: #2b3b7a; letter-spacing: 2px;">
+                         <textPath href="#curve" startOffset="50%" text-anchor="middle">${currentSchoolName.toUpperCase()}</textPath>
+                     </text>
+                 </svg>
+                 <div style="font-size: 14px; font-family: Arial, sans-serif; font-weight: bold; color: #2b3b7a; margin-top: 5px;">(NAAC ACCREDITED GRADE 'A')</div>
+                 <div style="margin-top: 15px;">
+                     <span style="background: #2b3b7a; color: #fff; padding: 8px 30px; border-radius: 20px; font-weight: bold; font-family: 'Times New Roman', serif; font-size: 20px; text-transform: uppercase;">BONAFIDE CERTIFICATE</span>
+                 </div>
                </div>
-        
-               <div style="display: flex; justify-content: space-between; margin-bottom: 35px; font-size: 18px; font-weight: bold; color: #333;">
-                   <div>No: <span style="border-bottom: 1px solid #000; padding: 0 40px; color: #d32f2f;">${Math.floor(Math.random() * 900 + 100)}</span></div>
-                   <div>Date <span style="border-bottom: 1px solid #000; padding: 0 20px; color: #2b3b7a;">${new Date().toLocaleDateString()}</span></div>
+               <div style="display: flex; justify-content: space-between; font-family: Arial, sans-serif; font-size: 14px; font-weight: bold; color: #333; margin-top: 30px; margin-bottom: 30px;">
+                   <div>No: <span style="display:inline-block; border-bottom: 1px solid #000; width: 150px; text-align:center; color: #d32f2f;">${affNo}</span></div>
+                   <div>Date <span style="display:inline-block; border-bottom: 1px solid #000; width: 120px; text-align:center; color: #2b3b7a; font-family: 'Caveat', cursive, serif;">${new Date().toLocaleDateString()}</span></div>
                </div>
-        
-               <div style="font-size: 22px; line-height: 2.5; color: #222; margin-top: 40px; padding: 0 10px;">
-                   <div style="margin-bottom: 20px;">
-                       This is to Certify that <span style="display: inline-block; min-width: 300px; border-bottom: 1px solid #333; text-align: center; font-weight: bold; color: #2b3b7a; font-style: italic;"> <span style="color: #d32f2f">-</span> ${(st.name || "N/A").toUpperCase()} <span style="color: #d32f2f">-</span></span>
-                   </div>
-                   <div style="margin-bottom: 20px;">
-                       S/o, D/o <span style="display: inline-block; width: 75%; border-bottom: 1px solid #333; text-align: center; font-weight: bold; color: #2b3b7a; font-style: italic;"><span style="color: #d32f2f">-</span> ${((st.parentage || st.fatherName) || "N/A").toUpperCase()} <span style="color: #d32f2f">-</span></span>
-                   </div>
-                   <div style="margin-bottom: 20px;">
-                       R/o <span style="display: inline-block; width: 80%; border-bottom: 1px solid #333; text-align: center; font-weight: bold; color: #2b3b7a; font-style: italic;"><span style="color: #d32f2f">-</span> ${(st.address || "RECORD NOT FOUND").toUpperCase()} <span style="color: #d32f2f">-</span></span>
-                   </div>
-                   <div style="margin-bottom: 20px;">
-                       Is a bonafide student of this college under class Roll No. <span style="display: inline-block; min-width: 150px; border-bottom: 1px solid #333; text-align: center; font-weight: bold; color: #2b3b7a; font-style: italic;"><span style="color: #d32f2f">-</span> ${(st.rollNo || st.rollCode || "N/A")} <span style="color: #d32f2f">-</span></span>
-                   </div>
-                   <div style="margin-bottom: 20px;">
-                       of BG <span style="display: inline-block; min-width: 100px; border-bottom: 1px solid #333; text-align: center; font-weight: bold; color: #2b3b7a; font-style: italic;"><span style="color: #d32f2f">-</span> ${(st.class || "N/A")} <span style="color: #d32f2f">-</span></span> Semester Session <span style="display: inline-block; min-width: 100px; border-bottom: 1px solid #333; text-align: center; font-weight: bold; color: #2b3b7a; font-style: italic;"><span style="color: #d32f2f">-</span> ${new Date().getFullYear()} <span style="color: #d32f2f">-</span></span>
-                   </div>
+               <div style="font-family: Arial, sans-serif; font-size: 16px; line-height: 2.8; color: #333; text-align: left;">
+                   <span style="color:#555;">This is to Certify that</span> <span style="display:inline-block; border-bottom: 1px solid #000; width: 420px; text-align:center; font-weight: bold; font-family: 'Caveat', cursive, serif; font-size: 22px; color: #2b3b7a;">${student.studentName.toUpperCase()}</span>
+                   <br>
+                   <span style="color:#555;">S/o, D/o</span> <span style="display:inline-block; border-bottom: 1px solid #000; width: 490px; text-align:center; font-weight: bold; font-family: 'Caveat', cursive, serif; font-size: 22px; color: #2b3b7a;">${student.parentName.toUpperCase()}</span>
+                   <br>
+                   <span style="color:#555;">R/o</span> <span style="display:inline-block; border-bottom: 1px solid #000; width: 510px; text-align:center; font-weight: bold; font-family: 'Caveat', cursive, serif; font-size: 22px; color: #2b3b7a;">${(student.address || "N/A").toUpperCase()}</span>
+                   <br>
+                   <span style="color:#555;">Is a bonafide student of this college under class Roll No.</span> <span style="display:inline-block; border-bottom: 1px solid #000; width: 180px; text-align:center; font-weight: bold; font-family: 'Caveat', cursive, serif; font-size: 22px; color: #2b3b7a;">${student.rollNo}</span>
+                   <br>
+                   <span style="color:#555;">of class</span> <span style="display:inline-block; border-bottom: 1px solid #000; width: 150px; text-align:center; font-weight: bold; font-family: 'Caveat', cursive, serif; font-size: 22px; color: #2b3b7a;">${student.className}</span>
+                   <span style="color:#555; margin-left: 20px;">Year</span> <span style="display:inline-block; border-bottom: 1px solid #000; width: 150px; text-align:center; font-weight: bold; font-family: 'Caveat', cursive, serif; font-size: 22px; color: #2b3b7a;">${new Date().getFullYear()}</span>
                </div>
-        
-               <div style="position: absolute; bottom: 25mm; left: 15mm; right: 15mm; display: flex; justify-content: space-between; align-items: flex-end;">
-                   <div style="text-align: center;">
-                       <div style="width: 150px; border-bottom: 1px solid #333; margin-bottom: 10px;"></div>
-                       <div style="font-weight: bold; font-size: 18px; color: #222;">I/c Admission</div>
-                   </div>
-                   <div style="text-align: center; position: relative;">
-                       ${stampCircleHtml}
-                       <img id="bonafide_sig_${st.id}" src="" style="width: 140px; display: none; mix-blend-mode: multiply; position: relative; z-index: 10;">
-                       <div style="border-top: 1px solid #333; width: 150px; margin-top: 60px; margin-bottom: 10px;"></div>
-                       <div style="font-weight: bold; font-size: 18px; color: #222;">Principal</div>
-                   </div>
+               <div style="position: absolute; bottom: 40px; right: 40px; text-align: center;">
+                 ${currentSignatureUrl ? `<img src="${currentSignatureUrl}" style="height: 60px; display: block; margin: 0 auto; object-fit: contain;">` : `<div style="height:60px;"></div>`}
+                 <div style="font-weight: bold; font-family: Arial, sans-serif; font-size: 14px; margin-top: 5px;">Principal</div>
+               </div>
+               <div style="position: absolute; bottom: 40px; left: 40px; text-align: center;">
+                 <div style="height:60px;"></div>
+                 <div style="font-weight: bold; font-family: Arial, sans-serif; font-size: 14px; margin-top: 5px; color:#555;">I/c Admission</div>
                </div>
            </div>
-          `;
+        `;
 
           if (currentSignatureUrl && (!window.currentSigSettings || window.currentSigSettings.bonafide !== false)) {
               try {
@@ -6184,6 +6183,7 @@ window.replyToMailThread = async () => {
     }
     btn.innerHTML = "<i class='fas fa-reply'></i> Reply"; btn.disabled = false;
 };
+
 
 
 
