@@ -3907,7 +3907,7 @@ window.triggerBulkAction = () => {
                <div style="position: absolute; top: 10px; left: 10px; bottom: 10px; right: 10px; border: 1px solid #4762a4; pointer-events: none;"></div>
                <div style="text-align: center; margin-bottom: 25px;">
                    <h1 style="color: #2b3b7a; font-size: 34px; font-weight: bold; margin: 0; text-transform: uppercase; font-family: 'Arial', sans-serif;">${currentSchoolName || "XYZ SCHOOL"}</h1>
-                   ${logoSrc ? \`<img src="${logoSrc}" style="width: 100px; height: 100px; margin: 15px 0; object-fit: contain;">\` : \`<div style="height: 100px; width: 100px; margin: 15px auto; border-radius: 50%; border: 1px solid #ccc; line-height: 100px;">LOGO</div>\`}
+                   ${logoSrc ? `<img src="${logoSrc}" style="width: 100px; height: 100px; margin: 15px 0; object-fit: contain;">` : `<div style="height: 100px; width: 100px; margin: 15px auto; border-radius: 50%; border: 1px solid #ccc; line-height: 100px;">LOGO</div>`}
                    <div style="color: #2b3b7a; font-size: 16px; font-weight: bold; margin-bottom: 10px;">(NAAC ACCREDITED GRADE 'A')</div>
                    <div style="background: #4762a4; color: white; display: inline-block; padding: 10px 40px; font-size: 24px; font-weight: bold; border-radius: 6px; letter-spacing: 1px;">BONAFIDE CERTIFICATE</div>
                </div>
@@ -6184,6 +6184,7 @@ window.replyToMailThread = async () => {
     }
     btn.innerHTML = "<i class='fas fa-reply'></i> Reply"; btn.disabled = false;
 };
+
 
 
 
