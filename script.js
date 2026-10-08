@@ -3877,32 +3877,30 @@ window.triggerBulkAction = () => {
     }
 };
 
-  window.triggerBulkBonafide = async (students) => {
-      document.getElementById("cert-modal").style.display = "flex";
-      if (document.getElementById("cert-printable")) document.getElementById("cert-printable").style.display = "none";
-      if (document.getElementById("cert-preview-frame")) document.getElementById("cert-preview-frame").style.display = "none";
-      if (document.getElementById("cert-actions")) document.getElementById("cert-actions").style.display = "none";
-      document.getElementById("cert-generating-text").style.display = "block";
-      document.getElementById("cert-generating-text").innerText = "Compiling Batch Bonafide PDF...";
+  window.triggerBulkBonafide = async (students, triggerBtn = null) => {
+    let originalHtml = "";
+    if (triggerBtn) {
+        originalHtml = triggerBtn.innerHTML;
+        triggerBtn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Generating...";
+        triggerBtn.disabled = true;
+    } else {
+        window.showToast("Compiling Bonafide PDF...", "#f59e0b");
+    }
 
-      let printWrapper = document.getElementById("bonafide-printable");
-      if (!printWrapper) {
-          printWrapper = document.createElement("div");
-          printWrapper.id = "bonafide-printable";
-          printWrapper.style.cssText = "width: 210mm; height: 297mm; padding: 15mm; background: white; font-family: 'Times New Roman', serif; position: absolute; left:-9999px; top:-9999px; color: #000; box-sizing: border-box;";
-          document.body.appendChild(printWrapper);
-      }
+    let printWrapper = document.getElementById("bonafide-printable");
+    if (!printWrapper) {
+        printWrapper = document.createElement("div");
+        printWrapper.id = "bonafide-printable";
+        printWrapper.style.cssText = "width: 210mm; height: 297mm; padding: 15mm; background: white; font-family: 'Times New Roman', serif; position: absolute; left:-9999px; top:-9999px; color: #000; box-sizing: border-box;";
+        document.body.appendChild(printWrapper);
+    }
 
-      const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      let pageCount = 0;
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    let pageCount = 0;
 
-      for (let st of students) {
-          let logoSrc = document.getElementById('top-school-logo') ? document.getElementById('top-school-logo').src : '';
-          
-          let stampCircleHtml = '<div style="position: absolute; top: -50px; left: -20px; width: 100px; height: 100px; border: 2px solid #4762a4; border-radius: 50%; opacity: 0.3; pointer-events: none; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #4762a4; text-align: center; transform: rotate(-15deg);"><span>OFFICIAL<br>SEAL</span></div>';
-
-                  const sRow = window.allSchoolsCache ? window.allSchoolsCache.find(s => s.id === currentSchoolId) : null;
+    for (let st of students) {
+        const sRow = window.allSchoolsCache ? window.allSchoolsCache.find(s => s.id === currentSchoolId) : null;
         let affNo = "______";
         if (sRow) {
             affNo = sRow.affiliationNo || sRow.affiliation_no || affNo;
@@ -3927,15 +3925,15 @@ window.triggerBulkAction = () => {
                    <div>Date <span style="display:inline-block; border-bottom: 1px solid #000; width: 120px; text-align:center; color: #2b3b7a; font-family: 'Caveat', cursive, serif;">${new Date().toLocaleDateString()}</span></div>
                </div>
                <div style="font-family: Arial, sans-serif; font-size: 16px; line-height: 2.8; color: #333; text-align: left;">
-                   <span style="color:#555;">This is to Certify that</span> <span style="display:inline-block; border-bottom: 1px solid #000; width: 420px; text-align:center; font-weight: bold; font-family: 'Caveat', cursive, serif; font-size: 22px; color: #2b3b7a;">${student.studentName.toUpperCase()}</span>
+                   <span style="color:#555;">This is to Certify that</span> <span style="display:inline-block; border-bottom: 1px solid #000; width: 420px; text-align:center; font-weight: bold; font-family: 'Caveat', cursive, serif; font-size: 22px; color: #2b3b7a;">${st.studentName ? st.studentName.toUpperCase() : ""}</span>
                    <br>
-                   <span style="color:#555;">S/o, D/o</span> <span style="display:inline-block; border-bottom: 1px solid #000; width: 490px; text-align:center; font-weight: bold; font-family: 'Caveat', cursive, serif; font-size: 22px; color: #2b3b7a;">${student.parentName.toUpperCase()}</span>
+                   <span style="color:#555;">S/o, D/o</span> <span style="display:inline-block; border-bottom: 1px solid #000; width: 490px; text-align:center; font-weight: bold; font-family: 'Caveat', cursive, serif; font-size: 22px; color: #2b3b7a;">${st.parentName ? st.parentName.toUpperCase() : ""}</span>
                    <br>
-                   <span style="color:#555;">R/o</span> <span style="display:inline-block; border-bottom: 1px solid #000; width: 510px; text-align:center; font-weight: bold; font-family: 'Caveat', cursive, serif; font-size: 22px; color: #2b3b7a;">${(student.address || "N/A").toUpperCase()}</span>
+                   <span style="color:#555;">R/o</span> <span style="display:inline-block; border-bottom: 1px solid #000; width: 510px; text-align:center; font-weight: bold; font-family: 'Caveat', cursive, serif; font-size: 22px; color: #2b3b7a;">${st.address ? st.address.toUpperCase() : "N/A"}</span>
                    <br>
-                   <span style="color:#555;">Is a bonafide student of this college under class Roll No.</span> <span style="display:inline-block; border-bottom: 1px solid #000; width: 180px; text-align:center; font-weight: bold; font-family: 'Caveat', cursive, serif; font-size: 22px; color: #2b3b7a;">${student.rollNo}</span>
+                   <span style="color:#555;">Is a bonafide student of this college under class Roll No.</span> <span style="display:inline-block; border-bottom: 1px solid #000; width: 180px; text-align:center; font-weight: bold; font-family: 'Caveat', cursive, serif; font-size: 22px; color: #2b3b7a;">${st.rollNo || ""}</span>
                    <br>
-                   <span style="color:#555;">of class</span> <span style="display:inline-block; border-bottom: 1px solid #000; width: 150px; text-align:center; font-weight: bold; font-family: 'Caveat', cursive, serif; font-size: 22px; color: #2b3b7a;">${student.className}</span>
+                   <span style="color:#555;">of class</span> <span style="display:inline-block; border-bottom: 1px solid #000; width: 150px; text-align:center; font-weight: bold; font-family: 'Caveat', cursive, serif; font-size: 22px; color: #2b3b7a;">${st.className || ""}</span>
                    <span style="color:#555; margin-left: 20px;">Year</span> <span style="display:inline-block; border-bottom: 1px solid #000; width: 150px; text-align:center; font-weight: bold; font-family: 'Caveat', cursive, serif; font-size: 22px; color: #2b3b7a;">${new Date().getFullYear()}</span>
                </div>
                <div style="position: absolute; bottom: 40px; right: 40px; text-align: center;">
@@ -3948,55 +3946,60 @@ window.triggerBulkAction = () => {
                </div>
            </div>
         `;
+        
+        await new Promise(r => setTimeout(r, 50));
+        const canvas = await html2canvas(printWrapper, { scale: 2, useCORS: true });
+        const imgData = canvas.toDataURL('image/png');
+        if (pageCount > 0) pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
+        pageCount++;
+    }
+    printWrapper.remove();
 
-          if (currentSignatureUrl && (!window.currentSigSettings || window.currentSigSettings.bonafide !== false)) {
-              try {
-                  const finalSigSrc = await getTransparentSignature(currentSignatureUrl);
-                  const sigImg = printWrapper.querySelector("#bonafide_sig_"+st.id);
-                  if(sigImg) {
-                      sigImg.src = finalSigSrc;
-                      sigImg.style.display = "block";
-                  }
-              } catch(e){}
-          }
+    if (triggerBtn) {
+        triggerBtn.innerHTML = "<i class='fas fa-check'></i> Generated!";
+        setTimeout(() => { triggerBtn.innerHTML = originalHtml; triggerBtn.disabled = false; }, 2000);
+    }
 
-          // Render canvas
-          await new Promise(r => setTimeout(r, 500));
-          const canvas = await html2canvas(printWrapper, { useCORS: true, scale: 2, logging: false });
-          const imgData = canvas.toDataURL("image/jpeg", 0.95);
+    await new Promise(r => setTimeout(r, 1000)); const outBlob = pdf.output('blob');
+    const outUrl = URL.createObjectURL(outBlob);
+    
+    // Now show modal
+    document.getElementById("cert-modal").style.display = "flex";
+    document.getElementById("cert-generating-text").style.display = "none";
+    if (document.getElementById("cert-printable")) document.getElementById("cert-printable").style.display = "none";
+    
+    document.getElementById("cert-preview-frame").style.display = "block";
+    document.getElementById("cert-preview-frame").src = outUrl;
+    document.getElementById("cert-actions").style.display = "flex";
+    
+    document.getElementById("cert-download-btn").onclick = () => {
+        const a = document.createElement("a");
+        a.href = outUrl; a.download = `Bonafide_Batch_${Date.now()}.pdf`;
+        a.click();
+    };
+    document.getElementById("cert-print-btn").onclick = () => {
+        document.getElementById("cert-preview-frame").contentWindow.print();
+    };
+};
 
-          if (pageCount > 0) pdf.addPage();
-          pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
-          pageCount++;
-      }
-
-      if (pageCount > 0) {
-          window.currentGeneratedPDF = pdf;
-          window.currentGeneratedFileName = "Batch_Bonafide_Certificates.pdf";
-          const blobUrl = pdf.output('bloburl');
-          document.getElementById("cert-preview-frame").src = blobUrl;
-          document.getElementById("cert-preview-frame").style.display = "block";
-          document.getElementById("cert-generating-text").style.display = "none";
-          document.getElementById("cert-actions").style.display = "flex";
-      }
-  };
-
-  window.triggerGlobalBonafideBatch = async () => {
-      const checked = document.querySelectorAll(".bonafide-checkbox:checked");
-      if (checked.length === 0) return alert("Please select at least one student.");
-      document.getElementById("global-bonafide-modal").style.display = "none";
-      
-      let stArr = [];
-      for (let cb of checked) {
-          const st = window.fetchedStudents.find(s => s.id === cb.value);
-          if (st) stArr.push(st);
-      }
-      if(stArr.length > 0) {
-          await window.triggerBulkBonafide(stArr);
-      } else {
-          alert("No valid students found.");
-      }
-  };
+window.triggerGlobalBonafideBatch = async () => {
+    const checked = document.querySelectorAll(".bonafide-checkbox:checked");
+    if (checked.length === 0) return alert("Please select at least one student.");
+    const btn = document.querySelector("#global-bonafide-modal .btn-blue") || null;
+    
+    let stArr = [];
+    for (let cb of checked) {
+        const st = window.fetchedStudents.find(s => s.id === cb.value);
+        if (st) stArr.push(st);
+    }
+    if(stArr.length > 0) {
+        await window.triggerBulkBonafide(stArr, btn);
+    } else {
+        alert("No valid students found.");
+    }
+    document.getElementById("global-bonafide-modal").style.display = "none";
+};
 // ================= PHASE 2: TRANSPORT MANAGER =================
 window.loadTransportRoutes = async () => {
     try {
@@ -6183,6 +6186,9 @@ window.replyToMailThread = async () => {
     }
     btn.innerHTML = "<i class='fas fa-reply'></i> Reply"; btn.disabled = false;
 };
+
+
+
 
 
 
