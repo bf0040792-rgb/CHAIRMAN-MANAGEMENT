@@ -957,25 +957,32 @@ const convertToBase64 = (file) => new Promise((resolve, reject) => { const reade
 const removeWhiteBackground = (base64) => new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width; canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imgData.data;
-        for (let i = 0; i < data.length; i += 4) {
-            // If pixel is close to white, make transparent
-            if (data[i] > 200 && data[i+1] > 200 && data[i+2] > 200) {
-                data[i+3] = 0; // Alpha 0
-            } else {
-                // Darken signature a bit for contrast
-                data[i] = Math.max(0, data[i] - 50);
-                data[i+1] = Math.max(0, data[i+1] - 50);
-                data[i+2] = Math.max(0, data[i+2] - 50);
+        try {
+            const canvas = document.createElement('canvas');
+            let w = img.width; let h = img.height;
+            if (w > 600) { h = Math.round((600 / w) * h); w = 600; }
+            canvas.width = w; canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            const imgData = ctx.getImageData(0, 0, w, h);
+            const data = imgData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                if (data[i] > 180 && data[i+1] > 180 && data[i+2] > 180) {
+                    data[i+3] = 0;
+                } else {
+                    data[i] = Math.max(0, data[i] - 50);
+                    data[i+1] = Math.max(0, data[i+1] - 50);
+                    data[i+2] = Math.max(0, data[i+2] - 50);
+                }
             }
+            ctx.putImageData(imgData, 0, 0);
+            resolve(canvas.toDataURL('image/png', 0.8));
+        } catch (e) {
+            resolve(base64); // Fallback to original if canvas fails (e.g. cross origin)
         }
-        ctx.putImageData(imgData, 0, 0);
-        resolve(canvas.toDataURL('image/png'));
+    };
+    img.onerror = () => {
+        resolve(base64); // Fallback to original
     };
     img.src = base64;
 });
@@ -3407,7 +3414,7 @@ window.showIDCard = async (id) => {
                 schoolNameColor: document.getElementById('idSchoolNameColor')?.value || currentSchoolNameColor || "#ffffff",
                 studentNameColor: document.getElementById('idStudentNameColor')?.value || currentStudentNameColor || "#d32f2f",
                 detailsColor: document.getElementById('idDetailsColor')?.value || currentDetailsColor || "#333333",
-                photoBgColor: document.getElementById('idPhotoBgColor')?.value || currentPhotoBgColor || "#ffffff"
+                photoBgColor: document.getElementById('idPhotoBgColor')?.value || currentPhotoBgColor || "#ffffff", textSettings: window.currentTextSettings
             })
         });
 
@@ -3930,7 +3937,7 @@ window.generateBatchIDCards = async (students) => {
                     schoolNameColor: document.getElementById('idSchoolNameColor')?.value || currentSchoolNameColor || "#ffffff",
                     studentNameColor: document.getElementById('idStudentNameColor')?.value || currentStudentNameColor || "#d32f2f",
                     detailsColor: document.getElementById('idDetailsColor')?.value || currentDetailsColor || "#333333",
-                    photoBgColor: document.getElementById('idPhotoBgColor')?.value || currentPhotoBgColor || "#ffffff"
+                    photoBgColor: document.getElementById('idPhotoBgColor')?.value || currentPhotoBgColor || "#ffffff", textSettings: window.currentTextSettings
                 })
             });
             const data = await response.json();
@@ -4008,6 +4015,29 @@ window.triggerBulkAction = async () => {
     }
 };
 
+window.saveTextFormatting = async () => {
+    const btn = document.getElementById("save_format_btn");
+    let originalText = btn.innerHTML;
+    btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Saving...";
+    const textSettings = {
+        color: document.getElementById("custom_doc_color").value,
+        font: document.getElementById("custom_doc_font").value,
+        isBold: document.getElementById("btn_format_bold").classList.contains("active-format"),
+        isItalic: document.getElementById("btn_format_italic").classList.contains("active-format"),
+        applyBonafide: document.getElementById("format_on_bonafide").checked,
+        applyIdCard: document.getElementById("format_on_id").checked
+    };
+    try {
+        const { error } = await supabaseClient.from("schools").update({ textSettings: textSettings }).eq("id", currentSchoolId);
+        if (error) throw error;
+        window.currentTextSettings = textSettings;
+        alert("Text Formatting Saved!");
+    } catch (e) {
+        alert("Failed to save formatting: " + e.message);
+    }
+    btn.innerHTML = originalText;
+};
+
   window.triggerBulkBonafide = async (students, triggerBtn = null) => {
     let originalHtml = "";
     if (triggerBtn) {
@@ -4037,7 +4067,20 @@ window.triggerBulkAction = async () => {
             affNo = sRow.affiliationNo || sRow.affiliation_no || affNo;
         }
 
-        const sName = st.name ? st.name.toUpperCase() : (st.studentName ? st.studentName.toUpperCase() : "");
+                const sName = st.name ? st.name.toUpperCase() : (st.studentName ? st.studentName.toUpperCase() : "");
+        const fName = st.fatherName ? st.fatherName.toUpperCase() : (st.parentage ? st.parentage.toUpperCase() : "");
+        
+        let bFontFamily = "font-family: 'Caveat', cursive, serif;";
+        let bColor = "color: #2b3b7a;";
+        let bFontWeight = "font-weight: bold;";
+        let bFontStyle = "";
+        
+        if (window.currentTextSettings && window.currentTextSettings.applyBonafide) {
+            bFontFamily = `font-family: ${window.currentTextSettings.font};`;
+            bColor = `color: ${window.currentTextSettings.color};`;
+            bFontWeight = window.currentTextSettings.isBold ? "font-weight: bold;" : "font-weight: normal;";
+            bFontStyle = window.currentTextSettings.isItalic ? "font-style: italic;" : "font-style: normal;";
+        }
         const fName = st.fatherName ? st.fatherName.toUpperCase() : (st.parentage ? st.parentage.toUpperCase() : "");
         
         let classPrefix = currentInstitutionType === 'college' ? "of BG" : "of class";
@@ -4062,16 +4105,16 @@ window.triggerBulkAction = async () => {
                    <div>Date <span style="display:inline-block; border-bottom: 1px solid #000; width: 120px; text-align:center; color: #2b3b7a; font-family: 'Caveat', cursive, serif;">${new Date().toLocaleDateString()}</span></div>
                </div>
                <div style="font-family: Arial, sans-serif; font-size: 16px; line-height: 2.8; color: #333; text-align: left;">
-                   <span style="color:#555;">This is to Certify that</span> <span style="display:inline-block; border-bottom: 1px solid #000; width: 420px; text-align:center; font-weight: bold; font-family: 'Caveat', cursive, serif; font-size: 22px; color: #2b3b7a;">${sName}</span>
+                   <span style="color:#555;">This is to Certify that</span> <span style="display:inline-block; border-bottom: 1px solid #000; width: 420px; text-align:center; font-weight: bold; ${bFontFamily} font-size: 22px; ${bColor} ${bFontWeight} ${bFontStyle}">${sName}</span>
                    <br>
-                   <span style="color:#555;">S/o, D/o</span> <span style="display:inline-block; border-bottom: 1px solid #000; width: 490px; text-align:center; font-weight: bold; font-family: 'Caveat', cursive, serif; font-size: 22px; color: #2b3b7a;">${fName}</span>
+                   <span style="color:#555;">S/o, D/o</span> <span style="display:inline-block; border-bottom: 1px solid #000; width: 490px; text-align:center; font-weight: bold; ${bFontFamily} font-size: 22px; ${bColor} ${bFontWeight} ${bFontStyle}">${fName}</span>
                    <br>
-                   <span style="color:#555;">R/o</span> <span style="display:inline-block; border-bottom: 1px solid #000; width: 510px; text-align:center; font-weight: bold; font-family: 'Caveat', cursive, serif; font-size: 22px; color: #2b3b7a;">${st.address ? st.address.toUpperCase() : "N/A"}</span>
+                   <span style="color:#555;">R/o</span> <span style="display:inline-block; border-bottom: 1px solid #000; width: 510px; text-align:center; font-weight: bold; ${bFontFamily} font-size: 22px; ${bColor} ${bFontWeight} ${bFontStyle}">${st.address ? st.address.toUpperCase() : "N/A"}</span>
                    <br>
-                   <span style="color:#555;">Is a bonafide student of this college under class Roll No.</span> <span style="display:inline-block; border-bottom: 1px solid #000; width: 180px; text-align:center; font-weight: bold; font-family: 'Caveat', cursive, serif; font-size: 22px; color: #2b3b7a;">${st.rollNo || ""}</span>
+                   <span style="color:#555;">Is a bonafide student of this college under class Roll No.</span> <span style="display:inline-block; border-bottom: 1px solid #000; width: 180px; text-align:center; font-weight: bold; ${bFontFamily} font-size: 22px; ${bColor} ${bFontWeight} ${bFontStyle}">${st.rollNo || ""}</span>
                    <br>
-                   <span style="color:#555;">${classPrefix}</span> <span style="display:inline-block; border-bottom: 1px solid #000; width: 150px; text-align:center; font-weight: bold; font-family: 'Caveat', cursive, serif; font-size: 22px; color: #2b3b7a;">${classVal}</span>
-                   <span style="color:#555; margin-left: 20px;">Year</span> <span style="display:inline-block; border-bottom: 1px solid #000; width: 150px; text-align:center; font-weight: bold; font-family: 'Caveat', cursive, serif; font-size: 22px; color: #2b3b7a;">${new Date().getFullYear()}</span>
+                   <span style="color:#555;">${classPrefix}</span> <span style="display:inline-block; border-bottom: 1px solid #000; width: 150px; text-align:center; font-weight: bold; ${bFontFamily} font-size: 22px; ${bColor} ${bFontWeight} ${bFontStyle}">${classVal}</span>
+                   <span style="color:#555; margin-left: 20px;">Year</span> <span style="display:inline-block; border-bottom: 1px solid #000; width: 150px; text-align:center; font-weight: bold; ${bFontFamily} font-size: 22px; ${bColor} ${bFontWeight} ${bFontStyle}">${new Date().getFullYear()}</span>
                </div>
                <div style="position: absolute; bottom: 40px; right: 40px; text-align: center; width: 200px;">
                  ${currentSignatureUrl ? `<img src="${currentSignatureUrl}" style="height: 60px; display: block; margin: 0 auto; object-fit: contain; mix-blend-mode: multiply;">` : `<div style="height:60px;"></div>`}
@@ -6322,6 +6365,12 @@ window.replyToMailThread = async () => {
     }
     btn.innerHTML = "<i class='fas fa-reply'></i> Reply"; btn.disabled = false;
 };
+
+
+
+
+
+
 
 
 
