@@ -958,12 +958,25 @@ const uploadToCloudinary = async (fileInputId, btnId, defaultText) => {
     const file = document.getElementById(fileInputId).files[0]; if (!file) return null;
     const btn = document.getElementById(btnId); btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Uploading...";
     try {
-        const base64Image = await convertToBase64(file);
-        const res = await fetch("https://api.cloudinary.com/v1_1/disgtvs6f/image/upload", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ file: base64Image, upload_preset: "school_portal" }) });
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("upload_preset", "school_portal");
+        
+        const res = await fetch("https://api.cloudinary.com/v1_1/disgtvs6f/image/upload", { 
+            method: "POST", 
+            body: formData 
+        });
+        
         const data = await res.json();
         btn.innerHTML = defaultText;
+        
+        if (data.error) {
+            alert("Cloudinary Error: " + data.error.message);
+            return null;
+        }
         return data.secure_url;
     } catch (e) {
+        alert("Upload Catch Error: " + e.message);
         btn.innerHTML = defaultText; return null;
     }
 };
@@ -6328,6 +6341,8 @@ window.replyToMailThread = async () => {
     }
     btn.innerHTML = "<i class='fas fa-reply'></i> Reply"; btn.disabled = false;
 };
+
+
 
 
 
