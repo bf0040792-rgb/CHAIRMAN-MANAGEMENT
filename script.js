@@ -954,47 +954,11 @@ document.getElementById("admissionToggle").addEventListener("change", async (e) 
 
 const convertToBase64 = (file) => new Promise((resolve, reject) => { const reader = new FileReader(); reader.readAsDataURL(file); reader.onload = () => resolve(reader.result); reader.onerror = (e) => reject(e); });
 
-const removeWhiteBackground = (base64) => new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-        try {
-            const canvas = document.createElement('canvas');
-            let w = img.width; let h = img.height;
-            if (w > 600) { h = Math.round((600 / w) * h); w = 600; }
-            canvas.width = w; canvas.height = h;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, w, h);
-            const imgData = ctx.getImageData(0, 0, w, h);
-            const data = imgData.data;
-            for (let i = 0; i < data.length; i += 4) {
-                if (data[i] > 180 && data[i+1] > 180 && data[i+2] > 180) {
-                    data[i+3] = 0;
-                } else {
-                    data[i] = Math.max(0, data[i] - 50);
-                    data[i+1] = Math.max(0, data[i+1] - 50);
-                    data[i+2] = Math.max(0, data[i+2] - 50);
-                }
-            }
-            ctx.putImageData(imgData, 0, 0);
-            resolve(canvas.toDataURL('image/png', 0.8));
-        } catch (e) {
-            resolve(base64); // Fallback to original if canvas fails (e.g. cross origin)
-        }
-    };
-    img.onerror = () => {
-        resolve(base64); // Fallback to original
-    };
-    img.src = base64;
-});
-
-const uploadToCloudinary = async (fileInputId, btnId, defaultText, isSignature = false) => {
+const uploadToCloudinary = async (fileInputId, btnId, defaultText) => {
     const file = document.getElementById(fileInputId).files[0]; if (!file) return null;
     const btn = document.getElementById(btnId); btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Uploading...";
     try {
-        let base64Image = await convertToBase64(file);
-        if (isSignature) {
-            base64Image = await removeWhiteBackground(base64Image);
-        }
+        const base64Image = await convertToBase64(file);
         const res = await fetch("https://api.cloudinary.com/v1_1/disgtvs6f/image/upload", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ file: base64Image, upload_preset: "school_portal" }) });
         const data = await res.json();
         btn.innerHTML = defaultText;
@@ -1954,7 +1918,7 @@ window.saveEmergency = async () => {
 window.saveSignature = async () => {
     let sigUrl = currentSignatureUrl;
     if (document.getElementById("sig_photo").files.length > 0) {
-        sigUrl = await uploadToCloudinary("sig_photo", "sig_btn", "<i class='fas fa-pen-nib'></i> Save Signature & Preferences", true);
+        sigUrl = await uploadToCloudinary("sig_photo", "sig_btn", "<i class='fas fa-pen-nib'></i> Save Signature & Preferences");
         if (!sigUrl) return alert("Please select an image or wait for upload.");
     }
 
@@ -6364,6 +6328,7 @@ window.replyToMailThread = async () => {
     }
     btn.innerHTML = "<i class='fas fa-reply'></i> Reply"; btn.disabled = false;
 };
+
 
 
 
