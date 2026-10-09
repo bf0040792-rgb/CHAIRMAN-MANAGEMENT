@@ -13,6 +13,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Dancing+Script:wght@400;700&family=Great+Vibes&family=Lato:wght@400;700&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;700&family=Oswald:wght@400;700&family=Pacifico&family=Playfair+Display:wght@400;700&family=Righteous&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <script>
         window.setTimeout(function () {
@@ -1900,12 +1901,37 @@
                                 </div>
                                 <div class="form-group" style="margin-bottom:0;">
                                     <label>Font Style</label>
-                                    <select id="custom_doc_font" class="input-premium" style="width:150px;">
-                                        <option value="Arial, sans-serif">Arial</option>
-                                        <option value="'Times New Roman', serif">Times New Roman</option>
-                                        <option value="'Caveat', cursive">Caveat (Cursive)</option>
-                                        <option value="'Courier New', monospace">Courier New</option>
-                                        <option value="Georgia, serif">Georgia</option>
+                                    <select id="custom_doc_font" class="input-premium" style="width:150px; font-family: inherit;">
+                                        <optgroup label="Standard (Web Safe)">
+                                            <option value="Arial, sans-serif">Arial</option>
+                                            <option value="Helvetica, sans-serif">Helvetica</option>
+                                            <option value="'Times New Roman', Times, serif">Times New Roman</option>
+                                            <option value="Georgia, serif">Georgia</option>
+                                            <option value="'Courier New', Courier, monospace">Courier New</option>
+                                            <option value="Verdana, sans-serif">Verdana</option>
+                                            <option value="Palatino, 'Palatino Linotype', serif">Palatino</option>
+                                            <option value="Garamond, serif">Garamond</option>
+                                            <option value="'Comic Sans MS', cursive, sans-serif">Comic Sans</option>
+                                            <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+                                            <option value="Impact, fantasy">Impact</option>
+                                        </optgroup>
+                                        <optgroup label="Modern & Professional">
+                                            <option value="'Roboto', sans-serif">Roboto</option>
+                                            <option value="'Open Sans', sans-serif">Open Sans</option>
+                                            <option value="'Montserrat', sans-serif">Montserrat</option>
+                                            <option value="'Lato', sans-serif">Lato</option>
+                                            <option value="'Oswald', sans-serif">Oswald</option>
+                                            <option value="'Playfair Display', serif">Playfair Display</option>
+                                        </optgroup>
+                                        <optgroup label="Cursive & Handwritten">
+                                            <option value="'Caveat', cursive">Caveat</option>
+                                            <option value="'Dancing Script', cursive">Dancing Script</option>
+                                            <option value="'Pacifico', cursive">Pacifico</option>
+                                            <option value="'Great Vibes', cursive">Great Vibes</option>
+                                        </optgroup>
+                                        <optgroup label="Creative & Bold">
+                                            <option value="'Righteous', cursive">Righteous</option>
+                                        </optgroup>
                                     </select>
                                 </div>
                                 <div style="display:flex; gap:10px; margin-top:25px;">
@@ -3599,7 +3625,7 @@
                     </div>
     </div>
 </div>
-<script src="script.js?v=20261009_bonafide_v10"></script>
+<script src="script.js?v=20261009_bonafide_v11"></script>
 <!-- STUDENT SUBJECTS MODAL (HOD) -->
 <div id="hod-subjects-modal" class="modal" style="display:none; align-items:center; justify-content:center; z-index: 10000;">
     <div class="modal-content" style="max-width: 500px; width: 100%;">
@@ -3664,6 +3690,7 @@
 </body>
 
 </html>
+
 
 
 
