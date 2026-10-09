@@ -953,14 +953,48 @@ document.getElementById("admissionToggle").addEventListener("change", async (e) 
 });
 
 const convertToBase64 = (file) => new Promise((resolve, reject) => { const reader = new FileReader(); reader.readAsDataURL(file); reader.onload = () => resolve(reader.result); reader.onerror = (e) => reject(e); });
-const uploadToCloudinary = async (fileInputId, btnId, defaultText) => {
+
+const removeWhiteBackground = (base64) => new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width; canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imgData.data;
+        for (let i = 0; i < data.length; i += 4) {
+            // If pixel is close to white, make transparent
+            if (data[i] > 200 && data[i+1] > 200 && data[i+2] > 200) {
+                data[i+3] = 0; // Alpha 0
+            } else {
+                // Darken signature a bit for contrast
+                data[i] = Math.max(0, data[i] - 50);
+                data[i+1] = Math.max(0, data[i+1] - 50);
+                data[i+2] = Math.max(0, data[i+2] - 50);
+            }
+        }
+        ctx.putImageData(imgData, 0, 0);
+        resolve(canvas.toDataURL('image/png'));
+    };
+    img.src = base64;
+});
+
+const uploadToCloudinary = async (fileInputId, btnId, defaultText, isSignature = false) => {
     const file = document.getElementById(fileInputId).files[0]; if (!file) return null;
     const btn = document.getElementById(btnId); btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Uploading...";
     try {
-        const base64Image = await convertToBase64(file);
-        const res = await fetch("https://api.cloudinary.com/v1_1/disgtvs6f/image/upload", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ file: base64Image, upload_preset: "ml_default" }) });
-        const data = await res.json(); btn.innerHTML = defaultText; return data.secure_url || null;
-    } catch (e) { btn.innerHTML = defaultText; return null; }
+        let base64Image = await convertToBase64(file);
+        if (isSignature) {
+            base64Image = await removeWhiteBackground(base64Image);
+        }
+        const res = await fetch("https://api.cloudinary.com/v1_1/disgtvs6f/image/upload", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ file: base64Image, upload_preset: "school_portal" }) });
+        const data = await res.json();
+        btn.innerHTML = defaultText;
+        return data.secure_url;
+    } catch (e) {
+        btn.innerHTML = defaultText; return null;
+    }
 };
 
 function loadAllData() { loadStudents(); loadStaff(); loadNotices(); loadInbox(); loadSentMail(); loadTransactions(); loadPendingResults(); window.initDashboardChart(); window.loadTransportRoutes(); window.loadInventory(); loadAllSchools(); loadStudentTransfers(); loadCoreEduChat(); window.loadStudentComplaints(); }
@@ -1913,7 +1947,7 @@ window.saveEmergency = async () => {
 window.saveSignature = async () => {
     let sigUrl = currentSignatureUrl;
     if (document.getElementById("sig_photo").files.length > 0) {
-        sigUrl = await uploadToCloudinary("sig_photo", "sig_btn", "<i class='fas fa-pen-nib'></i> Save Signature & Preferences");
+        sigUrl = await uploadToCloudinary("sig_photo", "sig_btn", "<i class='fas fa-pen-nib'></i> Save Signature & Preferences", true);
         if (!sigUrl) return alert("Please select an image or wait for upload.");
     }
 
@@ -3850,6 +3884,96 @@ window.toggleAllBulkStudents = (el) => {
     document.querySelectorAll(".bulk-student-cb").forEach(cb => cb.checked = el.checked);
 };
 
+window.generateBatchIDCards = async (students) => {
+    document.getElementById("id-modal").style.display = "flex";
+    document.getElementById("generating-text").style.display = "block";
+    document.getElementById("final-id-image").style.display = "none";
+    document.getElementById("id-actions").style.display = "none";
+    document.getElementById("printable-id").style.display = "none";
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    
+    let schoolName = currentSchoolName || document.getElementById('school-name')?.innerText || "ABC SCHOOL NAME";
+    const templateStyle = currentTemplateStyle || "wave";
+    
+    const cardW = 54; const cardH = 86;
+    let x = 10; let y = 10;
+    let count = 0;
+    
+    for (let i = 0; i < students.length; i++) {
+        let st = students[i];
+        document.getElementById("generating-text").innerText = `Generating ID ${i+1} of ${students.length}...`;
+        
+        try {
+            const response = await fetch("https://school-backend-zlgy.onrender.com/api/generate-id-card", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    studentData: {
+                        id: st.id || st.regNo,
+                        name: st.name,
+                        class: st.class,
+                        dob: st.dob || "N/A",
+                        parentage: (st.parentage || st.fatherName) || "N/A",
+                        mobile: st.mobile || "N/A",
+                        address: st.address || "N/A",
+                        photoUrl: st.photoUrl || "https://via.placeholder.com/150"
+                    },
+                    themeColor: currentThemeColor || "#1e3c72",
+                    secondaryColor: currentSecondaryColor || "#ffffff",
+                    templateStyle: templateStyle,
+                    schoolName: schoolName,
+                    schoolEmergency: document.getElementById("school_emergency")?.value || "N/A",
+                    signatureUrl: (window.currentSigSettings && window.currentSigSettings.idCard === false) ? "" : currentSignatureUrl,
+                    schoolLogoUrl: document.getElementById('print_school_logo')?.src || document.getElementById('school-logo')?.src || "",
+                    schoolNameColor: document.getElementById('idSchoolNameColor')?.value || currentSchoolNameColor || "#ffffff",
+                    studentNameColor: document.getElementById('idStudentNameColor')?.value || currentStudentNameColor || "#d32f2f",
+                    detailsColor: document.getElementById('idDetailsColor')?.value || currentDetailsColor || "#333333",
+                    photoBgColor: document.getElementById('idPhotoBgColor')?.value || currentPhotoBgColor || "#ffffff"
+                })
+            });
+            const data = await response.json();
+            if (data.success) {
+                if (count > 0 && count % 9 === 0) {
+                    pdf.addPage();
+                    x = 10; y = 10;
+                }
+                pdf.addImage(data.idCardUrl, 'JPEG', x, y, cardW, cardH);
+                
+                // Draw cutting line
+                pdf.setDrawColor(200);
+                pdf.rect(x, y, cardW, cardH);
+                
+                x += cardW + 5; // 5mm horizontal gap
+                if (x + cardW > 200) {
+                    x = 10;
+                    y += cardH + 5; // 5mm vertical gap
+                }
+                count++;
+            }
+        } catch (e) { console.error("Error generating ID for", st.name, e); }
+    }
+    
+    document.getElementById("generating-text").innerText = "Compiling PDF...";
+    await new Promise(r => setTimeout(r, 500));
+    
+    const outBlob = pdf.output('blob');
+    const outUrl = URL.createObjectURL(outBlob);
+    
+    document.getElementById("final-id-image").style.display = "block";
+    document.getElementById("final-id-image").src = outUrl; // Note: src for iframe, not img
+    // Wait, the id-modal uses <img id="final-id-image"> or <iframe>? Let's check single ID generation
+    // Ah, single ID generation sets final-id-image.src to data.idCardUrl (which is base64 JPEG).
+    // For Bulk, we have a PDF. We should open it in a new window or trigger download.
+    document.getElementById("id-modal").style.display = "none";
+    
+    const a = document.createElement("a");
+    a.href = outUrl; a.download = `Bulk_ID_Cards_${Date.now()}.pdf`;
+    a.click();
+    
+    alert(`Batch ID Cards generated! ${count} cards processed.`);
+};
 window.triggerBulkAction = async () => {
     const checked = document.querySelectorAll(".bulk-student-cb:checked");
     if (checked.length === 0) return alert("Please select at least one student.");
@@ -6198,6 +6322,8 @@ window.replyToMailThread = async () => {
     }
     btn.innerHTML = "<i class='fas fa-reply'></i> Reply"; btn.disabled = false;
 };
+
+
 
 
 
