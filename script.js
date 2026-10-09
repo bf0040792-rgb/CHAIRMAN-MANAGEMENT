@@ -1362,9 +1362,2681 @@ window.downloadTransferReceipt = (transferId) => {
     if (!tr) return alert("Transfer record not found.");
     try {
         const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const marginX = 15;
+        let y = 20;
+
+        pdf.setFillColor(30, 60, 114);
+        pdf.rect(0, 0, 210, 30, 'F');
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFontSize(18);
+        pdf.setFont(undefined, 'bold');
+        pdf.text("Student Transfer Receipt", marginX, 19);
+
+        pdf.setTextColor(0, 0, 0);
+        pdf.setFontSize(10);
+        pdf.setFont(undefined, 'normal');
+        y = 42;
+        pdf.text(`Receipt No: TRF-${tr.transferId ? tr.transferId.substring(0, 8).toUpperCase() : "N/A"}`, marginX, y);
+        pdf.text(`Date: ${new Date().toLocaleString()}`, 130, y);
+        y += 10;
+        pdf.setDrawColor(200, 200, 200);
+        pdf.line(marginX, y, 195, y);
+        y += 10;
+
+        const fields = [
+            ["Student Name", tr.studentName || "N/A"],
+            ["Class / Roll", `${tr.studentClass || "N/A"} / ${tr.rollNo || "N/A"}`],
+            ["Reg. No", tr.regNo || "N/A"],
+            ["From School", tr.fromSchoolName || "N/A"],
+            ["To School", tr.toSchoolName || "N/A"],
+            ["Transfer Date", tr.transferDate || "N/A"],
+            ["Reason", tr.reason || "N/A"],
+            ["Remarks", tr.remarks || "—"],
+            ["Status", tr.status || "N/A"]
+        ];
+        pdf.setFontSize(11);
+        fields.forEach(([label, value]) => {
+            pdf.setFont(undefined, 'bold');
+            pdf.text(`${label}:`, marginX, y);
+            pdf.setFont(undefined, 'normal');
+            const lines = pdf.splitTextToSize(String(value), 130);
+            pdf.text(lines, 70, y);
+            y += 7 * (lines.length || 1);
+        });
+
+        y += 5;
+        pdf.line(marginX, y, 195, y);
+        y += 10;
+        pdf.setFontSize(9);
+        pdf.setTextColor(120, 120, 120);
+        pdf.text("Workflow Progress:", marginX, y);
+        y += 6;
+        pdf.setTextColor(0, 0, 0);
+        (tr.workflowStages || []).forEach((s, i) => {
+            const mark = s.done ? "[x]" : "[ ]";
+            pdf.text(`${mark} ${s.stage}${s.at ? "  -  " + new Date(s.at).toLocaleString() : ""}`, marginX + 5, y);
+            y += 6;
+        });
+
+        y += 10;
+        pdf.setFontSize(9);
+        pdf.setTextColor(120, 120, 120);
+        pdf.text("Documents attached:", marginX, y);
+        y += 6;
+        pdf.setTextColor(0, 0, 0);
+        const docs = tr.documents || {};
+        const docEntries = Object.entries(docs).filter(([, url]) => !!url);
+        if (docEntries.length === 0) {
+            pdf.text("No documents attached", marginX + 5, y);
+        } else {
+            docEntries.forEach(([key, url]) => {
+                pdf.text(`- ${key}: ${url}`, marginX + 5, y);
+                y += 6;
+            });
+        }
+
+        y = 270;
+        pdf.setFontSize(8);
+        pdf.setTextColor(150, 150, 150);
+        pdf.text("This is a system-generated receipt from CoreEdu Tech Chairman Portal.", marginX, y);
+
+        const safeName = (tr.studentName || "student").replace(/[^a-zA-Z0-9]/g, "_");
+        pdf.save(`Transfer_Receipt_${safeName}.pdf`);
+    } catch (e) {
+        console.error("Receipt download failed:", e);
+        alert("Failed to generate receipt: " + e.message);
+    }
+};
+
+window.initDashboardChart = () => {
+    const ctx = document.getElementById('dashboardChart');
+    if (!ctx) return;
+
+    // Check if chart exists and destroy
+    if (window.myDashboardChart) {
+        window.myDashboardChart.destroy();
+    }
+
+    // Calculate total income (Fee) and expenses (Salary, Expense)
+    let totalIncome = 0;
+    let totalExpenses = 0;
+
+    const filter = document.getElementById('chart-date-filter') ? document.getElementById('chart-date-filter').value : 'All Time';
+    const specificDate = document.getElementById('chart-specific-date') ? document.getElementById('chart-specific-date').value : '';
+    const now = new Date();
+
+    let filteredTransactions = window.fetchedTransactions || [];
+
+    if (specificDate) {
+        filteredTransactions = filteredTransactions.filter(t => t.date === specificDate);
+    } else if (filter === 'This Month') {
+        filteredTransactions = filteredTransactions.filter(t => {
+            const d = new Date(t.date);
+            return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        });
+    } else if (filter === 'Last Month') {
+        filteredTransactions = filteredTransactions.filter(t => {
+            const d = new Date(t.date);
+            const lastMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+            const year = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+            return d.getMonth() === lastMonth && d.getFullYear() === year;
+        });
+    } else if (filter === 'This Year') {
+        filteredTransactions = filteredTransactions.filter(t => {
+            const d = new Date(t.date);
+            return d.getFullYear() === now.getFullYear();
+        });
+    }
+
+    filteredTransactions.forEach(t => {
+        const amt = parseFloat(t.amount) || 0;
+        if (t.type === 'Fee') {
+            totalIncome += amt;
+        } else if (t.type === 'Salary' || t.type === 'Expense') {
+            totalExpenses += amt;
+        }
+    });
+
+    if (document.getElementById("count-revenue")) {
+        document.getElementById("count-revenue").innerText = "₹ " + (totalIncome - totalExpenses);
+    }
+
+    const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 400);
+    gradient.addColorStop(0, 'rgba(0, 240, 255, 0.5)'); // Neon Cyan
+    gradient.addColorStop(1, 'rgba(139, 92, 246, 0.1)'); // Neon Purple
+
+    window.myDashboardChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['Total Income', 'Total Expenses'],
+            datasets: [{
+                label: 'Financial Analytics (₹)',
+                data: [totalIncome, totalExpenses],
+                backgroundColor: gradient,
+                borderColor: '#00F0FF',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: '#8b5cf6',
+                pointBorderColor: '#00F0FF',
+                pointRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { grid: { color: 'rgba(255, 255, 255, 0.05)' } },
+                y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.05)' } }
+            }
+        }
+    });
+
+    window.initAnalyticsCharts();
+};
+
+window.initAnalyticsCharts = async () => {
+    const chartFont = { color: '#94a3b8' };
+    const gridStyle = { color: 'rgba(148, 163, 184, 0.08)' };
+
+    // 1. Gender Distribution (Doughnut)
+    try {
+        const gCtx = document.getElementById('genderChart');
+        if (gCtx) {
+            if (window.genderChartInstance) window.genderChartInstance.destroy();
+            let male = 0, female = 0, other = 0;
+            (window.fetchedStudents || []).forEach(st => {
+                const g = (st.gender || "").toString().toLowerCase();
+                if (g === "male" || g === "m" || g === "boy") male++;
+                else if (g === "female" || g === "f" || g === "girl") female++;
+                else if (g) other++;
+            });
+            window.genderChartInstance = new Chart(gCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Male', 'Female', 'Other'],
+                    datasets: [{
+                        data: [male, female, other],
+                        backgroundColor: ['#3b82f6', '#ec4899', '#f59e0b'],
+                        borderColor: '#0f172a',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#cbd5e1', font: { size: 11 } } },
+                        tooltip: { callbacks: { label: (c) => `${c.label}: ${c.parsed} students` } }
+                    }
+                }
+            });
+        }
+    } catch (e) { console.warn("genderChart error", e); }
+
+    // 2. Class Enrollment (Bar)
+    try {
+        const cCtx = document.getElementById('classEnrollChart');
+        if (cCtx) {
+            if (window.classEnrollChartInstance) window.classEnrollChartInstance.destroy();
+            const classCounts = {};
+            (window.fetchedStudents || []).forEach(st => {
+                const c = st.class || "Unassigned";
+                classCounts[c] = (classCounts[c] || 0) + 1;
+            });
+            const sortedClasses = Object.keys(classCounts).sort((a, b) => {
+                const order = ["Nursery", "LKG", "UKG", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th"];
+                return order.indexOf(a) - order.indexOf(b);
+            });
+            window.classEnrollChartInstance = new Chart(cCtx, {
+                type: 'bar',
+                data: {
+                    labels: sortedClasses,
+                    datasets: [{
+                        label: 'Students',
+                        data: sortedClasses.map(c => classCounts[c]),
+                        backgroundColor: '#3b82f6',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { font: chartFont }, grid: { display: false } },
+                        y: { beginAtZero: true, ticks: { font: chartFont, precision: 0 }, grid: gridStyle }
+                    }
+                }
+            });
+        }
+    } catch (e) { console.warn("classEnrollChart error", e); }
+
+    // 3. Attendance Trend - last 7 days (Line)
+    try {
+        const aCtx = document.getElementById('attendanceTrendChart');
+        if (aCtx) {
+            if (window.attendanceTrendInstance) window.attendanceTrendInstance.destroy();
+            const labels = [];
+            const presentData = [];
+            const absentData = [];
+            const today = new Date();
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date(today);
+                d.setDate(d.getDate() - i);
+                const dateStr = d.toLocaleDateString("en-CA");
+                labels.push(d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' }));
+                let present = 0, absent = 0;
+                (window.fetchedAttendance || []).forEach(a => {
+                    if (a.date === dateStr) {
+                        if (a.status === "Present" || a.present) present++;
+                        else if (a.status === "Absent" || a.absent) absent++;
+                    }
+                });
+                if (present === 0 && absent === 0 && window.fetchedStudents) {
+                    // fallback: if no attendance records, estimate based on records matching date key
+                }
+                presentData.push(present);
+                absentData.push(absent);
+            }
+            window.attendanceTrendInstance = new Chart(aCtx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        { label: 'Present', data: presentData, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.15)', fill: true, tension: 0.4 },
+                        { label: 'Absent', data: absentData, borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.1)', fill: true, tension: 0.4 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#cbd5e1', font: { size: 11 } } } },
+                    scales: {
+                        x: { ticks: { font: chartFont }, grid: { display: false } },
+                        y: { beginAtZero: true, ticks: { font: chartFont, precision: 0 }, grid: gridStyle }
+                    }
+                }
+            });
+        }
+    } catch (e) { console.warn("attendanceTrendChart error", e); }
+
+    // 4. Fee Collection - monthly (Bar)
+    try {
+        const fCtx = document.getElementById('feeCollectionChart');
+        if (fCtx) {
+            if (window.feeCollectionChartInstance) window.feeCollectionChartInstance.destroy();
+            const monthMap = {};
+            const now = new Date();
+            for (let i = 5; i >= 0; i--) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const key = `${d.getFullYear()}-${d.getMonth()}`;
+                monthMap[key] = { label: d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }), fee: 0, expense: 0 };
+            }
+            (window.fetchedTransactions || []).forEach(t => {
+                if (!t.date) return;
+                const d = new Date(t.date);
+                if (isNaN(d)) return;
+                const key = `${d.getFullYear()}-${d.getMonth()}`;
+                if (monthMap[key]) {
+                    const amt = parseFloat(t.amount) || 0;
+                    if (t.type === "Fee") monthMap[key].fee += amt;
+                    else if (t.type === "Salary" || t.type === "Expense") monthMap[key].expense += amt;
+                }
+            });
+            const keys = Object.keys(monthMap);
+            window.feeCollectionChartInstance = new Chart(fCtx, {
+                type: 'bar',
+                data: {
+                    labels: keys.map(k => monthMap[k].label),
+                    datasets: [
+                        { label: 'Fee Collected', data: keys.map(k => monthMap[k].fee), backgroundColor: '#f59e0b', borderRadius: 4 },
+                        { label: 'Expenses', data: keys.map(k => monthMap[k].expense), backgroundColor: '#94a3b8', borderRadius: 4 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#cbd5e1', font: { size: 11 } } } },
+                    scales: {
+                        x: { ticks: { font: chartFont }, grid: { display: false } },
+                        y: { beginAtZero: true, ticks: { font: chartFont }, grid: gridStyle }
+                    }
+                }
+            });
+        }
+    } catch (e) { console.warn("feeCollectionChart error", e); }
+};
+
+function hydrateFeatureSettings(savedSettings = {}, legacyEnabledModules = []) {
+    const settings = JSON.parse(JSON.stringify(DEFAULT_FEATURE_SETTINGS));
+    Object.keys(settings).forEach(group => {
+        if (savedSettings[group]) settings[group] = { ...settings[group], ...savedSettings[group] };
+    });
+    Object.entries(LEGACY_STUDENT_FEATURE_KEYS).forEach(([legacyKey, currentKey]) => {
+        if (savedSettings.student && Object.prototype.hasOwnProperty.call(savedSettings.student, legacyKey)) {
+            settings.student[currentKey] = savedSettings.student[legacyKey];
+        }
+    });
+    if (Array.isArray(legacyEnabledModules) && legacyEnabledModules.length > 0) {
+        Object.keys(settings.modules).forEach(key => { settings.modules[key] = legacyEnabledModules.includes(key); });
+    }
+    return settings;
+}
+
+function isFeatureEnabled(group, key) {
+    return window.currentFeatureSettings?.[group]?.[key] !== false;
+}
+
+function showCompanyRestrictedAlert() {
+    alert("Access Restricted: This feature is disabled by the Super Admin. Please contact your Company Administrator to enable it.");
+}
+
+function getSchoolFeatureKeyForTab(targetId) {
+    const map = {
+        'tab-dashboard': 'dashboard',
+        'tab-students': 'students',
+        'tab-student-transfer': 'studentTransfer',
+        'tab-admit-cards-module': 'admitCards',
+        'tab-staff': 'staff',
+        'tab-finance': 'finance',
+        'tab-fee-approvals': 'feeApprovals',
+        'tab-academics': 'academics',
+        'tab-notices': 'notices',
+        'tab-mailbox': 'communicationHub',
+        'tab-coreedu-comm': 'communicationHub',
+        'tab-qr-fee': 'qrFee',
+        'tab-admit-card': 'admitCardModule',
+        'tab-whatsapp': 'whatsapp',
+        'tab-transport': 'transport',
+        'tab-inventory': 'inventory',
+        'tab-daily-attendance': 'dailyAttendance',
+        'tab-student-features': 'studentPortalFeatures',
+        'tab-settings': 'settings',
+        'staff-tab-attendance': 'dailyAttendance',
+        'staff-tab-marks': 'academics',
+        'staff-tab-notices': 'notices',
+        'staff-tab-homework': 'academics',
+        'staff-tab-timetable': 'academics',
+        'staff-tab-staff': 'settings'
+    };
+    return map[targetId] || null;
+}
+
+function isSchoolTabRestricted(targetId) {
+    const key = getSchoolFeatureKeyForTab(targetId);
+    return !!key && window.currentFeatureSettings?.school && window.currentFeatureSettings.school[key] === false;
+}
+
+function applyFeatureLocks() {
+    const moduleMap = {
+        qrFee: ['payment_qr_upload', 'upi_id_input', 'save_qr_btn'],
+        admitCard: ['bulk-admit-btn', 'admit_class_select', 'searchAdmitStudentInput'],
+        whatsapp: ['wa_group_link'],
+        transport: ['tab-transport'],
+        inventory: ['tab-inventory'],
+        attendance: ['tab-daily-attendance']
+    };
+    Object.entries(moduleMap).forEach(([key, ids]) => {
+        const enabled = isFeatureEnabled('modules', key);
+        ids.forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.classList.toggle('locked-row', !enabled);
+            if ('disabled' in el) el.disabled = !enabled;
+            if (el.classList.contains('tab-content')) el.style.opacity = enabled ? '1' : '0.55';
+        });
+    });
+    document.querySelectorAll('.menu-item[data-target]').forEach(item => {
+        const locked = isSchoolTabRestricted(item.dataset.target);
+        item.classList.toggle('company-feature-locked', locked);
+        item.setAttribute('aria-disabled', locked ? 'true' : 'false');
+        if (locked && !item.querySelector('.company-lock-badge')) item.insertAdjacentHTML('beforeend', ' <span class="company-lock-badge"><i class="fas fa-lock"></i> Locked</span>');
+        if (!locked) item.querySelector('.company-lock-badge')?.remove();
+    });
+    renderStudentFeatureGrid();
+}
+
+function renderFeatureToggleSettings() {
+    const container = document.getElementById('feature-toggle-settings');
+    if (!container) return;
+    container.innerHTML = Object.entries(FEATURE_TOGGLE_META).filter(([group]) => group === 'student').map(([group, meta]) => {
+        const entries = Object.entries(meta.items);
+        const enabledCount = entries.filter(([key]) => isFeatureEnabled(group, key)).length;
+        const groupEnabled = enabledCount === entries.length;
+        const groupPartial = enabledCount > 0 && enabledCount < entries.length;
+        return `<section class="feature-toggle-card" data-feature-group="${group}">
+            <div class="feature-toggle-head">
+                <div>
+                    <span class="section-kicker">School Portal Control</span>
+                    <h4>${meta.label}</h4>
+                    <p>${enabledCount}/${entries.length} features active. Locked features student/school side par visible rahengi, par click disabled rahega.</p>
+                </div>
+                <label class="feature-master-switch ${groupEnabled ? 'is-on' : ''} ${groupPartial ? 'is-partial' : ''}">
+                    <span>${groupEnabled ? 'All ON' : (groupPartial ? 'Partial' : 'All OFF')}</span>
+                    <input type="checkbox" onchange="window.toggleFeatureGroup('${group}', this.checked)" ${groupEnabled ? 'checked' : ''}>
+                </label>
+            </div>
+            <div class="feature-toggle-grid">
+                ${entries.map(([key, label]) => {
+            const enabled = isFeatureEnabled(group, key);
+            return `<label class="feature-toggle-item ${enabled ? 'enabled' : 'locked'}">
+                        <span class="feature-toggle-copy">
+                            <strong>${label}</strong>
+                            <small>${enabled ? 'Live & clickable' : 'Visible but locked'}</small>
+                        </span>
+                        <input type="checkbox" onchange="window.toggleSingleFeature('${group}', '${key}', this.checked)" ${enabled ? 'checked' : ''}>
+                    </label>`;
+        }).join('')}
+            </div>
+        </section>`;
+    }).join('');
+}
+
+async function persistFeatureSettings() {
+    try {
+        if (!currentSchoolId) throw new Error("School ID missing");
+        const featurePayload = {
+            featureSettings: window.currentFeatureSettings,
+            updatedAt: new Date().toISOString(),
+            updatedBy: currentUserId || "school"
+        };
+
+        // One feature_controls row per school: update it when present, otherwise create it.
+        const { data: existingRows, error: updateError } = await supabaseClient
+            .from(FEATURE_SETTINGS_TABLE)
+            .update(featurePayload)
+            .eq("schoolId", currentSchoolId)
+            .select("id");
+        if (updateError) throw updateError;
+
+        if (!existingRows || existingRows.length === 0) {
+            const { error: insertError } = await supabaseClient
+                .from(FEATURE_SETTINGS_TABLE)
+                .insert({ id: currentSchoolId, schoolId: currentSchoolId, ...featurePayload });
+            if (insertError) throw insertError;
+        }
+        applyFeatureLocks();
+        renderFeatureToggleSettings();
+    } catch (e) {
+        console.error("Feature settings save failed", e);
+        alert("Failed to save feature configurations.");
+    }
+}
+
+window.toggleFeatureGroup = async (group, enabled) => {
+    window.currentFeatureSettings[group] = window.currentFeatureSettings[group] || {};
+    Object.keys(FEATURE_TOGGLE_META[group]?.items || DEFAULT_FEATURE_SETTINGS[group] || {}).forEach(key => { window.currentFeatureSettings[group][key] = enabled; });
+    await persistFeatureSettings();
+};
+
+window.toggleSingleFeature = async (group, key, enabled) => {
+    window.currentFeatureSettings[group] = window.currentFeatureSettings[group] || {};
+    window.currentFeatureSettings[group][key] = enabled;
+    Object.entries(LEGACY_STUDENT_FEATURE_KEYS).forEach(([legacyKey, currentKey]) => {
+        if (group === 'student' && currentKey === key) window.currentFeatureSettings.student[legacyKey] = enabled;
+    });
+    await persistFeatureSettings();
+};
+
+window.selectTemplateUI = (style) => {
+    currentTemplateStyle = style;
+    document.querySelectorAll('[id^="card_"]').forEach(el => el.style.borderColor = "transparent");
+    const selectedCard = document.getElementById("card_" + style);
+    if (selectedCard) selectedCard.style.borderColor = "#10b981";
+};
+
+window.saveThemeSettings = async () => {
+    const color = document.getElementById("school_theme_color")?.value || currentThemeColor;
+    const secColor = document.getElementById("school_secondary_color")?.value || currentSecondaryColor;
+    const style = currentTemplateStyle || "wave";
+    try {
+        const { error } = await supabaseClient.from("schools").update({ themeColor: color, idTemplateColor: color, secondaryColor: secColor, idTemplateStyle: style }).eq("id", currentSchoolId);
+        if (error) throw error;
+        currentThemeColor = color;
+        currentSecondaryColor = secColor;
+        document.documentElement.style.setProperty('--theme-color', currentThemeColor);
+        alert("ID Card Design & Theme Color Saved Successfully!");
+    } catch (e) {
+        alert("Failed to save theme: " + e.message);
+    }
+};
+
+window.saveIDColorSettings = async () => {
+    const scColor = document.getElementById("idSchoolNameColor")?.value || currentSchoolNameColor;
+    const stColor = document.getElementById("idStudentNameColor")?.value || currentStudentNameColor;
+    const dColor = document.getElementById("idDetailsColor")?.value || currentDetailsColor;
+    const pbColor = document.getElementById("idPhotoBgColor")?.value || currentPhotoBgColor;
+    try {
+        const { error } = await supabaseClient.from("schools").update({ schoolNameColor: scColor, studentNameColor: stColor, detailsColor: dColor, photoBgColor: pbColor }).eq("id", currentSchoolId);
+        if (error) throw error;
+        currentSchoolNameColor = scColor;
+        currentStudentNameColor = stColor;
+        currentDetailsColor = dColor;
+        currentPhotoBgColor = pbColor;
+        alert("ID Card Text & Photo Colors Saved Successfully!");
+    } catch (e) {
+        alert("Failed to save colors: " + e.message);
+    }
+};
+window.saveEmergency = async () => {
+    const num = document.getElementById("school_emergency").value.trim(); if (!num) return alert("Enter Emergency Number");
+    try {
+        const { error } = await supabaseClient.from("schools").update({ emergencyMobile: num }).eq("id", currentSchoolId);
+        if (error) throw error;
+        document.getElementById("print_emergency").innerText = "Emergency: " + num; alert("Emergency Number Saved!");
+    } catch (e) { }
+};
+window.saveSignature = async () => {
+    let sigUrl = currentSignatureUrl;
+    if (document.getElementById("sig_photo").files.length > 0) {
+        sigUrl = await uploadToCloudinary("sig_photo", "sig_btn", "<i class='fas fa-pen-nib'></i> Save Signature & Preferences");
+        if (!sigUrl) return alert("Please select an image or wait for upload.");
+    }
+
+    const sigSettings = {
+        marksheet: document.getElementById("sig_on_marksheet") ? document.getElementById("sig_on_marksheet").checked : true,
+        idCard: document.getElementById("sig_on_id").checked,
+        bonafide: document.getElementById("sig_on_bonafide").checked,
+        admit: document.getElementById("sig_on_admit").checked
+    };
+
+    try {
+        const { error } = await supabaseClient.from("schools").update({ signatureUrl: sigUrl, sigSettings: sigSettings }).eq("id", currentSchoolId);
+        if (error) throw error;
+        currentSignatureUrl = sigUrl;
+        window.currentSigSettings = sigSettings;
+        if (sigUrl) {
+            document.getElementById("preview-signature").src = sigUrl;
+            document.getElementById("print_sig").src = sigUrl;
+            document.getElementById("cert_sig").src = sigUrl;
+        }
+        alert("Signature & Preferences Saved!");
+    } catch (e) { console.error(e); }
+};
+
+let currentPaymentQrUrl = "";
+window.savePaymentSettings = async () => {
+    let qrUrl = currentPaymentQrUrl;
+    if (document.getElementById("payment_qr_upload").files.length > 0) {
+        qrUrl = await uploadToCloudinary("payment_qr_upload", "save_qr_btn", "<i class='fas fa-save'></i> Save Payment Settings");
+        if (!qrUrl) return alert("Upload failed.");
+    }
+
+    const upiId = document.getElementById("upi_id_input").value.trim();
+    if (!upiId) return alert("Please enter a valid UPI ID.");
+
+    try {
+        const { error } = await supabaseClient.from("schools").update({ paymentQrUrl: qrUrl, upiId: upiId }).eq("id", currentSchoolId);
+        if (error) throw error;
+        currentPaymentQrUrl = qrUrl;
+        if (qrUrl) document.getElementById("payment_qr_preview").src = qrUrl;
+        alert("Payment Settings Saved successfully!");
+    } catch (e) {
+        alert("Error saving payment settings: " + e.message);
+    }
+};
+
+window.sendPasswordRequest = async () => {
+    const newPass = document.getElementById("req_new_pass").value.trim(); if (!newPass) return alert("Please enter a new password.");
+    try {
+        const { error } = await supabaseClient.from("users").update({ suggestedPassword: newPass }).eq("id", currentUserId);
+        if (error) throw error;
+        alert("Password change request sent to Super Admin!"); document.getElementById("req_new_pass").value = "";
+    } catch (e) { }
+};
+
+// ================= MAIL BOX =================
+window.toggleSpecificStaff = () => { const val = document.getElementById("mail_target").value; document.getElementById("specific_staff_div").style.display = val === "specific_staff" ? "block" : "none"; };
+window.sendChairmanMessage = async () => {
+    const target = document.getElementById("mail_target").value; const title = document.getElementById("mail_title").value.trim(); const body = document.getElementById("mail_body").value.trim();
+    if (!title || !body) return alert("Fill title and body");
+    let receiverId = target; let receiverType = target;
+    if (target === "specific_staff") { receiverId = document.getElementById("mail_specific_staff").value; receiverType = "staff_member"; if (!receiverId) return alert("Please select a staff member."); }
+    try {
+        const { error } = await supabaseClient.from("direct_messages").insert({ senderId: currentUserId, senderName: currentSchoolName + " (Chairman)", senderRole: "chairman", schoolId: currentSchoolId, receiverType: receiverType, receiverId: receiverId, title: title, body: body, isRead: false, createdAt: new Date().toISOString() });
+        if (error) throw error;
+        alert("Message Sent!"); document.getElementById("mail_title").value = ""; document.getElementById("mail_body").value = ""; loadSentMail();
+    } catch (e) { }
+};
+async function loadInbox() {
+    try {
+        const { data: rows, error } = await supabaseClient.from("direct_messages").select("*").eq("schoolId", currentSchoolId).eq("receiverType", "chairman");
+        if (error) throw error;
+        let html = ""; let msgs = rows || [];
+        msgs.sort((a, b) => { if (!a.createdAt) return 1; if (!b.createdAt) return -1; return toEpochMillis(b.createdAt) - toEpochMillis(a.createdAt); });
+        let unreadCount = 0;
+        msgs.forEach(msg => {
+            let isUnread = !msg.isRead;
+            if (msg.replies && msg.replies.length > 0) {
+                let lastReply = msg.replies[msg.replies.length - 1];
+                if (lastReply.senderRole !== "chairman" && !lastReply.isRead) isUnread = true;
+            }
+            if (isUnread) unreadCount++;
+
+            let ts = msg.createdAt ? new Date(msg.createdAt).toLocaleString() : "Unknown";
+            let sender = msg.senderRole || 'Admin';
+            let initial = sender.charAt(0).toUpperCase();
+            html += `<div class="gmail-item" onclick="openMailThread('${msg.id}')" style="${isUnread ? 'font-weight:bold; background:#f0f7ff;' : ''}">
+                        <div class="gmail-avatar">${initial}</div>
+                        <div class="gmail-content">
+                            <div class="gmail-header">
+                                <div class="gmail-sender">${sender} ${isUnread ? '<span style="color:red;">●</span>' : ''}</div>
+                                <div class="gmail-date">${ts}</div>
+                            </div>
+                            <div class="gmail-subject">${msg.title || 'No Subject'}</div>
+                            <div class="gmail-snippet">${msg.body}</div>
+                        </div>
+                    </div>`;
+        });
+        if (unreadCount > 0) {
+            document.getElementById("badge-mailbox").innerText = unreadCount;
+            document.getElementById("badge-mailbox").style.display = "inline-block";
+        } else {
+            document.getElementById("badge-mailbox").style.display = "none";
+        }
+        document.getElementById("inbox-list").innerHTML = html || "<p style='padding:20px; text-align:center;'>No messages in Inbox.</p>";
+    } catch (e) { console.error(e); }
+}
+async function loadSentMail() {
+    try {
+        const { data: rows, error } = await supabaseClient.from("direct_messages").select("*").eq("senderId", currentUserId);
+        if (error) throw error;
+        let html = ""; let msgs = rows || [];
+        msgs.sort((a, b) => { if (!a.createdAt) return 1; if (!b.createdAt) return -1; return toEpochMillis(b.createdAt) - toEpochMillis(a.createdAt); });
+        msgs.forEach(msg => {
+            let isUnreadReply = false;
+            if (msg.replies && msg.replies.length > 0) {
+                let lastReply = msg.replies[msg.replies.length - 1];
+                if (lastReply.senderRole !== "chairman" && !lastReply.isRead) isUnreadReply = true;
+            }
+            let ts = msg.createdAt ? new Date(msg.createdAt).toLocaleString() : "Unknown";
+            let toWho = msg.receiverType === 'staff_member' ? 'Specific Staff' : (msg.receiverType === 'school' ? 'Specific School' : msg.receiverType);
+            let initial = toWho.charAt(0).toUpperCase();
+            html += `<div class="gmail-item" onclick="openMailThread('${msg.id}')" style="${isUnreadReply ? 'font-weight:bold; background:#f0f7ff;' : ''}">
+                        <div class="gmail-avatar" style="background:#8e44ad;">${initial}</div>
+                        <div class="gmail-content">
+                            <div class="gmail-header">
+                                <div class="gmail-sender">To: ${toWho} ${isUnreadReply ? '<span style="color:red;">●</span>' : ''}</div>
+                                <div class="gmail-date">${ts}</div>
+                            </div>
+                            <div class="gmail-subject">${msg.title || 'No Subject'}</div>
+                            <div class="gmail-snippet">${msg.body}</div>
+                        </div>
+                    </div>`;
+        });
+        document.getElementById("sent-list").innerHTML = html || "<p style='padding:20px; text-align:center;'>No sent messages.</p>";
+    } catch (e) { console.error(e); }
+}
+
+// ================= COMM HUB SUB-TABS & COMPLAINTS =================
+window.switchCommSubtab = (subId) => {
+    document.querySelectorAll(".comm-subtab").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".comm-subsection").forEach(s => s.classList.remove("active"));
+    const btn = document.querySelector(`.comm-subtab[data-subtab="${subId}"]`);
+    const sec = document.getElementById(subId);
+    if (btn) btn.classList.add("active");
+    if (sec) sec.classList.add("active");
+    if (subId === "sub-complaints") window.loadStudentComplaints();
+    if (subId === "sub-chat") window.loadCoreEduChat();
+};
+
+window.fetchedStudentComplaints = [];
+
+window.loadStudentComplaints = async () => {
+    const tbody = document.getElementById("complaints-list-body");
+    if (!tbody || !currentSchoolId) return;
+    tbody.innerHTML = "<tr><td colspan='7' style='text-align:center;'>Loading complaints...</td></tr>";
+    try {
+        const { data: rows, error } = await supabaseClient.from("complaints").select("*").eq("schoolId", currentSchoolId);
+        if (error) throw error;
+        window.fetchedStudentComplaints = rows || [];
+        window.fetchedStudentComplaints.sort((a, b) => toEpochMillis(b.createdAt) - toEpochMillis(a.createdAt));
+        window.renderStudentComplaints();
+    } catch (e) {
+        console.error("Load complaints failed:", e);
+        tbody.innerHTML = "<tr><td colspan='7' style='text-align:center; color:#fca5a5;'>Unable to load complaints.</td></tr>";
+    }
+};
+
+window.renderStudentComplaints = () => {
+    const tbody = document.getElementById("complaints-list-body");
+    if (!tbody) return;
+    let openCount = 0;
+    let html = "";
+    (window.fetchedStudentComplaints || []).forEach(c => {
+        const status = c.status || "Open";
+        if (status === "Open") openCount++;
+        const statusColor = status === "Open" ? "#f59e0b" : status === "In Progress" ? "#3b82f6" : "#10b981";
+        const ts = c.createdAt ? new Date(c.createdAt).toLocaleDateString("en-CA") : "N/A";
+        html += `<tr>
+            <td>${ts}</td>
+            <td><strong>${c.studentName || "N/A"}</strong><br><small>Class ${c.studentClass || "N/A"}</small></td>
+            <td>${c.target || "N/A"}</td>
+            <td><strong>${c.subject || "N/A"}</strong></td>
+            <td style="max-width:260px;">${c.description || "N/A"}</td>
+            <td><span style="color:${statusColor}; font-weight:bold;">${status}</span></td>
+            <td>
+                <button class="action-btn btn-blue" style="padding:4px 10px; font-size:12px; margin-bottom:4px;" onclick="window.resolveComplaint('${c.id}')"><i class="fas fa-check"></i> Resolve</button>
+                <button class="action-btn" style="padding:4px 10px; font-size:12px; background:#64748b;" onclick="window.replyToComplaint('${c.id}')"><i class="fas fa-reply"></i> Reply</button>
+            </td>
+        </tr>`;
+    });
+    tbody.innerHTML = html || "<tr><td colspan='7' style='text-align:center;'>No complaints found.</td></tr>";
+
+    const badge = document.getElementById("badge-complaints");
+    if (badge) {
+        if (openCount > 0) { badge.innerText = openCount; badge.style.display = "inline-block"; }
+        else { badge.style.display = "none"; }
+    }
+};
+
+window.resolveComplaint = async (complaintId) => {
+    const c = window.fetchedStudentComplaints.find(x => x.id === complaintId);
+    if (!c) return alert("Complaint not found.");
+    if (!confirm(`Mark complaint "${c.subject || "this complaint"}" as Resolved?`)) return;
+    try {
+        const { error } = await supabaseClient.from("complaints").update({ status: "Resolved", resolvedAt: new Date().toISOString(), resolvedBy: currentUserId || "chairman" }).eq("id", complaintId);
+        if (error) throw error;
+        alert("Complaint marked as resolved.");
+        window.loadStudentComplaints();
+    } catch (e) {
+        console.error("Resolve complaint failed:", e);
+        alert("Failed to resolve complaint: " + e.message);
+    }
+};
+
+window.replyToComplaint = async (complaintId) => {
+    const c = window.fetchedStudentComplaints.find(x => x.id === complaintId);
+    if (!c) return alert("Complaint not found.");
+    const reply = prompt(`Reply to ${c.studentName || "student"} regarding "${c.subject || "complaint"}":`);
+    if (!reply) return;
+    try {
+        const { error } = await supabaseClient.from("complaints").update({ chairmanReply: reply, status: "In Progress", repliedAt: new Date().toISOString() }).eq("id", complaintId);
+        if (error) throw error;
+        alert("Reply sent to student.");
+        window.loadStudentComplaints();
+    } catch (e) {
+        console.error("Reply complaint failed:", e);
+        alert("Failed to send reply: " + e.message);
+    }
+};
+
+// ================= FINANCE & PAYROLL & EXPENSES =================
+window.saveFeeStructure = async () => {
+    const cls = document.getElementById("master_fee_class").value;
+    const tui = document.getElementById("master_tuition").value;
+    const bus = document.getElementById("master_bus").value;
+    const oth = document.getElementById("master_other").value;
+    if (!tui) return alert("Tuition fee is required.");
+    try {
+        // One row per school + class in the dedicated fee_structures table.
+        const { error } = await supabaseClient.from("fee_structures").upsert({
+            id: `${currentSchoolId}_${cls}`,
+            schoolId: currentSchoolId,
+            class: cls,
+            tuition: Number(tui),
+            bus: bus ? Number(bus) : 0,
+            other: oth ? Number(oth) : 0,
+            updatedAt: new Date().toISOString()
+        });
+        if (error) throw error;
+        alert(`Fee structure for Class ${cls} updated successfully!`);
+    } catch (e) { alert("Error saving fee structure."); }
+};
+
+window.populateFeeStudents = () => {
+    const cls = document.getElementById("fee_class").value; const select = document.getElementById("fee_student"); select.innerHTML = '<option value="">-- Select Student --</option>'; if (!cls) return;
+    const filtered = window.fetchedStudents.filter(s => s.class && s.class.toUpperCase() === cls.toUpperCase() && s.status === 'Approved');
+    filtered.forEach(s => { select.innerHTML += `<option value="${s.id}">${s.name} ${s.roll ? '(Roll: ' + s.roll + ')' : ''}</option>`; }); document.getElementById("fee_mobile").value = "";
+};
+window.autoFillFeeDetails = () => { const sid = document.getElementById("fee_student").value; const s = window.fetchedStudents.find(x => x.id === sid); if (s) document.getElementById("fee_mobile").value = s.mobile || 'N/A'; };
+
+window.saveStudentFee = async () => {
+    const cls = document.getElementById("fee_class").value; const sId = document.getElementById("fee_student").value; const mob = document.getElementById("fee_mobile").value; const amt = document.getElementById("fee_amount").value; const mode = document.getElementById("fee_mode").value; const date = document.getElementById("fee_date").value;
+    if (!sId || !amt || !date) return alert("Fill all required details.");
+    const selectEl = document.getElementById("fee_student"); const sName = selectEl.options[selectEl.selectedIndex].text.split('(')[0].trim();
+    try {
+        const { error } = await supabaseClient.from("transactions").insert({ schoolId: currentSchoolId, type: "Fee", personId: sId, personName: sName, class: cls, mobile: mob, amount: Number(amt), mode: mode, date: date, createdAt: new Date().toISOString() });
+        if (error) throw error;
+        alert("Fee Record Added!"); document.getElementById("fee_amount").value = ""; loadTransactions();
+    } catch (e) { }
+};
+
+window.saveStaffSalary = async () => {
+    const stId = document.getElementById("salary_staff").value; const amt = document.getElementById("salary_amount").value; const mode = document.getElementById("salary_mode").value; const date = document.getElementById("salary_date").value;
+    if (!stId || !amt || !date) return alert("Fill all details.");
+    const selectEl = document.getElementById("salary_staff"); const stName = selectEl.options[selectEl.selectedIndex].text.split('(')[0].trim();
+    try {
+        const { error } = await supabaseClient.from("transactions").insert({ schoolId: currentSchoolId, type: "Salary", personId: stId, personName: stName, amount: Number(amt), mode: mode, date: date, createdAt: new Date().toISOString() });
+        if (error) throw error;
+        alert("Salary Disbursed & Approved!"); document.getElementById("salary_amount").value = ""; loadTransactions();
+    } catch (e) { }
+};
+
+window.saveExpense = async () => {
+    const title = document.getElementById("exp_title").value.trim(); const amt = document.getElementById("exp_amount").value; const date = document.getElementById("exp_date").value;
+    if (!title || !amt || !date) return alert("Fill all expense details.");
+    try {
+        const { error } = await supabaseClient.from("transactions").insert({ schoolId: currentSchoolId, type: "Expense", personName: title, amount: Number(amt), mode: "Cash/Bank", date: date, createdAt: new Date().toISOString() });
+        if (error) throw error;
+        alert("Expense Logged!"); document.getElementById("exp_title").value = ""; document.getElementById("exp_amount").value = ""; loadTransactions();
+    } catch (e) { }
+};
+
+window.fetchedTransactions = [];
+window.currentLedgerTab = 'All';
+
+async function loadTransactions() {
+    try {
+        const { data: rows, error } = await supabaseClient.from("transactions").select("*").eq("schoolId", currentSchoolId);
+        if (error) throw error;
+        window.fetchedTransactions = rows || [];
+        window.fetchedTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        let totalFees = 0, totalSalaries = 0, totalExpenses = 0;
+        window.fetchedTransactions.forEach(t => {
+            if (t.type === "Fee") totalFees += Number(t.amount);
+            if (t.type === "Salary") totalSalaries += Number(t.amount);
+            if (t.type === "Expense") totalExpenses += Number(t.amount);
+        });
+
+        document.getElementById("summary-fees").innerText = "₹ " + totalFees;
+        document.getElementById("summary-salaries").innerText = "₹ " + totalSalaries;
+        document.getElementById("summary-balance").innerText = "₹ " + (totalFees - (totalSalaries + totalExpenses));
+
+        if (window.initDashboardChart) window.initDashboardChart();
+        window.renderTransactionsTable();
+        document.getElementById("count-revenue").innerText = "Rs. " + (totalFees - totalSalaries - totalExpenses);
+
+        const staffNames = new Set(window.fetchedTransactions.filter(t => t.type === "Salary" && t.personName).map(t => t.personName));
+        const staffDropdown = document.getElementById("ledger-search-staff");
+        staffDropdown.innerHTML = '<option value="">All Staff</option>';
+        staffNames.forEach(name => {
+            staffDropdown.innerHTML += `<option value="${name}">${name}</option>`;
+        });
+
+        window.renderTransactionsTable();
+    } catch (e) { }
+}
+
+window.switchLedgerTab = (tab, btnElement) => {
+    window.currentLedgerTab = tab;
+    document.querySelectorAll('#ledger-tabs .filter-btn').forEach(btn => btn.classList.remove('active'));
+    if (btnElement) btnElement.classList.add('active');
+
+    // Toggle Search Inputs
+    const classFilter = document.getElementById("ledger-search-class");
+    const staffFilter = document.getElementById("ledger-search-staff");
+
+    if (tab === 'Fee') {
+        classFilter.style.display = "block";
+        staffFilter.style.display = "none";
+        staffFilter.value = "";
+    } else if (tab === 'Salary') {
+        classFilter.style.display = "none";
+        classFilter.value = "";
+        staffFilter.style.display = "block";
+    } else {
+        classFilter.style.display = "none"; classFilter.value = "";
+        staffFilter.style.display = "none"; staffFilter.value = "";
+    }
+
+    document.getElementById("ledger-search-name").value = "";
+    document.getElementById("ledger-search-name").placeholder = tab === 'Fee' ? "Search by Student Name..." : (tab === 'Salary' ? "Search by Staff Name/ID..." : "Search by Name/Title...");
+
+    window.renderTransactionsTable();
+};
+
+window.renderTransactionsTable = () => {
+    const tbody = document.getElementById("transaction-table");
+    const nameSearch = document.getElementById("ledger-search-name").value.toLowerCase();
+    const classSearch = document.getElementById("ledger-search-class").value;
+    const staffSearch = document.getElementById("ledger-search-staff").value;
+
+    let filtered = window.fetchedTransactions;
+
+    if (window.currentLedgerTab !== 'All') {
+        filtered = filtered.filter(t => t.type === window.currentLedgerTab);
+    }
+
+    if (classSearch) {
+        filtered = filtered.filter(t => t.class === classSearch);
+    }
+
+    if (staffSearch) {
+        filtered = filtered.filter(t => t.personName === staffSearch);
+    }
+
+    if (nameSearch) {
+        filtered = filtered.filter(t => t.personName?.toLowerCase().includes(nameSearch));
+    }
+
+    let html = "";
+    filtered.forEach(t => {
+        const typeColor = t.type === "Fee" ? "#27ae60" : (t.type === "Expense" ? "#e53e3e" : "#e67e22");
+        const details = t.type === "Fee" ? `Class: ${t.class || 'N/A'}` : (t.type === "Expense" ? "School Expense" : "Staff Pay");
+        const actionBtn = t.type === 'Salary' ? `<button class="action-btn btn-blue" style="padding:2px 5px; font-size:10px; margin-left:5px;" onclick="window.generatePayslip('${t.id}')"><i class="fas fa-download"></i> Slip</button>` : '';
+        html += `<tr><td>${t.date}</td><td><strong style="color:${typeColor}">${t.type}</strong></td><td>${t.personName || 'N/A'}</td><td>${details}</td><td style="font-weight:bold;">Rs. ${t.amount}</td><td>${t.mode} ${actionBtn}</td>
+        <td><button class="action-btn btn-red" onclick="window.requestTransactionDeletion('${t.id}')"><i class="fas fa-trash"></i></button></td></tr>`;
+    });
+
+    tbody.innerHTML = html || "<tr><td colspan='7' style='text-align:center;'>No Financial Records Found.</td></tr>";
+}
+
+window.requestTransactionDeletion = async (id) => {
+    const t = window.fetchedTransactions.find(x => x.id === id);
+    if (!t) return;
+
+    if (confirm("Request Super Admin to delete this transaction?")) {
+        try {
+            const { error } = await supabaseClient.from("pending_deletions").upsert({
+                id,
+                ...t,
+                targetDocId: id,
+                targetCollection: 'transactions',
+                schoolId: window.currentSchoolId || t.schoolId || 'UNKNOWN',
+                requestDate: new Date().toISOString(),
+                status: "Pending"
+            });
+            if (error) throw error;
+            alert("Deletion request sent to Super Admin for approval.");
+        } catch (e) {
+            console.error(e);
+            alert("Error sending deletion request.");
+        }
+    }
+};
+
+window.downloadLedgerPDF = () => {
+    try {
+        if (!window.jspdf?.jsPDF) {
+            alert("The PDF library is not loaded yet. Please refresh the page and try again.");
+            return;
+        }
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('l', 'mm', 'a4');
+
+        const transactions = Array.isArray(window.fetchedTransactions) ? window.fetchedTransactions : [];
+        const nameSearch = (document.getElementById("ledger-search-name")?.value || "").toLowerCase();
+        const classSearch = document.getElementById("ledger-search-class")?.value || "";
+        const staffSearch = document.getElementById("ledger-search-staff")?.value || "";
+
+        let filtered = [...transactions];
+        if ((window.currentLedgerTab || 'All') !== 'All') { filtered = filtered.filter(t => t.type === window.currentLedgerTab); }
+        if (classSearch) { filtered = filtered.filter(t => t.class === classSearch); }
+        if (staffSearch) { filtered = filtered.filter(t => t.personName === staffSearch); }
+        if (nameSearch) { filtered = filtered.filter(t => t.personName?.toLowerCase().includes(nameSearch)); }
+
+        if (!filtered.length) {
+            alert("No ledger records are available for the selected filter.");
+            return;
+        }
+
+        pdf.setFontSize(18);
+        pdf.text(currentSchoolName || "Combined Financial Ledger", 14, 18);
+        pdf.setFontSize(11);
+        pdf.text(`Report: ${(window.currentLedgerTab || 'All')} Transactions | Records: ${filtered.length}`, 14, 26);
+        pdf.text(`Generated: ${new Date().toLocaleString()}`, 14, 33);
+
+        let y = 45;
+        const drawHeader = () => {
+            pdf.setFillColor(239, 246, 255);
+            pdf.rect(12, y - 6, 270, 9, 'F');
+            pdf.setFontSize(10);
+            pdf.setFont(undefined, 'bold');
+            pdf.text("Date", 14, y);
+            pdf.text("Type", 42, y);
+            pdf.text("Name/Title", 72, y);
+            pdf.text("Details", 125, y);
+            pdf.text("Amount", 188, y);
+            pdf.text("Mode", 228, y);
+            pdf.setFont(undefined, 'normal');
+            y += 10;
+        };
+        drawHeader();
+
+        filtered.forEach(t => {
+            if (y > 190) {
+                pdf.addPage();
+                y = 20;
+                drawHeader();
+            }
+            const details = t.type === "Fee" ? `Class: ${t.class || 'N/A'}` : (t.type === "Expense" ? "School Expense" : "Staff Pay");
+            pdf.text(String(t.date || '').substring(0, 12), 14, y);
+            pdf.text(String(t.type || ''), 42, y);
+            pdf.text(String(t.personName || 'N/A').substring(0, 24), 72, y);
+            pdf.text(details.substring(0, 28), 125, y);
+            pdf.text("Rs. " + (t.amount || 0), 188, y);
+            pdf.text(String(t.mode || '').substring(0, 18), 228, y);
+            y += 9;
+        });
+
+        pdf.save(`Ledger_Report_${new Date().toISOString().slice(0, 10)}.pdf`);
+    } catch (e) {
+        console.error(e);
+        alert("Ledger PDF generation failed. Check the console for details.");
+    }
+};
+
+window.generatePayslip = async (id) => {
+    const t = window.fetchedTransactions.find(x => x.id === id);
+    if (!t) return;
+
+    const slipDiv = document.createElement('div');
+    slipDiv.style.position = 'absolute';
+    slipDiv.style.top = '-9999px';
+    slipDiv.style.left = '-9999px';
+    slipDiv.style.width = '210mm';
+    slipDiv.style.padding = '40px';
+    slipDiv.style.background = '#fff';
+    slipDiv.style.color = '#000';
+    slipDiv.style.fontFamily = 'Arial, sans-serif';
+
+    const schoolName = currentSchoolName || 'School Name';
+    slipDiv.innerHTML = `
+        <div style="text-align:center; border-bottom:2px solid #ccc; padding-bottom:20px; margin-bottom:20px;">
+            <h1 style="margin:0; font-size:24px; color:#1e3c72;">${schoolName.toUpperCase()}</h1>
+            <p style="margin:5px 0 0 0; color:#555;">STAFF SALARY SLIP</p>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:30px;">
+            <div>
+                <p><strong>Employee Name:</strong> ${t.personName}</p>
+                <p><strong>Payment Date:</strong> ${new Date(t.date).toLocaleDateString()}</p>
+            </div>
+            <div>
+                <p><strong>Transaction ID:</strong> ${t.id}</p>
+                <p><strong>Payment Mode:</strong> ${t.mode}</p>
+            </div>
+        </div>
+        <table style="width:100%; border-collapse:collapse; margin-bottom:40px;">
+            <thead>
+                <tr style="background:#f4f4f4;">
+                    <th style="padding:12px; border:1px solid #ccc; text-align:left;">Description</th>
+                    <th style="padding:12px; border:1px solid #ccc; text-align:right;">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="padding:12px; border:1px solid #ccc;">Basic Salary Disbursement</td>
+                    <td style="padding:12px; border:1px solid #ccc; text-align:right;">Rs. ${t.amount}</td>
+                </tr>
+                <tr>
+                    <td style="padding:12px; border:1px solid #ccc; font-weight:bold; text-align:right;">Net Payable:</td>
+                    <td style="padding:12px; border:1px solid #ccc; font-weight:bold; text-align:right;">Rs. ${t.amount}</td>
+                </tr>
+            </tbody>
+        </table>
+        <div style="display:flex; justify-content:flex-end; margin-top:50px;">
+            <div style="text-align:center;">
+                ${currentSignatureUrl ? `<img src="${currentSignatureUrl}" style="height:50px; margin-bottom:5px;">` : `<div style="height:50px;"></div>`}
+                <div style="border-top:1px solid #000; padding-top:5px;">Authorized Signatory</div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(slipDiv);
+    try {
+        const canvas = await html2canvas(slipDiv, { scale: 2 });
+        const imgData = canvas.toDataURL('image/jpeg', 1.0);
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const imgProps = pdf.getImageProperties(imgData);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+        pdf.save(`Payslip_${t.personName.replace(/\s+/g, '_')}_${t.date}.pdf`);
+    } catch (e) {
+        console.error(e);
+        alert('Error generating pay-slip');
+    } finally {
+        document.body.removeChild(slipDiv);
+    }
+}
+
+// ================= STUDENTS, CERTS & DEFAULTER LOCKDOWN =================
+async function loadStudents() {
+    try {
+        const { data: studentRows, error: studentError } = await supabaseClient.from("students").select("*").eq("schoolId", currentSchoolId);
+        if (studentError) throw studentError;
+        let pendingCount = 0; let totalPresent = 0;
+        
+        // --- SECURE BATCH 2 READ PATH FOR ADMISSIONS ---
+        const { data: admissionRows, error: admissionError } = await supabaseClient.from("admission_applications").select("*").eq("schoolId", currentSchoolId);
+        if (admissionError) throw admissionError;
+        
+        window.fetchedStudents = []; 
+        
+        // Push actual students. The approval function keeps the profile fields
+        // (name, rollNo, mobile, parentage, photoUrl, status ...) inside the
+        // JSONB `data` column of `students`, so flatten it exactly like the
+        // admission payload below - otherwise every real student renders as
+        // "N/A". A students row carrying no status at all is an enrolled
+        // (approved) student by definition.
+        (studentRows || []).forEach(dt => {
+            let row = (dt && dt.data) ? { ...dt, ...dt.data } : dt;
+            if (!row.status) row.status = "Approved";
+            // Legacy pendings (should be 0)
+            if (row.status === "Pending") pendingCount++;
+            window.fetchedStudents.push(row);
+        });
+
+        // Push only ACTIONABLE (Pending) admission applications.
+        // Approved / Rejected applications remain in `admission_applications`
+        // as audit history, but the approved child already exists in `students`
+        // (created by approve_admission), so merging finished applications into
+        // the student list rendered the same child twice.
+        (admissionRows || []).forEach(dt => {
+            // Flatten JSONB payload to match legacy format
+            let flatDt = { ...dt, ...dt.data, _isNewAdmission: true };
+            // Finished applications (Approved / Rejected) are history only.
+            if (flatDt.status !== "Pending") return;
+            pendingCount++;
+            window.fetchedStudents.push(flatDt);
+        });
+
+        document.getElementById("count-students").innerText = (studentRows || []).length; 
+        document.getElementById("count-pending").innerText = pendingCount;
+
+        if (studentRows && studentRows.length > 0) {
+            try {
+                const todayStr = new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD
+                const { data: attendanceRows, error: attendanceError } = await supabaseClient.from("attendance").select("*").eq("schoolId", currentSchoolId).eq("date", todayStr);
+                if (attendanceError) throw attendanceError;
+                let totalStudentsRecorded = 0;
+                let totalPresent = 0;
+                (attendanceRows || []).forEach(record => {
+                    const recs = record.records || {};
+                    for (let sid in recs) {
+                        totalStudentsRecorded++;
+                        if (recs[sid] === "Present") totalPresent++;
+                    }
+                });
+                let att = 0;
+                if (totalStudentsRecorded > 0) {
+                    att = Math.floor((totalPresent / totalStudentsRecorded) * 100);
+                } else {
+                    att = "N/A ";
+                }
+                document.getElementById("count-attendance").innerText = att + (att !== "N/A " ? "%" : "");
+            } catch (e) {
+                document.getElementById("count-attendance").innerText = "Err";
+            }
+        }
+
+        renderClassFilters(); renderStudentsTable("All"); populateTransferStudentOptions(); window.renderStudentExportRecords();
+    } catch (e) { }
+}
+
+function renderClassFilters() {
+    const classes = institutionIsCollege() ? ["1st Semester", "2nd Semester", "3rd Semester", "4th Semester", "5th Semester", "6th Semester"] : ["Nursery", "LKG", "UKG", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th"];
+    let html = `<button class="filter-btn active" onclick="filterStudents('All', this)">All</button>`;
+    classes.forEach(c => html += `<button class="filter-btn" onclick="filterStudents('${c}', this)">${c}</button>`);
+    document.getElementById("class-filters").innerHTML = html;
+}
+
+window.filterStudents = (className, btnElement) => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    if (btnElement) btnElement.classList.add('active');
+    sessionStorage.setItem('activeStudentTab', className);
+    renderStudentsTable(className);
+    renderAdmitCardStudentsTable(className);
+};
+
+window.searchStudent = () => {
+    const term = document.getElementById("searchStudentInput").value;
+    const activeClass = document.querySelector('.filter-btn.active') ? document.querySelector('.filter-btn.active').innerText : (sessionStorage.getItem('activeStudentTab') || 'All');
+    renderStudentsTable(activeClass, term);
+    renderAdmitCardStudentsTable(activeClass, term);
+};
+
+window.filterByStatus = (status) => {
+    switchTab('tab-students');
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('.filter-btn').classList.add('active');
+    renderStudentsTable('All', null, status);
+    renderAdmitCardStudentsTable('All', null, status);
+};
+
+function renderStudentsTable(className, searchTerm = null, statusFilter = null) {
+    const tbody = document.getElementById("student-table"); let html = "";
+    let filtered = className === "All" ? window.fetchedStudents : window.fetchedStudents.filter(s => s.class && s.class.toUpperCase() === className.toUpperCase());
+
+    if (statusFilter && statusFilter !== 'all') {
+        filtered = filtered.filter(s => s.status && s.status.toLowerCase() === statusFilter.toLowerCase());
+    }
+
+    if (searchTerm) {
+        const lowerTerm = searchTerm.toLowerCase();
+        filtered = filtered.filter(s =>
+            (s.name && s.name.toLowerCase().includes(lowerTerm)) ||
+            (s.rollNo && String(s.rollNo).includes(lowerTerm)) ||
+            (s.regNo && String(s.regNo).includes(lowerTerm)) ||
+            (s.mobile && String(s.mobile).includes(lowerTerm))
+        );
+    }
+
+    filtered.sort((a, b) => (Number(a.rollNo) || 999999) - (Number(b.rollNo) || 999999));
+
+    filtered.forEach(dt => {
+        const safeId = studentHtml(dt.id).replace(/"/g, '&quot;');
+        const locked = dt.lockedOut;
+        const safeNameAttr = studentHtml(dt.name).replace(/"/g, '&quot;');
+        const safeName = studentHtml(dt.name);
+        const safeMobile = studentHtml(dt.mobile);
+        const safeRollNo = studentHtml(dt.rollNo);
+        const safeClass = studentHtml(dt.class);
+        const safeParentage = studentHtml(dt.parentage || dt.fatherName);
+        const safeMother = studentHtml(dt.motherName);
+        const safeStatus = studentHtml(dt.status);
+        const feeDueNum = Number(dt.feeDue) || 0;
+        
+        let safePhoto = dt.photoUrl ? studentHtml(dt.photoUrl) : 'https://via.placeholder.com/100';
+        if (!isSafeStudentPhotoUrl(safePhoto)) {
+            safePhoto = 'https://via.placeholder.com/100';
+        }
+
+        const statusColor = safeStatus === 'Approved' ? '#27ae60' : (safeStatus === 'Pending' ? '#e67e22' : '#e53e3e'); 
+        const statusIcon = safeStatus === 'Approved' ? '<i class="fas fa-check"></i>' : '<i class="fas fa-clock"></i>';
+
+        const lockBtn = locked ? `<button class="action-btn btn-green" data-id="${safeId}" onclick="toggleStudentLock(this.dataset.id, false)" title="Unlock Account"><i class="fas fa-unlock"></i></button>` : `<button class="action-btn btn-dark" data-id="${safeId}" onclick="toggleStudentLock(this.dataset.id, true)" title="Lock Account"><i class="fas fa-lock"></i></button>`;
+
+        const actionBtns = safeStatus === "Pending"
+            ? (dt._isNewAdmission 
+                ? `<button class="action-btn btn-green" data-id="${safeId}" onclick="updateStudentStatus(this.dataset.id, true)"><i class="fas fa-check"></i> Approve</button>`
+                : `<button class="action-btn btn-green" data-id="${safeId}" onclick="updateStudentStatus(this.dataset.id, false)"><i class="fas fa-check"></i> Approve (Legacy)</button>`)
+            : `
+            <button class="action-btn btn-blue" data-id="${safeId}" onclick="showIDCard(this.dataset.id)"><i class="fas fa-id-card"></i> ID</button>
+            <button class="action-btn" style="background:#3b82f6; color:white;" data-id="${safeId}" data-name="${safeNameAttr}" onclick="window.openDirectMessageModal(this.dataset.id, this.dataset.name)"><i class="fas fa-comment-dots"></i> Message</button>
+            <button class="action-btn btn-purple" data-id="${safeId}" onclick="openStudentModal(this.dataset.id)"><i class="fas fa-edit"></i> Edit</button>
+            ${institutionIsCollege() ? `<button class="action-btn" style="background:#0d9488;color:white;" data-id="${safeId}" title="Academic Placement" onclick="window.openStudentPlacement(this.dataset.id)"><i class="fas fa-sitemap"></i></button>` : ''}${lockBtn}`;
+
+        html += `<tr class="${locked ? 'locked-row' : ''}">
+            <td style="text-align:center;"><input type="checkbox" class="student-select-checkbox" data-id="${safeId}" onchange="window.toggleStudentSelection(this.dataset.id, this.checked)" ${window.selectedStudentIds.has(dt.id) ? 'checked' : ''}></td>
+            <td><img src="${safePhoto}" class="img-circle"></td>
+            <td><strong style="display:block; font-size:13px;">${safeName} ${locked ? '<i class="fas fa-lock" style="color:#e53e3e"></i>' : ''}</strong><small style="color:#7f8c8d;">${safeMobile === 'N/A' ? 'No Mobile' : safeMobile}</small></td>
+            <td><span style="font-weight:bold; font-size:13px; color:#333;">${safeRollNo}</span></td>
+            <td><span style="background:#eaf4ff; color:#2c7be5; padding:3px 8px; border-radius:12px; font-size:12px; font-weight:bold;">Class: ${safeClass}</span>${dt.subjects && dt.subjects.length > 0 ? `<br><small style="color:#64748b; font-size:10px;">` + escapeHtml(dt.subjects.join(", ")) + `</small>` : ""}</td>
+            <td><span style="font-size:12px; display:block;"><b>P:</b> ${safeParentage}</span><span style="font-size:12px; display:block;"><b>M:</b> ${safeMother}</span></td>
+            <td><div style="font-size:11px; font-weight:bold; padding:2px 6px; border-radius:4px; display:inline-block; border:1px solid ${statusColor}; color:${statusColor};">${statusIcon} ${safeStatus}</div><br><span style="font-size:11px; color:#7f8c8d;">Due: ₹${feeDueNum.toLocaleString('en-IN')}</span></td>
+            <td><div class="action-btn-group">${actionBtns} <button class="action-btn btn-red" data-id="${safeId}" onclick="deleteStudent(this.dataset.id)"><i class="fas fa-trash"></i></button></div></td>
+        </tr>`;
+    });
+    tbody.innerHTML = html || "<tr><td colspan='8' style='text-align:center; padding:30px; color:#999;'>No Students Found.</td></tr>";
+    const selectAll = document.getElementById('select-all-students');
+    if (selectAll) {
+        const visibleIds = filtered.map(s => s.id);
+        selectAll.checked = visibleIds.length > 0 && visibleIds.every(id => window.selectedStudentIds.has(id));
+    }
+}
+
+window.toggleStudentSelection = (studentId, checked) => {
+    if (checked) window.selectedStudentIds.add(studentId);
+    else window.selectedStudentIds.delete(studentId);
+    updateExportSelectionUI();
+};
+
+window.toggleSelectAllStudents = (checked) => {
+    document.querySelectorAll('.student-select-checkbox').forEach(cb => {
+        cb.checked = checked;
+        if (checked) window.selectedStudentIds.add(cb.value);
+        else window.selectedStudentIds.delete(cb.value);
+    });
+};
+
+// Dedicated A4 Student Records Export Center. This intentionally uses the same
+// selection set as the student database, while keeping export controls isolated.
+function getExportScopeStudents() {
+    const selectedClass = document.getElementById('export-records-class')?.value || 'ALL';
+    return (window.fetchedStudents || [])
+        .filter(student => selectedClass === 'ALL' || String(student.class || '').toLowerCase() === selectedClass.toLowerCase())
+        .sort((a, b) => (Number(a.rollNo) || 999999) - (Number(b.rollNo) || 999999));
+}
+
+function updateExportSelectionUI(scope = getExportScopeStudents()) {
+    const selectedCount = scope.filter(student => window.selectedStudentIds.has(student.id)).length;
+    const countEl = document.getElementById('export-selected-count');
+    const selectAll = document.getElementById('export-select-all-students');
+    if (countEl) countEl.textContent = selectedCount;
+    if (selectAll) {
+        selectAll.checked = scope.length > 0 && selectedCount === scope.length;
+        selectAll.indeterminate = selectedCount > 0 && selectedCount < scope.length;
+    }
+}
+
+window.renderStudentExportRecords = () => {
+    const tbody = document.getElementById('export-student-records-body');
+    if (!tbody) return;
+    const scope = getExportScopeStudents();
+    if (!scope.length) {
+        tbody.innerHTML = '<tr><td colspan="8" class="export-empty-state">No student records found for this class.</td></tr>';
+        updateExportSelectionUI(scope);
+        return;
+    }
+    tbody.innerHTML = scope.map(student => {
+        const id = String(student.id).replace(/'/g, "\\'");
+        const checked = window.selectedStudentIds.has(student.id) ? ' checked' : '';
+        const status = student.status || 'Approved';
+        return `<tr>
+            <td class="export-check-column"><input type="checkbox" value="${id}"${checked}
+                onchange="window.toggleExportStudent('${id}', this.checked)"></td>
+            <td>${student.rollNo || 'N/A'}</td>
+            <td><strong>${student.name || 'N/A'}</strong></td>
+            <td>${student.class || 'Unassigned'}</td>
+            <td>${student.regNo || 'N/A'}</td>
+            <td>${student.parentage || student.fatherName || 'N/A'}</td>
+            <td>${student.mobile || 'N/A'}</td>
+            <td><span class="export-status-pill">${status}</span></td>
+        </tr>`;
+    }).join('');
+    updateExportSelectionUI(scope);
+};
+
+window.toggleExportStudent = (studentId, checked) => {
+    if (checked) window.selectedStudentIds.add(studentId);
+    else window.selectedStudentIds.delete(studentId);
+    updateExportSelectionUI();
+};
+
+window.toggleSelectAllExportStudents = (checked) => {
+    getExportScopeStudents().forEach(student => {
+        if (checked) window.selectedStudentIds.add(student.id);
+        else window.selectedStudentIds.delete(student.id);
+    });
+    window.renderStudentExportRecords();
+};
+
+window.exportSelectedStudentsPDF = async () => {
+    const scope = getExportScopeStudents();
+    const selected = scope.filter(student => window.selectedStudentIds.has(student.id));
+    if (!selected.length) return alert('Please select at least one student record.');
+    if (!window.jspdf?.jsPDF || typeof html2canvas !== 'function') {
+        return alert('The PDF library is not loaded yet. Please refresh the page and try again.');
+    }
+
+    const schoolName = currentSchoolName || document.getElementById('top-school-name')?.innerText || 'School Name';
+    const selectedClass = document.getElementById('export-records-class')?.value || 'ALL';
+    const classTitle = selectedClass === 'ALL' ? 'All Classes' : `Class ${selectedClass}`;
+    const accent = /^#[0-9a-f]{6}$/i.test(currentThemeColor || '') ? currentThemeColor : '#2563eb';
+    const escapeHtml = value => {
+        const span = document.createElement('span');
+        span.textContent = String(value ?? 'N/A');
+        return span.innerHTML;
+    };
+    const recordSheets = document.createElement('div');
+    recordSheets.className = 'student-record-pdf-root';
+    recordSheets.style.cssText = 'position:absolute;left:-10000px;top:0;width:794px;background:#fff;z-index:-1;';
+
+    const pages = [];
+    for (let index = 0; index < selected.length; index += 18) pages.push(selected.slice(index, index + 18));
+    recordSheets.innerHTML = pages.map((students, pageIndex) => `
+        <section class="student-record-pdf-page" style="position:relative;width:794px;height:1123px;box-sizing:border-box;padding:22px 28px;background:#fff;color:#172033;font-family:Arial,sans-serif;overflow:hidden;">
+            <header style="border-bottom:3px solid ${accent};padding-bottom:8px;margin-bottom:10px;text-align:center;">
+                <h1 style="margin:0;color:${accent};font-size:20px;line-height:1.2;text-transform:uppercase;">${escapeHtml(schoolName)}</h1>
+                <div style="margin-top:4px;color:#475569;font-size:9px;font-weight:700;letter-spacing:1px;">STUDENT RECORD • ${escapeHtml(classTitle.toUpperCase())}</div>
+            </header>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+                ${students.map(student => `
+                    <article style="height:158px;box-sizing:border-box;border:1.5px solid ${accent};border-radius:5px;overflow:hidden;background:#f8fafc;">
+                        <div style="height:5px;background:${accent};"></div>
+                        <div style="display:flex;gap:7px;padding:7px 7px 4px;">
+                            <div style="width:52px;flex:0 0 52px;">
+                                <img src="${escapeHtml(student.photoUrl || 'https://via.placeholder.com/80?text=Photo')}" crossorigin="anonymous" style="display:block;width:52px;height:64px;object-fit:cover;border:1px solid #cbd5e1;border-radius:3px;background:#fff;">
+                                <div style="margin-top:3px;padding:2px;border-radius:3px;background:${accent};color:#fff;text-align:center;font-size:6.5px;font-weight:700;">${escapeHtml(student.status || 'Approved')}</div>
+                            </div>
+                            <div style="min-width:0;flex:1;overflow:hidden;">
+                                <h2 style="margin:0 0 3px;color:${accent};font-size:10px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(student.name || 'N/A')}</h2>
+                                <div style="font-size:7px;line-height:1.55;color:#334155;white-space:nowrap;overflow:hidden;">
+                                    <div><b>Class:</b> ${escapeHtml(student.class || 'N/A')} &nbsp; <b>Roll:</b> ${escapeHtml(student.rollNo || 'N/A')}</div>
+                                    <div style="text-overflow:ellipsis;overflow:hidden;"><b>Reg:</b> ${escapeHtml(student.regNo || 'N/A')}</div>
+                                    <div><b>Mobile:</b> ${escapeHtml(student.mobile || 'N/A')}</div>
+                                    <div><b>DOB:</b> ${escapeHtml(student.dob || 'N/A')}</div>
+                                    <div><b>Gender:</b> ${escapeHtml(student.gender || 'N/A')}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="margin:0 7px;padding:4px 5px;border-top:1px solid #dbe4ef;background:#fff;font-size:6.7px;line-height:1.4;color:#334155;overflow:hidden;">
+                            <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><b>Father:</b> ${escapeHtml(student.parentage || student.fatherName || 'N/A')}</div>
+                            <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><b>Mother:</b> ${escapeHtml(student.motherName || 'N/A')}</div>
+                            <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><b>Address:</b> ${escapeHtml(student.address || 'N/A')}</div>
+                        </div>
+                    </article>`).join('')}
+            </div>
+            <footer style="position:absolute;left:28px;right:28px;bottom:12px;display:flex;justify-content:space-between;border-top:1px solid #cbd5e1;padding-top:5px;color:#64748b;font-size:8px;">
+                <span>Generated: ${new Date().toLocaleDateString()}</span>
+                <span>Page ${pageIndex + 1} of ${pages.length}</span>
+            </footer>
+        </section>`).join('');
+    document.body.appendChild(recordSheets);
+
+    const button = document.getElementById('export-student-records-btn');
+    if (button) { button.disabled = true; button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing PDF'; }
+    try {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const sheets = recordSheets.querySelectorAll('.student-record-pdf-page');
+        for (let pageIndex = 0; pageIndex < sheets.length; pageIndex++) {
+            const canvas = await html2canvas(sheets[pageIndex], { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false });
+            if (pageIndex > 0) pdf.addPage();
+            pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, 297);
+        }
+        const safeSchoolName = schoolName.replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '') || 'School';
+        pdf.save(`Student_Record_${safeSchoolName}_${new Date().toISOString().slice(0, 10)}.pdf`);
+    } catch (error) {
+        console.error('Student record PDF export failed:', error);
+        alert('Student record PDF export failed. Please check student photos and try again.');
+    } finally {
+        recordSheets.remove();
+        if (button) { button.disabled = false; button.innerHTML = '<i class="fas fa-file-pdf"></i> Export PDF'; }
+    }
+};
+
+window.filterAdmitStudents = (className) => {
+    sessionStorage.setItem('activeAdmitStudentTab', className);
+    renderAdmitCardStudentsTable(className);
+};
+
+window.searchAdmitStudent = () => {
+    const term = document.getElementById("searchAdmitStudentInput").value;
+    const activeClass = document.getElementById("admit_class_select").value || sessionStorage.getItem('activeAdmitStudentTab') || 'All';
+    renderAdmitCardStudentsTable(activeClass, term);
+};
+
+function renderAdmitCardStudentsTable(className = "ALL", searchTerm = null, statusFilter = null) {
+    const tbody = document.getElementById("admit-student-table");
+    if (!tbody) return;
+    let html = "";
+
+    let filtered = className.toUpperCase() === "ALL" ? window.fetchedStudents : window.fetchedStudents.filter(s => s.class && s.class.toUpperCase() === className.toUpperCase());
+
+    if (statusFilter && statusFilter !== 'all') {
+        filtered = filtered.filter(s => s.status && s.status.toLowerCase() === statusFilter.toLowerCase());
+    }
+
+    if (searchTerm) {
+        const lowerTerm = searchTerm.toLowerCase();
+        filtered = filtered.filter(s =>
+            (s.name && s.name.toLowerCase().includes(lowerTerm)) ||
+            (s.rollNo && String(s.rollNo).includes(lowerTerm)) ||
+            (s.regNo && String(s.regNo).includes(lowerTerm)) ||
+            (s.mobile && String(s.mobile).includes(lowerTerm))
+        );
+    }
+
+    filtered.sort((a, b) => (Number(a.rollNo) || 999999) - (Number(b.rollNo) || 999999));
+
+    filtered.forEach(dt => {
+        const safeId = dt.id.replace(/'/g, "\\'");
+        const locked = dt.lockedOut;
+
+        // NO Generate ID Card Button
+        const actionBtns = `
+            <button class="action-btn btn-purple" onclick="downloadMyAdmitCard('${safeId}')"><i class="fas fa-file-alt"></i> Admit Card</button>
+            <button class="action-btn" style="background:#10b981; color:white;" onclick="downloadMyMarksheet('${safeId}')"><i class="fas fa-file-invoice"></i> Marksheet</button>
+        `;
+
+        const toggleHtml = `<label class="switch" style="transform: scale(0.8);"><input type="checkbox" onchange="toggleAdmitCardVisibility('${safeId}', this.checked)" ${dt.admitCardPublished ? 'checked' : ''}><span class="slider"></span></label>`;
+
+        html += `<tr class="${locked ? 'locked-row' : ''}">
+            <td><img src="${dt.photoUrl || 'https://via.placeholder.com/100'}" class="img-circle"></td>
+            <td><strong style="display:block; font-size:13px;">${dt.name || 'N/A'} ${locked ? '<i class="fas fa-lock" style="color:#e53e3e"></i>' : ''}</strong><span style="font-size:12px; display:block;"><b>P:</b> ${(dt.parentage || dt.fatherName) || 'N/A'}</span></td>
+            <td><span style="background:#eaf4ff; color:#2c7be5; padding:3px 8px; border-radius:12px; font-size:12px; font-weight:bold;">Class: ${dt.class || 'N/A'} (Roll: ${dt.rollNo || 'N/A'})</span></td>
+            <td><span style="font-size:13px; font-weight:bold; color:#e53e3e;">₹${dt.feeDue || 0}</span></td>
+            <td style="text-align: center;">${toggleHtml}</td>
+            <td><div class="action-btn-group">${actionBtns}</div></td>
+        </tr>`;
+    });
+    tbody.innerHTML = html || "<tr><td colspan='6' style='text-align:center; padding:30px; color:#999;'>No Students Found.</td></tr>";
+}
+
+window.toggleAdmitCardVisibility = async (studentId, isPublished) => {
+    try {
+        const { error: rpcError } = await supabaseClient.rpc('update_student', { p_student_id: studentId, p_payload: { admitCardPublished: isPublished } });
+        if (rpcError) throw new Error(rpcError.message);
+        // Optionally update the local fetched array so it persists on re-filter
+        const idx = window.fetchedStudents.findIndex(s => s.id === studentId);
+        if (idx !== -1) window.fetchedStudents[idx].admitCardPublished = isPublished;
+        console.log(`Admit card visibility updated for ${studentId}: ${isPublished}`);
+    } catch (error) {
+        console.error("Error toggling admit card visibility:", error);
+        alert("Failed to update database.");
+    }
+};
+
+window.populateStudentsForMarks = () => {
+    const classVal = document.getElementById("marks_class").value;
+    const studentSelect = document.getElementById("marks_student");
+    studentSelect.innerHTML = '<option value="">-- Select Student --</option>';
+    if (!classVal) return;
+
+    const students = window.fetchedStudents.filter(s => s.class === classVal);
+    students.forEach(s => {
+        studentSelect.innerHTML += `<option value="${s.id}">${s.name} (${s.rollNo || 'N/A'})</option>`;
+    });
+
+    const subjects = window.examSubjects || ['English', 'Mathematics', 'Science', 'Social Studies', 'Hindi/Local'];
+    const tbody = document.getElementById("marks_entry_table");
+    tbody.innerHTML = '';
+
+    subjects.forEach((sub, idx) => {
+        tbody.innerHTML += `<tr>
+            <td style="padding:10px; border:1px solid #ccc;">${sub}</td>
+            <td style="padding:10px; border:1px solid #ccc; text-align:center;"><input type="number" id="marks_max_${idx}" value="100" class="input-premium" style="width:60px;"></td>
+            <td style="padding:10px; border:1px solid #ccc; text-align:center;"><input type="number" id="marks_min_${idx}" value="33" class="input-premium" style="width:60px;"></td>
+            <td style="padding:10px; border:1px solid #ccc; text-align:center;"><input type="number" id="marks_obt_${idx}" class="input-premium" style="width:80px;" placeholder="Marks"></td>
+        </tr>`;
+    });
+};
+
+window.saveStudentMarks = async () => {
+    const studentId = document.getElementById("marks_student").value;
+    if (!studentId) return alert("Please select a student.");
+    const examTerm = document.getElementById("marks_exam_term") ? document.getElementById("marks_exam_term").value : "Annual Examination 2026";
+
+    const subjects = window.examSubjects || ['English', 'Mathematics', 'Science', 'Social Studies', 'Hindi/Local'];
+    const marksData = {};
+
+    let totalObt = 0;
+    let totalMax = 0;
+
+    subjects.forEach((sub, idx) => {
+        const max = parseFloat(document.getElementById(`marks_max_${idx}`).value) || 100;
+        const min = parseFloat(document.getElementById(`marks_min_${idx}`).value) || 33;
+        const obt = parseFloat(document.getElementById(`marks_obt_${idx}`).value) || 0;
+        totalMax += max;
+        totalObt += obt;
+        let grade = obt >= (0.9 * max) ? 'A+' : (obt >= (0.8 * max) ? 'A' : (obt >= (0.7 * max) ? 'B' : (obt >= min ? 'C' : 'F')));
+        marksData[sub] = { max, min, obt, grade };
+    });
+
+    try {
+        const { error } = await supabaseClient.from("student_marks").upsert({
+            id: studentId,
+            marks: marksData,
+            totalMax,
+            totalObt,
+            examTerm: examTerm,
+            updatedAt: new Date().toISOString()
+        });
+        if (error) throw error;
+        alert("Marks saved successfully!");
+    } catch (e) {
+        console.error(e);
+        alert("Error saving marks.");
+    }
+};
+
+async function getTransparentSignature(sigUrl) {
+    try {
+        // Assuming backend is running on the same domain or configure full URL
+        const res = await fetch('https://school-backend-zlgy.onrender.com/api/remove-bg', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imageUrl: sigUrl })
+        });
+        const data = await res.json();
+        return data.success ? data.base64 : sigUrl;
+    } catch (e) {
+        return sigUrl;
+    }
+}
+
+window.generateMarksheet = async (st, marksDoc) => {
+    const slipDiv = document.createElement('div');
+    slipDiv.style.position = 'absolute';
+    slipDiv.style.top = '-9999px';
+    slipDiv.style.left = '-9999px';
+    slipDiv.style.width = '210mm';
+    slipDiv.style.padding = '40px';
+    slipDiv.style.background = '#fff';
+    slipDiv.style.color = '#000';
+    slipDiv.style.fontFamily = 'Arial, sans-serif';
+
+    const schoolName = currentSchoolName || 'School Name';
+    const examTerm = marksDoc.examTerm || 'Annual Examination 2026';
+
+    let rowsHtml = '';
+    let totalMarks = marksDoc.totalObt || 0;
+    let maxTotal = marksDoc.totalMax || 0;
+
+    Object.keys(marksDoc.marks || {}).forEach(sub => {
+        const m = marksDoc.marks[sub];
+        rowsHtml += `<tr>
+            <td style="padding:10px; border:1px solid #ccc;">${sub}</td>
+            <td style="padding:10px; border:1px solid #ccc; text-align:center;">${m.max}</td>
+            <td style="padding:10px; border:1px solid #ccc; text-align:center;">${m.min}</td>
+            <td style="padding:10px; border:1px solid #ccc; text-align:center;">${m.obt}</td>
+            <td style="padding:10px; border:1px solid #ccc; text-align:center;">${m.grade}</td>
+        </tr>`;
+    });
+
+    const percentage = maxTotal > 0 ? ((totalMarks / maxTotal) * 100).toFixed(2) : 0;
+    const finalResult = percentage >= 33 ? '<span style="color:#27ae60;">PASS</span>' : '<span style="color:#e53e3e;">FAIL</span>';
+
+    slipDiv.innerHTML = `
+        <div style="text-align:center; margin-bottom:20px; padding-bottom:10px; border-bottom:3px double #1e3c72;">
+            <h1 style="margin:0; font-size:28px; color:#1e3c72; text-transform:uppercase;">${schoolName}</h1>
+            <p style="margin:5px 0 0 0; font-size:16px; letter-spacing:2px; font-weight:bold;">ACADEMIC PERFORMANCE REPORT - ${examTerm.toUpperCase()}</p>
+        </div>
+        
+        <div style="display:flex; justify-content:space-between; margin-bottom:20px; border:1px solid #ccc; padding:15px; border-radius:5px;">
+            <div style="flex:1;">
+                <p style="margin:5px 0;"><strong>Student Name:</strong> ${st.name}</p>
+                <p style="margin:5px 0;"><strong>Class/Section:</strong> ${st.class}</p>
+                <p style="margin:5px 0;"><strong>Roll Number:</strong> ${st.rollNo || 'N/A'}</p>
+            </div>
+            <div style="flex:1; text-align:right;">
+                <p style="margin:5px 0;"><strong>Parent/Guardian:</strong> ${(st.parentage || st.fatherName) || 'N/A'}</p>
+                <p style="margin:5px 0;"><strong>Date of Birth:</strong> ${st.dob || 'N/A'}</p>
+                <p style="margin:5px 0;"><strong>Reg No:</strong> ${st.regNo || 'N/A'}</p>
+            </div>
+        </div>
+        
+        <table style="width:100%; border-collapse:collapse; margin-bottom:20px;">
+            <thead>
+                <tr style="background:#1e3c72; color:#fff;">
+                    <th style="padding:10px; border:1px solid #1e3c72; text-align:left;">SUBJECTS</th>
+                    <th style="padding:10px; border:1px solid #1e3c72; text-align:center;">MAX MARKS</th>
+                    <th style="padding:10px; border:1px solid #1e3c72; text-align:center;">MIN MARKS</th>
+                    <th style="padding:10px; border:1px solid #1e3c72; text-align:center;">OBTAINED</th>
+                    <th style="padding:10px; border:1px solid #1e3c72; text-align:center;">GRADE</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${rowsHtml}
+                <tr style="background:#f4f4f4; font-weight:bold;">
+                    <td style="padding:10px; border:1px solid #ccc;">GRAND TOTAL</td>
+                    <td style="padding:10px; border:1px solid #ccc; text-align:center;">${maxTotal}</td>
+                    <td style="padding:10px; border:1px solid #ccc; text-align:center;"></td>
+                    <td style="padding:10px; border:1px solid #ccc; text-align:center;">${totalMarks}</td>
+                    <td style="padding:10px; border:1px solid #ccc; text-align:center;"></td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div style="display:flex; justify-content:space-between; margin-bottom:40px; padding:15px; background:#f9f9f9; border:1px solid #eee; border-radius:5px;">
+            <div><strong>Overall Percentage:</strong> ${percentage}%</div>
+            <div><strong>Final Result:</strong> ${finalResult}</div>
+        </div>
+    `;
+
+    const renderSig = currentSignatureUrl && (!window.currentSigSettings || window.currentSigSettings.marksheet !== false);
+    let finalSigSrc = "";
+    if (renderSig) finalSigSrc = await getTransparentSignature(currentSignatureUrl);
+
+    slipDiv.innerHTML += `
+        <div style="display:flex; justify-content:space-between; margin-top:60px;">
+            <div style="text-align:center; width:200px;">
+                <div style="border-top:1px solid #000; padding-top:5px;">Class Teacher</div>
+            </div>
+            <div style="text-align:center; width:200px;">
+                ${renderSig ? `<img src="${finalSigSrc}" style="height:50px; margin-bottom:5px;">` : `<div style="height:50px;"></div>`}
+                <div style="border-top:1px solid #000; padding-top:5px;">Principal Signature</div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(slipDiv);
+    await new Promise(r => setTimeout(r, 500));
+    const canvas = await html2canvas(slipDiv, { scale: 2, useCORS: true });
+    const imgData = canvas.toDataURL('image/jpeg', 1.0);
+    document.body.removeChild(slipDiv);
+    return imgData;
+};
+
+window.generateBulkMarksheets = async (students) => {
+    document.getElementById("cert-modal").style.display = "flex";
+    if (document.getElementById("cert-printable")) document.getElementById("cert-printable").style.display = "none";
+    if (document.getElementById("cert-preview-frame")) document.getElementById("cert-preview-frame").style.display = "none";
+    if (document.getElementById("cert-actions")) document.getElementById("cert-actions").style.display = "none";
+    document.getElementById("cert-generating-text").style.display = "block";
+    document.getElementById("cert-generating-text").innerText = "Fetching Real Marks and Generating Marksheets...";
+
+    try {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        let pdfAdded = false;
+
+        for (let st of students) {
+            const { data: marksRow, error: marksError } = await supabaseClient.from("student_marks").select("*").eq("id", st.id).maybeSingle();
+            if (marksError) throw marksError;
+            if (!marksRow) {
+                console.warn(`No marks found for ${st.name}`);
+                continue; // Skip if no real data
+            }
+
+            const imgData = await window.generateMarksheet(st, marksRow);
+
+            if (pdfAdded) pdf.addPage();
+
+            const imgProps = pdf.getImageProperties(imgData);
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+            pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+            pdfAdded = true;
+        }
+
+        if (pdfAdded) {
+            window.currentGeneratedPDF = pdf;
+            window.currentGeneratedFileName = "Batch_Marksheets.pdf";
+            const blobUrl = pdf.output('bloburl');
+            document.getElementById("cert-preview-frame").src = blobUrl;
+            document.getElementById("cert-preview-frame").style.display = "block";
+            document.getElementById("cert-generating-text").style.display = "none";
+            document.getElementById("cert-actions").style.display = "flex";
+        } else {
+            alert("No real marks data found for any of the selected students. Please enter marks in Academic Veto first.");
+            closeCustomModal("cert-modal");
+        }
+    } catch (e) {
+        alert("Failed to generate Marksheets. Error: " + e.message);
+        closeCustomModal("cert-modal");
+    }
+};
+
+window.updateStudentStatus = async (id, isNewAdmission) => { 
+    if (isNewAdmission) {
+        if (!confirm("Approve this new admission and create student record?")) return;
+        try {
+            const { data, error } = await supabaseClient.rpc('approve_admission', { p_application_id: id });
+            if (error) throw error;
+            alert('Admission approved successfully! Student record created.');
+            loadStudents();
+        } catch (err) {
+            console.error('Approval failed:', err);
+            alert('Error approving admission: ' + (err.message || 'Unknown error'));
+        }
+        return;
+    }
+    if (confirm("Approve legacy admission?")) { 
+        try {
+            const { error: rpcError } = await supabaseClient.rpc('update_student', { p_student_id: id, p_payload: { status: "Approved" } });
+            if (rpcError) throw new Error(rpcError.message);
+            alert("Status updated successfully.");
+            loadStudents(); 
+        } catch (e) {
+            alert("Error updating status: " + e.message);
+        }
+    } 
+};
+window.deleteStudent = async (id) => { 
+    if (confirm("Delete this student permanently?")) { 
+        try {
+            const { error: rpcError } = await supabaseClient.rpc('delete_student', { p_student_id: id });
+            if (rpcError) throw new Error(rpcError.message);
+            loadStudents(); 
+        } catch (err) {
+            alert("Error deleting student: " + (err.message || "Unknown error"));
+        }
+    } 
+};
+
+window.toggleStudentLock = async (id, state) => {
+    if (confirm(state ? "Lock this student's account?" : "Unlock this student's account?")) {
+        try {
+            const { error: rpcError } = await supabaseClient.rpc('update_student', { p_student_id: id, p_payload: { lockedOut: state } });
+            if (rpcError) throw new Error(rpcError.message);
+            loadStudents();
+        } catch (e) {
+            alert("Error locking/unlocking student: " + e.message);
+        }
+    }
+};
+
+window.openStudentModal = (id = null) => {
+    document.getElementById("student-modal").style.display = "flex";
+    document.getElementById("modal-student-photo-file").value = "";
+    if (id) {
+        document.getElementById("student-modal-title").innerText = "Edit Student";
+        const st = window.fetchedStudents.find(s => s.id === id);
+        document.getElementById("modal-student-id").value = id;
+        document.getElementById("modal-student-name").value = st.name || "";
+        document.getElementById("modal-student-father").value = (st.parentage || st.fatherName) || "";
+        document.getElementById("dob").value = st.dob || "";
+        document.getElementById("modal-student-class").value = st.class || "";
+        document.getElementById("modal-student-address").value = st.address || "";
+        document.getElementById("modal-student-rollNo").value = st.rollNo || "";
+        document.getElementById("modal-student-regNo").value = st.regNo || "";
+        document.getElementById("modal-student-mobile").value = st.mobile || "";
+        document.getElementById("modal-student-emergency").value = st.emergencyNo || "";
+        document.getElementById("modal-student-photo-url").value = st.photoUrl || "";
+        
+        if (institutionIsCollege()) {
+            document.getElementById("modal-student-subjects-group").style.display = "flex";
+            document.getElementById("modal-student-minor").value = st.minorSubject || "";
+            document.getElementById("modal-student-mdc").value = st.mdcSubject || "";
+            document.getElementById("modal-student-skill").value = st.skillSubject || "";
+            document.getElementById("modal-student-voc").value = st.vocationalSubject || "";
+        }
+        if (st.photoUrl) {
+            document.getElementById("modal-student-photo-preview").src = st.photoUrl;
+            document.getElementById("modal-student-photo-preview").style.display = "block";
+        } else {
+            document.getElementById("modal-student-photo-preview").style.display = "none";
+        }
+    } else {
+        document.getElementById("student-modal-title").innerText = "Add Student";
+        document.getElementById("modal-student-id").value = "";
+        document.getElementById("modal-student-name").value = "";
+        document.getElementById("modal-student-father").value = "";
+        document.getElementById("dob").value = "";
+        document.getElementById("modal-student-class").value = institutionIsCollege() ? "1st Semester" : "1st";
+        document.getElementById("modal-student-address").value = "";
+        document.getElementById("modal-student-rollNo").value = "";
+        document.getElementById("modal-student-regNo").value = "";
+        document.getElementById("modal-student-mobile").value = "";
+        document.getElementById("modal-student-emergency").value = "";
+        document.getElementById("modal-student-photo-url").value = "";
+        document.getElementById("modal-student-minor").value = "";
+        document.getElementById("modal-student-mdc").value = "";
+        document.getElementById("modal-student-skill").value = "";
+        document.getElementById("modal-student-voc").value = "";
+        document.getElementById("modal-student-photo-preview").style.display = "none";
+    }
+};
+
+const uploadStudentPhotoWithBgRemoval = async (fileInputId, btnId, defaultText) => {
+    const file = document.getElementById(fileInputId).files[0];
+    if (!file) return null;
+
+    const btn = document.getElementById(btnId);
+    btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Processing Photo...";
+
+    try {
+        let base64Image = await convertToBase64(file);
+
+        // 1. Pre-process: Remove Background
+        try {
+            const bgRes = await fetch("https://school-backend-zlgy.onrender.com/api/remove-bg", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ imageUrl: base64Image })
+            });
+            const bgData = await bgRes.json();
+            if (bgData.success && bgData.base64) {
+                base64Image = bgData.base64;
+            }
+        } catch (e) {
+            console.warn("Remove BG API Failed, falling back to original photo.", e);
+        }
+
+        // 2. Upload transparent image to Cloudinary
+        btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Uploading...";
+        const res = await fetch("https://api.cloudinary.com/v1_1/disgtvs6f/image/upload", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ file: base64Image, upload_preset: "ml_default" })
+        });
+        const data = await res.json();
+        btn.innerHTML = defaultText;
+        return data.secure_url || null;
+    } catch (e) {
+        btn.innerHTML = defaultText;
+        return null;
+    }
+};
+
+window.saveStudentModal = async () => {
+    const id = document.getElementById("modal-student-id").value;
+
+    let photoUrl = document.getElementById("modal-student-photo-url").value;
+    if (document.getElementById("modal-student-photo-file").files.length > 0) {
+        let uploadedUrl = await uploadStudentPhotoWithBgRemoval("modal-student-photo-file", "modal-save-btn", "<i class='fas fa-save'></i> Save");
+        if (uploadedUrl) photoUrl = uploadedUrl;
+    }
+
+    const data = {
+        name: document.getElementById("modal-student-name").value.trim(),
+        parentage: document.getElementById("modal-student-father").value.trim(),
+        dob: document.getElementById("dob").value,
+        address: document.getElementById("modal-student-address").value.trim(),
+        class: document.getElementById("modal-student-class").value,
+        rollNo: document.getElementById("modal-student-rollNo").value.trim(),
+        regNo: document.getElementById("modal-student-regNo").value.trim(),
+        mobile: document.getElementById("modal-student-mobile").value.trim(),
+        emergencyNo: document.getElementById("modal-student-emergency").value.trim(),
+        minorSubject: document.getElementById("modal-student-minor").value.trim(),
+        mdcSubject: document.getElementById("modal-student-mdc").value.trim(),
+        skillSubject: document.getElementById("modal-student-skill").value.trim(),
+        vocationalSubject: document.getElementById("modal-student-voc").value.trim(),
+        photoUrl: photoUrl.trim(),
+        schoolId: currentSchoolId
+    };
+
+    if (!data.name || !data.class) return alert("Name and Class are required.");
+
+    // SaaS Throttling Check
+    if (!id && window.currentLicenseStatus === "Throttled") {
+        return alert("Your account is throttled due to non-payment. Database writes for new records are disabled. Please contact billing.");
+    }
+
+    // Global Blacklist Pre-Check
+    try {
+        const checkValues = [];
+        if (data.mobile) checkValues.push(data.mobile);
+        const emailEl = document.getElementById("modal-student-email");
+        if (emailEl && emailEl.value) checkValues.push(emailEl.value);
+        
+        for (const val of checkValues) {
+            const { data: isBlocked, error } = await supabaseClient.rpc('is_blacklisted', { check_value: val });
+            if (error) throw error;
+            if (isBlocked) {
+                return alert("Flagged in Global Blacklist. Action rejected.");
+            }
+        }
+    } catch (err) {
+        console.warn("Blacklist check failed:", err.message);
+        return alert("Security check failed. Please try again later.");
+    }
+
+    try {
+        if (id) {
+            const { error: rpcError } = await supabaseClient.rpc('update_student', { p_student_id: id, p_payload: data });
+            if (rpcError) throw new Error(rpcError.message);
+            alert("Student details updated successfully!");
+        } else {
+            // Use Secure Server-Side Student Creation RPC
+            const { data: newStudentId, error: rpcError } = await supabaseClient.rpc('create_student', { p_payload: data });
+            if (rpcError) {
+                console.error("RPC Error:", rpcError);
+                throw new Error(rpcError.message || "Failed to create student securely.");
+            }
+            alert("New student added successfully!");
+        }
+        document.getElementById("student-modal").style.display = "none";
+        loadStudents();
+    } catch (e) {
+        alert("Error saving student: " + (e.message || "Unknown error"));
+    }
+};
+
+window.runDefaulterLockdown = () => { alert("Defaulter Lockdown Tool active! Click the padlock icon next to a student's ID button to lock their portal/results access."); };
+
+// ====== CLEAN ID CARD & CERTIFICATES ======
+window.showIDCard = async (id) => {
+    const st = window.fetchedStudents.find(s => s.id === id); if (!st) return;
+
+    // Setup UI for loading
+    document.getElementById("printable-id").style.display = "none";
+    document.getElementById("generating-text").style.display = "block";
+    document.getElementById("final-id-image").style.display = "none";
+    document.getElementById("id-actions").style.display = "none";
+    document.getElementById("id-modal").style.display = "flex";
+
+    try {
+        let schoolName = currentSchoolName || document.getElementById('school-name')?.innerText || "ABC SCHOOL NAME";
+        const templateStyle = currentTemplateStyle || "wave";
+
+        const response = await fetch("https://school-backend-zlgy.onrender.com/api/generate-id-card", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                studentData: {
+                    id: st.id || st.regNo,
+                    name: st.name,
+                    class: st.class,
+                    dob: st.dob || "N/A",
+                    parentage: (st.parentage || st.fatherName) || "N/A",
+                    mobile: st.mobile || "N/A",
+                    address: st.address || "N/A",
+                    photoUrl: st.photoUrl || "https://via.placeholder.com/150"
+                },
+                themeColor: currentThemeColor || "#1e3c72",
+                secondaryColor: currentSecondaryColor || "#ffffff",
+                templateStyle: templateStyle,
+                schoolName: schoolName,
+                schoolEmergency: document.getElementById("school_emergency").value || "N/A",
+                signatureUrl: (window.currentSigSettings && window.currentSigSettings.idCard === false) ? "" : currentSignatureUrl,
+                schoolLogoUrl: document.getElementById('print_school_logo')?.src || document.getElementById('school-logo')?.src || "",
+                schoolNameColor: document.getElementById('idSchoolNameColor')?.value || currentSchoolNameColor || "#ffffff",
+                studentNameColor: document.getElementById('idStudentNameColor')?.value || currentStudentNameColor || "#d32f2f",
+                detailsColor: document.getElementById('idDetailsColor')?.value || currentDetailsColor || "#333333",
+                photoBgColor: document.getElementById('idPhotoBgColor')?.value || currentPhotoBgColor || "#ffffff", textSettings: window.currentTextSettings
+            })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            document.getElementById("final-id-image").src = data.idCardUrl;
+            document.getElementById("generating-text").style.display = "none";
+            document.getElementById("final-id-image").style.display = "block";
+            document.getElementById("id-actions").style.display = "flex";
+        } else {
+            alert("API Error: " + data.message);
+            document.getElementById("id-modal").style.display = "none";
+        }
+    } catch (e) {
+        alert("Failed to generate ID Card. Ensure backend is running.");
+        document.getElementById("id-modal").style.display = "none";
+    }
+};
+
+window.downloadGeneratedID = () => {
+    const img = document.getElementById('final-id-image');
+    if (!img.src) return alert("No ID card available.");
+    const link = document.createElement('a');
+    link.href = img.src;
+    link.download = `Student_IDCard.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
+window.printGeneratedID = () => {
+    const img = document.getElementById('final-id-image');
+    if (!img.src) return alert("No ID card available.");
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write('<html><head><title>Print ID Card</title></head><body><img src="' + img.src + '" onload="window.print();window.close()"></body></html>');
+    printWindow.document.close();
+};
+
+window.generateCertificate = async (id, type) => {
+    const st = window.fetchedStudents.find(s => s.id === id); if (!st) return;
+    document.getElementById("cert-school-name").innerText = currentSchoolName; document.getElementById("cert-school-name").style.color = currentThemeColor;
+    document.getElementById("cert-title").innerText = type.toUpperCase() + " CERTIFICATE"; document.getElementById("cert-date").innerText = new Date().toLocaleDateString();
+
+    let bodyText = "";
+    if (type === 'tc') bodyText = `This is to certify that Mr./Ms. <strong>${st.name}</strong>, son/daughter of <strong>${(st.parentage || st.fatherName)}</strong>, was a bona fide student of class <strong>${st.class}</strong> in this institution. He/She has paid all dues and is hereby granted this Transfer Certificate to pursue further education.`;
+    if (type === 'character') bodyText = `This is to certify that <strong>${st.name}</strong>, son/daughter of <strong>${(st.parentage || st.fatherName)}</strong>, student of class <strong>${st.class}</strong>, bears a good moral character to the best of our knowledge. We wish him/her success in all future endeavors.`;
+    if (type === 'bonafide') bodyText = `This is to certify that <strong>${st.name}</strong>, son/daughter of <strong>${(st.parentage || st.fatherName)}</strong>, is a bona fide student of this institution, currently studying in class <strong>${st.class}</strong> during the current academic session.`;
+    document.getElementById("cert-body").innerHTML = bodyText;
+
+    document.getElementById("cert-printable").style.display = "flex"; document.getElementById("final-cert-image").style.display = "none"; document.getElementById("cert-actions").style.display = "none"; document.getElementById("cert-generating-text").style.display = "block"; document.getElementById("cert-modal").style.display = "flex";
+
+    setTimeout(() => {
+        html2canvas(document.getElementById("cert-printable"), { useCORS: true, scale: 2 }).then(canvas => {
+            document.getElementById("final-cert-image").src = canvas.toDataURL("image/png");
+            document.getElementById("cert-printable").style.display = "none"; document.getElementById("cert-generating-text").style.display = "none";
+            document.getElementById("final-cert-image").style.display = "block"; document.getElementById("cert-actions").style.display = "flex";
+        }).catch(e => { document.getElementById("cert-generating-text").style.display = "none"; });
+    }, 800);
+};
+
+window.shareImage = async (imgId, filename) => {
+    const imgSrc = document.getElementById(imgId).src; if (!imgSrc) return;
+    try { if (navigator.share) { const blob = await (await fetch(imgSrc)).blob(); const file = new File([blob], filename, { type: 'image/png' }); await navigator.share({ title: 'Document', files: [file] }); } else { alert("Long press the image to save it."); } } catch (err) { }
+};
+
+// ================= STAFF & PRIVILEGES =================
+window.saveStaff = async () => {
+    const name = document.getElementById("s_name").value.trim(); const email = document.getElementById("s_email").value.trim(); const pass = document.getElementById("s_pass").value.trim(); const role = document.getElementById("s_role").value;
+    if (!name || !email || !pass) return alert("Fill all fields.");
+
+    // SaaS Throttling Check
+    if (window.currentLicenseStatus === "Throttled") {
+        return alert("Your account is throttled due to non-payment. Database writes for new records are disabled. Please contact billing.");
+    }
+
+    // Global Blacklist Pre-Check
+    try {
+        const { data: isBlocked, error } = await supabaseClient.rpc('is_blacklisted', { check_value: email });
+        if (error) throw error;
+        if (isBlocked) {
+            return alert("Flagged in Global Blacklist. Action rejected.");
+        }
+    } catch (err) {
+        console.warn("Blacklist check failed:", err.message);
+        return alert("Security check failed. Please try again later.");
+    }
+
+    let photoUrl = await uploadToCloudinary("s_photo", "s_btn", "<i class='fas fa-save'></i> Add Staff Member"); if (!photoUrl) photoUrl = "https://via.placeholder.com/100";
+    try {
+        // Step 1: auth account. Supabase returns NO error and a null user when the email is
+        // already registered, so that case is detected explicitly instead of failing opaquely.
+        const { data: created, error: signUpError } = await staffAuthClient.auth.signUp({ email, password: pass });
+        if (signUpError) throw new Error("Auth account creation failed: " + signUpError.message);
+        let newStaffId = created && created.user ? created.user.id : null;
+        if (!newStaffId) {
+            // Supabase returns NO error and a null user when the email is already registered.
+            // That happens when an earlier attempt created the auth account but the users
+            // profile row failed (RLS). Recover the orphaned account: sign in with the same
+            // credentials to learn its UID, then (re)create the profile row below.
+            const { data: signInData, error: signInError } = await staffAuthClient.auth.signInWithPassword({ email, password: pass });
+            if (signInError) throw new Error("Email already registered and this password does not match it (" + signInError.message + "). Re-enter the same password used first time, or delete the old account in Supabase Auth.");
+            newStaffId = signInData && signInData.user ? signInData.user.id : null;
+            if (!newStaffId) throw new Error("Email already registered; could not recover the existing account.");
+        }
+
+        // Step 2: staff profile row (RLS requires the chairman policy added in
+        // supabase/2026-10-02_staff_portal_rls.sql; the error is surfaced verbatim otherwise).
+        const { error } = await supabaseClient.from("users").upsert({ id: newStaffId, name, email, role: "staff", staffRole: role, plainPassword: pass, photoUrl: photoUrl, schoolId: currentSchoolId, status: "active", privileges: { attendance: true, marks: true, finance: false, notices: false, admissions: false, certs: false, exams: false, settings: false, view_finance: false, delete: false } });
+        if (error) throw new Error("Staff profile could not be saved (" + error.message + ").");
+        
+        if (role === "HOD" && institutionIsCollege()) {
+            const deptId = document.getElementById("s_dept")?.value;
+            if (deptId) {
+                await supabaseClient.from("staff_assignments").insert({
+                    userId: newStaffId,
+                    schoolId: currentSchoolId,
+                    departmentId: deptId,
+                    roleId: "hod",
+                    isPrimary: true
+                });
+            }
+        }
+        
+        alert("Staff created successfully!"); document.getElementById("s_name").value = ""; document.getElementById("s_email").value = ""; document.getElementById("s_pass").value = ""; loadStaff();
+    } catch (e) { alert("Error: " + e.message); } finally { await staffAuthClient.auth.signOut().catch(() => { }); }
+};
+
+async function loadStaff() {
+    try {
+        if (institutionIsCollege()) {
+            const { data: depts } = await supabaseClient.from("departments").select("id, name, code").eq("schoolId", currentSchoolId);
+            let sDept = document.getElementById("s_dept");
+            if (sDept) {
+                sDept.innerHTML = "<option value=\"\">-- Select --</option>" + (depts || []).map(d => `<option value="${d.id}">${d.name} (${d.code})</option>`).join("");
+            }
+        }
+        const { data: staffRows, error } = await supabaseClient.from("users").select("*").eq("schoolId", currentSchoolId).eq("role", "staff");
+        if (error) throw error;
+        window.fetchedStaff = []; let html = ""; document.getElementById("count-staff").innerText = (staffRows || []).length; let staffOpts = "<option value=''>-- Select Staff --</option>";
+        (staffRows || []).forEach(dt => {
+            window.fetchedStaff.push(dt);
+            staffOpts += `<option value="${dt.id}">${dt.name} (${dt.staffRole})</option>`;
+            const statusColor = dt.status === "blocked" ? "red" : "green";
+            const blockBtn = dt.status === "blocked" ? `<button class="action-btn btn-green" onclick="updateStaffStatus('${dt.id}', 'active')">Unblock</button>` : `<button class="action-btn btn-yellow" onclick="updateStaffStatus('${dt.id}', 'blocked')">Block</button>`;
+
+            let privs = dt.privileges || {}; let privStr = [];
+            if (privs.attendance) privStr.push("Att."); if (privs.marks) privStr.push("Marks"); if (privs.finance) privStr.push("Fin."); if (privs.notices) privStr.push("Notices");
+
+            html += `<tr>
+                <td><img src="${dt.photoUrl || 'https://via.placeholder.com/100'}" class="img-circle"></td>
+                <td><strong>${dt.name}</strong><br><small>${dt.staffRole}</small></td>
+                <td><small>${dt.email}</small><br><strong>${dt.plainPassword}</strong></td>
+                <td><span style="font-size:11px; background:#e2e8f0; padding:2px 5px; border-radius:4px;">${privStr.join(', ') || 'None'}</span></td>
+                <td style="color:${statusColor}; font-weight:bold;">${(dt.status || 'ACTIVE').toUpperCase()}</td>
+                <td>
+                    <button class="action-btn btn-blue" onclick="editStaff('${dt.id}')"><i class="fas fa-user-edit"></i> Auth / Edit</button>
+                    ${blockBtn} <button class="action-btn btn-red" onclick="deleteStaff('${dt.id}')"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>`;
+        });
+        document.getElementById("staff-table").innerHTML = html || "<tr><td colspan='6'>No Staff Found.</td></tr>";
+        document.getElementById("mail_specific_staff").innerHTML = staffOpts; document.getElementById("salary_staff").innerHTML = staffOpts;
+    } catch (e) { }
+}
+
+window.downloadGlobalStaffCSV = async (evt = null) => {
+    const triggerBtn = evt?.currentTarget || (typeof event !== "undefined" ? event.currentTarget : null);
+    const originalHtml = triggerBtn?.innerHTML;
+    try {
+        if (triggerBtn) { triggerBtn.disabled = true; triggerBtn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Preparing CSV..."; }
+        const [staffRes, schoolsRes] = await Promise.all([
+            supabaseClient.from("users").select("*").eq("role", "staff"),
+            supabaseClient.from("vw_public_schools").select("*").then(res => (res.error ? null : res))
+        ]);
+        if (staffRes.error) throw staffRes.error;
+        const schoolMap = {};
+        (schoolsRes?.data || []).forEach(school => {
+            schoolMap[school.id] = school.name || school.schoolName || school.entityName || "";
+        });
+        const rows = [["School ID", "School Name", "Name", "Role", "Email", "Password", "Status"]];
+        (staffRes.data || []).forEach(s => {
+            rows.push([s.schoolId || '', s.schoolName || schoolMap[s.schoolId] || currentSchoolName || '', s.name || '', s.staffRole || '', s.email || '', s.plainPassword || '', s.status || 'active']);
+        });
+        if (rows.length === 1) {
+            alert("No global staff records are currently available.");
+            return;
+        }
+        const csv = rows.map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Global_Staff_${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    } catch (e) {
+        console.error(e);
+        alert("Global staff download failed. Permission ya network issue ho sakta hai.");
+    } finally {
+        if (triggerBtn) { triggerBtn.disabled = false; triggerBtn.innerHTML = originalHtml; }
+    }
+};
+
+window.editStaff = async (id) => {
+    const st = window.fetchedStaff.find(s => s.id === id); if (!st) return; currentEditStaffId = id;
+    const resolvedSchoolName = st.schoolName || currentSchoolName || "";
+    document.getElementById("edit_s_school_name").value = resolvedSchoolName;
+    document.getElementById("edit_s_name").value = st.name || "";
+    document.getElementById("edit_s_email").value = st.email || "";
+    document.getElementById("edit_s_pass").value = st.plainPassword || "";
+    
+    // Set role
+    const roleSelect = document.getElementById("edit_s_role");
+    if (roleSelect) {
+        roleSelect.value = st.staffRole || "Teacher";
+    }
+
+    if (institutionIsCollege()) {
+        const { data: depts } = await supabaseClient.from("departments").select("id, name, code").eq("schoolId", currentSchoolId);
+        let eDept = document.getElementById("edit_s_dept");
+        if (eDept) {
+            eDept.innerHTML = "<option value=\"\">-- Select --</option>" + (depts || []).map(d => `<option value="${d.id}">${d.name} (${d.code})</option>`).join("");
+        }
+
+        if (st.staffRole === "HOD") {
+            document.getElementById("edit_s_dept_group").style.display = "block";
+            const { data: assign } = await supabaseClient.from("staff_assignments").select("departmentId").eq("userId", id).maybeSingle();
+            if (assign && assign.departmentId) {
+                eDept.value = assign.departmentId;
+            }
+        } else {
+            document.getElementById("edit_s_dept_group").style.display = "none";
+        }
+    }
+
+    document.getElementById("edit_s_status").value = (st.status || "active").toUpperCase();
+    let p = st.privileges || {};
+    document.getElementById("priv_attendance").checked = p.attendance === true;
+    document.getElementById("priv_marks").checked = p.marks === true;
+    document.getElementById("priv_finance").checked = p.finance === true;
+    document.getElementById("priv_notices").checked = p.notices === true;
+    document.getElementById("priv_admissions").checked = p.admissions === true;
+    document.getElementById("priv_certs").checked = p.certs === true;
+    document.getElementById("priv_exams").checked = p.exams === true;
+    document.getElementById("priv_settings").checked = p.settings === true;
+    document.getElementById("priv_view_finance").checked = p.view_finance === true;
+    document.getElementById("priv_delete").checked = p.delete === true;
+    document.getElementById("edit-staff-modal").style.display = "flex";
+};;
+
+window.saveStaffEdits = async () => {
+    const schoolName = document.getElementById("edit_s_school_name").value.trim();
+    const name = document.getElementById("edit_s_name").value.trim();
+    const email = document.getElementById("edit_s_email").value.trim();
+    const p = document.getElementById("edit_s_pass").value.trim();
+    const r = document.getElementById("edit_s_role").value;
+    if (!schoolName || !name || !email) {
+        alert("Entity Name, Chairman Name aur Auth Email required hain.");
+        return;
+    }
+    const privs = {
+        attendance: document.getElementById("priv_attendance").checked,
+        marks: document.getElementById("priv_marks").checked,
+        finance: document.getElementById("priv_finance").checked,
+        notices: document.getElementById("priv_notices").checked,
+        admissions: document.getElementById("priv_admissions").checked,
+        certs: document.getElementById("priv_certs").checked,
+        exams: document.getElementById("priv_exams").checked,
+        settings: document.getElementById("priv_settings").checked,
+        view_finance: document.getElementById("priv_view_finance").checked,
+        delete: document.getElementById("priv_delete").checked
+    };
+    try {
+        const updatePayload = { schoolName, name, email, staffRole: r, privileges: privs, updatedAt: new Date().toISOString() };
+        if (p) updatePayload.plainPassword = p;
+        const { error } = await supabaseClient.from("users").update(updatePayload).eq("id", currentEditStaffId);
+        if (error) throw error;
+
+        // Update HOD department if applicable
+        if (institutionIsCollege() && r === "HOD") {
+            const deptId = document.getElementById("edit_s_dept").value;
+            if (deptId) {
+                const { data: existing } = await supabaseClient.from("staff_assignments").select("id").eq("userId", currentEditStaffId).maybeSingle();
+                if (existing) {
+                    await supabaseClient.from("staff_assignments").update({ departmentId: deptId }).eq("id", existing.id);
+                } else {
+                    await supabaseClient.from("staff_assignments").insert({
+                        userId: currentEditStaffId,
+                        roleId: "hod",
+                        departmentId: deptId,
+                        schoolId: currentSchoolId
+                    });
+                }
+            }
+        } else if (institutionIsCollege()) {
+            await supabaseClient.from("staff_assignments").delete().eq("userId", currentEditStaffId);
+        }
+
+        alert("Staff details updated successfully!"); 
+        document.getElementById("edit-staff-modal").style.display = "none"; 
+        loadStaff();
+    } catch (e) { console.error(e); alert("Error saving staff details."); }
+};
+
+window.updateStaffStatus = async (uid, newStatus) => {
+    if (newStatus === 'blocked') { const reason = prompt("Enter reason for blocking this staff member:"); if (reason === null) return; const { error } = await supabaseClient.from("users").update({ status: newStatus, blockReason: reason || "Violation of policies" }).eq("id", uid); if (error) throw error; } else { if (confirm("Unblock this staff member?")) { const { error } = await supabaseClient.from("users").update({ status: newStatus, blockReason: "" }).eq("id", uid); if (error) throw error; } else return; } loadStaff();
+};
+window.deleteStaff = async (uid) => { if (confirm("Permanently delete this staff member?")) { const { error } = await supabaseClient.from("users").delete().eq("id", uid); if (error) throw error; loadStaff(); } };
+
+// ================= ACADEMIC VETO =================
+async function loadPendingResults() {
+    try {
+        const { data: pendingMarks, error } = await supabaseClient.from("exam_marks").select("*").eq("schoolId", currentSchoolId).eq("status", "Pending");
+        if (error) throw error;
+        let html = "";
+        (pendingMarks || []).forEach(dt => {
+            html += `<tr><td>${dt.date || 'Recent'}</td><td><strong>${dt.studentName}</strong><br><small>Class: ${dt.class}</small></td><td><strong>${dt.examName}</strong><br><small>${dt.subject}</small></td><td><span style="color:#e67e22; font-weight:bold;">${dt.marksObtained} / ${dt.maxMarks}</span></td><td><button class="action-btn btn-green" onclick="approveResult('${dt.id}')"><i class="fas fa-check"></i> Approve Result</button></td></tr>`;
+        });
+        document.getElementById("veto-table").innerHTML = html || "<tr><td colspan='5' style='text-align:center;'>No pending results to vet.</td></tr>";
+    } catch (e) { console.log("Academic veto skip", e); }
+}
+window.approveResult = async (docId) => { try { const { error } = await supabaseClient.from("exam_marks").update({ status: "Approved" }).eq("id", docId); if (error) throw error; alert("Result Approved! Students can now see it."); loadPendingResults(); } catch (e) { } };
+
+// ================= NOTICES =================
+window.saveNotice = async () => {
+    const target = document.getElementById("n_target").value;
+    const title = document.getElementById("n_title").value.trim(); const body = document.getElementById("n_body").value.trim();
+    if (!title || !body) return alert("Fill title and body");
+    try {
+        const { error } = await supabaseClient.from("notices").insert({ target, title, body, date: new Date().toLocaleDateString(), visible: true, schoolId: currentSchoolId, createdAt: new Date().toISOString() });
+        if (error) throw error;
+        document.getElementById("n_title").value = ""; document.getElementById("n_body").value = ""; loadNotices();
+    } catch (e) { alert("Error saving notice."); }
+};
+
+window.saveWhatsappLink = async () => {
+    const link = document.getElementById("wa_group_link").value.trim();
+    if (!link) return alert("Please enter the WhatsApp Group Link.");
+
+    try {
+        const { error } = await supabaseClient.from("schools").update({ whatsappGroup: link }).eq("id", currentSchoolId);
+        if (error) throw error;
+        alert("WhatsApp Group Link saved successfully!");
+    } catch (e) {
+        alert("Error saving link.");
+    }
+};
+
+window.broadcastToWhatsapp = async () => {
+    const link = document.getElementById("wa_group_link").value.trim();
+    const msg = document.getElementById("wa_message").value.trim();
+
+    if (!link) return alert("Please save the Official WhatsApp Group Link first.");
+    if (!msg) return alert("Please enter a message to broadcast.");
+
+    try {
+        await navigator.clipboard.writeText(msg);
+        alert("Message copied to clipboard! Opening WhatsApp Group...\nPlease paste the message into the chat.");
+        window.open(link, "_blank");
+    } catch (err) {
+        alert("Failed to copy message. Please manually copy it before opening WhatsApp.");
+        window.open(link, "_blank");
+    }
+};
+
+async function loadNotices() {
+    try {
+        const { data: noticeRows, error } = await supabaseClient.from("notices").select("*").eq("schoolId", currentSchoolId);
+        if (error) throw error;
+        let html = "", activeCount = 0;
+        (noticeRows || []).forEach(dt => {
+            if (dt.visible) activeCount++;
+            const eyeIcon = dt.visible ? "fa-eye" : "fa-eye-slash", eyeColor = dt.visible ? "btn-blue" : "btn-yellow";
+            html += `<tr><td>${dt.date}</td><td><strong>${dt.target || 'All'}</strong></td><td>${dt.title}</td><td>${dt.body}</td>
+            <td><button class="action-btn ${eyeColor}" onclick="toggleNotice('${dt.id}', ${!dt.visible})"><i class="fas ${eyeIcon}"></i></button></td>
+            <td><button class="action-btn btn-red" onclick="deleteRecordFromDb('notices', '${dt.id}', loadNotices)"><i class="fas fa-trash"></i> Del</button></td></tr>`;
+        });
+        document.getElementById("notice-table").innerHTML = html || "<tr><td colspan='6'>No Notices Found.</td></tr>";
+        document.getElementById("count-notices").innerText = activeCount;
+    } catch (e) { }
+}
+
+window.toggleNotice = async (id, state) => { const { error } = await supabaseClient.from("notices").update({ visible: state }).eq("id", id); if (error) throw error; loadNotices(); };
+
+window.deleteRecordFromDb = async (tableName, id, callback) => {
+    if (confirm("Are you sure you want to permanently delete this record?")) {
+        const { error } = await supabaseClient.from(tableName).delete().eq("id", id);
+        if (error) throw error;
+        callback();
+    }
+};
+
+function parseUserAgent(ua) {
+    if (!ua) return { os: "Unknown", model: "Unknown" };
+    let os = "Unknown OS", model = "Unknown Device";
+    if (ua.includes("Android")) { os = "Android"; model = ua.split(';')[2].split('Build')[0]; }
+    else if (ua.includes("iPhone")) { os = "iOS"; model = "iPhone"; }
+    else if (ua.includes("Windows")) { os = "Windows"; model = "PC"; }
+    return { os, model };
+}
+
+// AUTO LOGIN FOR SUPER ADMIN IMPERSONATION
+window.addEventListener('DOMContentLoaded', async () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('impersonate') === 'true') {
+        sessionStorage.setItem("is_impersonating", "true");
+        const impEmail = urlParams.get('email');
+        const impPass = urlParams.get('pass');
+
+        if (impEmail && impPass) {
+            document.getElementById('auth-overlay').innerHTML = '<i class="fas fa-fingerprint fa-pulse" style="font-size:3rem; margin-bottom:15px;"></i><div>Authenticating Super Admin...</div>';
+            document.getElementById('auth-overlay').style.display = 'flex';
+            
+            // Wait for existing session check, then forcefully sign out
+            const sessionResp = await supabaseClient.auth.getSession();
+            if (sessionResp.data.session) {
+                await supabaseClient.auth.signOut();
+            }
+
+            setTimeout(() => {
+                document.getElementById("loginId").value = decodeURIComponent(impEmail);
+                document.getElementById("loginPassword").value = decodeURIComponent(impPass);
+                document.getElementById("doLoginBtn").click();
+
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }, 500);
+        }
+    }
+});
+
+// ================= BULK ACTION MODAL (ID, ADMIT, BONAFIDE) =================
+window.currentBulkActionType = '';
+window.pendingAdmitCardStudents = [];
+
+window.openBulkActionModal = (type) => {
+    window.currentBulkActionType = type;
+    let title = "Batch Action";
+    if (type === 'id') title = "<i class='fas fa-id-badge'></i> Bulk Generate ID Cards";
+    if (type === 'admit') title = "<i class='fas fa-file-alt'></i> Bulk Generate Admit Cards";
+    if (type === 'bonafide') title = "<i class='fas fa-graduation-cap'></i> Bulk Generate Bonafide Certificates";
+    document.getElementById("bulk-modal-title").innerHTML = title;
+    document.getElementById("bulk-action-class").value = "All";
+    document.getElementById("bulk-select-all").checked = false;
+    window.renderBulkActionStudents();
+    document.getElementById("bulk-action-modal").style.display = "flex";
+};
+
+window.renderBulkActionStudents = () => {
+    const cls = document.getElementById("bulk-action-class").value;
+    let filtered = window.fetchedStudents.filter(s => s.status === 'Approved');
+    if (cls !== "All") filtered = filtered.filter(s => s.class === cls);
+    filtered.sort((a, b) => (Number(a.rollNo) || 999999) - (Number(b.rollNo) || 999999));
+
+    const tbody = document.getElementById("bulk-action-list");
+    if (filtered.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; padding:15px;'>No approved students found.</td></tr>";
+        return;
+    }
+    let html = "";
+    filtered.forEach(st => {
+        html += `<tr>
+            <td style="padding:10px;"><input type="checkbox" class="bulk-student-cb" value="${st.id}"></td>
+            <td style="padding:10px;">${st.rollNo || 'N/A'}</td>
+            <td style="padding:10px;">${st.name}</td>
+            <td style="padding:10px;">${st.class}</td>
+        </tr>`;
+    });
+    tbody.innerHTML = html;
+};
+
+window.toggleAllBulkStudents = (el) => {
+    document.querySelectorAll(".bulk-student-cb").forEach(cb => cb.checked = el.checked);
+};
+
+window.generateBatchIDCards = async (students) => {
+    document.getElementById("id-modal").style.display = "flex";
+    document.getElementById("generating-text").style.display = "block";
+    document.getElementById("final-id-image").style.display = "none";
+    document.getElementById("id-actions").style.display = "none";
+    document.getElementById("printable-id").style.display = "none";
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    
+    let schoolName = currentSchoolName || document.getElementById('school-name')?.innerText || "ABC SCHOOL NAME";
+    const templateStyle = currentTemplateStyle || "wave";
+    
+    const cardW = 54; const cardH = 86;
+    let x = 10; let y = 10;
+    let count = 0;
+    
+    for (let i = 0; i < students.length; i++) {
+        let st = students[i];
+        document.getElementById("generating-text").innerText = `Generating ID ${i+1} of ${students.length}...`;
+        
+        try {
+            const response = await fetch("https://school-backend-zlgy.onrender.com/api/generate-id-card", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    studentData: {
+                        id: st.id || st.regNo,
+                        name: st.name,
+                        class: st.class,
+                        dob: st.dob || "N/A",
+                        parentage: (st.parentage || st.fatherName) || "N/A",
+                        mobile: st.mobile || "N/A",
+                        address: st.address || "N/A",
+                        photoUrl: st.photoUrl || "https://via.placeholder.com/150"
+                    },
+                    themeColor: currentThemeColor || "#1e3c72",
+                    secondaryColor: currentSecondaryColor || "#ffffff",
+                    templateStyle: templateStyle,
+                    schoolName: schoolName,
+                    schoolEmergency: document.getElementById("school_emergency")?.value || "N/A",
+                    signatureUrl: (window.currentSigSettings && window.currentSigSettings.idCard === false) ? "" : currentSignatureUrl,
+                    schoolLogoUrl: document.getElementById('print_school_logo')?.src || document.getElementById('school-logo')?.src || "",
+                    schoolNameColor: document.getElementById('idSchoolNameColor')?.value || currentSchoolNameColor || "#ffffff",
+                    studentNameColor: document.getElementById('idStudentNameColor')?.value || currentStudentNameColor || "#d32f2f",
+                    detailsColor: document.getElementById('idDetailsColor')?.value || currentDetailsColor || "#333333",
+                    photoBgColor: document.getElementById('idPhotoBgColor')?.value || currentPhotoBgColor || "#ffffff", textSettings: window.currentTextSettings
+                })
+            });
+            const data = await response.json();
+            if (data.success) {
+                if (count > 0 && count % 9 === 0) {
+                    pdf.addPage();
+                    x = 10; y = 10;
+                }
+                pdf.addImage(data.idCardUrl, 'JPEG', x, y, cardW, cardH);
+                
+                // Draw cutting line
+                pdf.setDrawColor(200);
+                pdf.rect(x, y, cardW, cardH);
+                
+                x += cardW + 5; // 5mm horizontal gap
+                if (x + cardW > 200) {
+                    x = 10;
+                    y += cardH + 5; // 5mm vertical gap
+                }
+                count++;
+            }
+        } catch (e) { console.error("Error generating ID for", st.name, e); }
+    }
+    
+    document.getElementById("generating-text").innerText = "Compiling PDF...";
+    await new Promise(r => setTimeout(r, 500));
+    
+    const outBlob = pdf.output('blob');
+    const outUrl = URL.createObjectURL(outBlob);
+    
+    document.getElementById("final-id-image").style.display = "block";
+    document.getElementById("final-id-image").src = outUrl; // Note: src for iframe, not img
+    // Wait, the id-modal uses <img id="final-id-image"> or <iframe>? Let's check single ID generation
+    // Ah, single ID generation sets final-id-image.src to data.idCardUrl (which is base64 JPEG).
+    // For Bulk, we have a PDF. We should open it in a new window or trigger download.
+    document.getElementById("id-modal").style.display = "none";
+    
+    const a = document.createElement("a");
+    a.href = outUrl; a.download = `Bulk_ID_Cards_${Date.now()}.pdf`;
+    a.click();
+    
+    alert(`Batch ID Cards generated! ${count} cards processed.`);
+};
+window.triggerBulkAction = async () => {
+    const checked = document.querySelectorAll(".bulk-student-cb:checked");
+    if (checked.length === 0) return alert("Please select at least one student.");
+
+    const selectedIds = Array.from(checked).map(cb => cb.value);
+    const selectedStudents = window.fetchedStudents.filter(st => selectedIds.includes(st.id));
+
+    if (window.currentBulkActionType === 'id') {
+        if(typeof window.generateBatchIDCards === 'function') {
+            closeCustomModal('bulk-action-modal');
+            window.generateBatchIDCards(selectedStudents);
+        } else {
+            alert("ID Card Generation is currently disabled on the frontend. Generating from Backend soon...");
+        }
+    } else if (window.currentBulkActionType === 'marksheet') {
+        closeCustomModal('bulk-action-modal');
+        window.generateBulkMarksheets(selectedStudents);
+    } else if (window.currentBulkActionType === 'admit') {
+        closeCustomModal('bulk-action-modal');
+        const hasDefaulters = selectedStudents.some(st => st.dueBalance && st.dueBalance > 0);
+        if (hasDefaulters) {
+            window.pendingAdmitCardStudents = selectedStudents;
+            document.getElementById("defaulter-admit-modal").style.display = "flex";
+        } else {
+            window.pendingAdmitCardStudents = selectedStudents;
+            window.proceedAdmitCards('disable');
+        }
+    } else if (window.currentBulkActionType === 'bonafide') {
+        const btn = document.getElementById("bulk-trigger-btn");
+        await window.triggerBulkBonafide(selectedStudents, btn);
+        closeCustomModal('bulk-action-modal');
+    }
+};
+
+window.saveTextFormatting = async () => {
+    const btn = document.getElementById("save_format_btn");
+    let originalText = btn.innerHTML;
+    btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Saving...";
+    const textSettings = {
+        color: document.getElementById("custom_doc_color").value,
+        font: document.getElementById("custom_doc_font").value,
+        isBold: document.getElementById("btn_format_bold").classList.contains("active-format"),
+        isItalic: document.getElementById("btn_format_italic").classList.contains("active-format"),
+        applyBonafide: document.getElementById("format_on_bonafide").checked,
+        applyIdCard: document.getElementById("format_on_id").checked
+    };
+    try {
+        const { error } = await supabaseClient.from("schools").update({ textSettings: textSettings }).eq("id", currentSchoolId);
+        if (error) throw error;
+        window.currentTextSettings = textSettings;
+        alert("Text Formatting Saved!");
+    } catch (e) {
+        alert("Failed to save formatting: " + e.message);
+    }
+    btn.innerHTML = originalText;
+};
+
+  window.triggerBulkBonafide = async (students, triggerBtn = null) => {
+    let originalHtml = "";
+    if (triggerBtn) {
+        originalHtml = triggerBtn.innerHTML;
+        triggerBtn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Generating...";
+        triggerBtn.disabled = true;
+    } else {
+        console.log("Compiling Bonafide PDF...");
+    }
+
+    let printWrapper = document.getElementById("bonafide-printable");
+    if (!printWrapper) {
+        printWrapper = document.createElement("div");
+        printWrapper.id = "bonafide-printable";
+        printWrapper.style.cssText = "width: 210mm; height: 297mm; padding: 15mm; background: white; font-family: 'Times New Roman', serif; position: absolute; left:-9999px; top:-9999px; color: #000; box-sizing: border-box;";
+        document.body.appendChild(printWrapper);
+    }
+
+    const { jsPDF } = window.jspdf;
     const pdf = new jsPDF('p', 'mm', 'a4');
     let pageCount = 0;
-    
+
     let transparentSig = currentSignatureUrl;
     if (currentSignatureUrl && (!window.currentSigSettings || window.currentSigSettings.bonafide !== false)) {
         if (typeof getTransparentSignature === 'function') {
@@ -3678,6 +6350,7 @@ window.replyToMailThread = async () => {
     }
     btn.innerHTML = "<i class='fas fa-reply'></i> Reply"; btn.disabled = false;
 };
+
 
 
 
