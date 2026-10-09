@@ -1754,6 +1754,12 @@ function getSchoolFeatureKeyForTab(targetId) {
         'tab-daily-attendance': 'dailyAttendance',
         'tab-student-features': 'studentPortalFeatures',
         'tab-settings': 'settings',
+        'tab-departments': 'departments',
+        'tab-programs': 'programs',
+        'tab-sessions': 'sessions',
+        'tab-sections': 'sections',
+        'tab-export-records': 'studentRecord',
+        'tab-password': 'changePassword',
         'staff-tab-attendance': 'dailyAttendance',
         'staff-tab-marks': 'academics',
         'staff-tab-notices': 'notices',
@@ -6350,6 +6356,8 @@ window.replyToMailThread = async () => {
     }
     btn.innerHTML = "<i class='fas fa-reply'></i> Reply"; btn.disabled = false;
 };
+
+
 
 
 
