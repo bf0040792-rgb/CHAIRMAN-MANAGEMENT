@@ -4081,7 +4081,6 @@ window.saveTextFormatting = async () => {
             bFontWeight = window.currentTextSettings.isBold ? "font-weight: bold;" : "font-weight: normal;";
             bFontStyle = window.currentTextSettings.isItalic ? "font-style: italic;" : "font-style: normal;";
         }
-        const fName = st.fatherName ? st.fatherName.toUpperCase() : (st.parentage ? st.parentage.toUpperCase() : "");
         
         let classPrefix = currentInstitutionType === 'college' ? "of BG" : "of class";
         let classVal = st.class || "";
@@ -6365,6 +6364,7 @@ window.replyToMailThread = async () => {
     }
     btn.innerHTML = "<i class='fas fa-reply'></i> Reply"; btn.disabled = false;
 };
+
 
 
 
