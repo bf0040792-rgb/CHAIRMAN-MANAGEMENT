@@ -3891,7 +3891,7 @@ window.triggerBulkAction = async () => {
         triggerBtn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Generating...";
         triggerBtn.disabled = true;
     } else {
-        console.log("Compiling Bonafide...");
+        console.log("Compiling Bonafide PDF...");
     }
 
     let printWrapper = document.getElementById("bonafide-printable");
@@ -3913,8 +3913,14 @@ window.triggerBulkAction = async () => {
             affNo = sRow.affiliationNo || sRow.affiliation_no || affNo;
         }
 
+        const sName = st.name ? st.name.toUpperCase() : (st.studentName ? st.studentName.toUpperCase() : "");
+        const fName = st.fatherName ? st.fatherName.toUpperCase() : (st.parentage ? st.parentage.toUpperCase() : "");
+        
+        let classPrefix = currentInstitutionType === 'college' ? "of BG" : "of class";
+        let classVal = st.class || "";
+
         printWrapper.innerHTML = `
-           <div style="background: #f4fdf4; border: 3px double #2b3b7a; padding: 15mm; height: 100%; box-sizing: border-box; position: relative;">
+           <div style="background: #eaf6ea; border: 3px double #2b3b7a; padding: 15mm; height: 100%; box-sizing: border-box; position: relative;">
                <div style="text-align: center; margin-bottom: 20px;">
                  <svg viewBox="0 0 800 120" style="width:100%; max-height:100px;">
                      <path id="curve" d="M 50 100 Q 400 -20 750 100" fill="transparent" />
@@ -3924,7 +3930,7 @@ window.triggerBulkAction = async () => {
                  </svg>
                  <div style="font-size: 14px; font-family: Arial, sans-serif; font-weight: bold; color: #2b3b7a; margin-top: 5px;">(NAAC ACCREDITED GRADE 'A')</div>
                  <div style="margin-top: 15px;">
-                     <span style="background: #2b3b7a; color: #fff; padding: 8px 30px; border-radius: 20px; font-weight: bold; font-family: 'Times New Roman', serif; font-size: 20px; text-transform: uppercase;">BONAFIDE CERTIFICATE</span>
+                     <span style="display:inline-block; background: #2b3b7a; color: #fff; padding: 10px 30px; border-radius: 20px; font-weight: bold; font-family: 'Times New Roman', serif; font-size: 20px; text-transform: uppercase;">BONAFIDE CERTIFICATE</span>
                  </div>
                </div>
                <div style="display: flex; justify-content: space-between; font-family: Arial, sans-serif; font-size: 14px; font-weight: bold; color: #333; margin-top: 30px; margin-bottom: 30px;">
@@ -3932,24 +3938,24 @@ window.triggerBulkAction = async () => {
                    <div>Date <span style="display:inline-block; border-bottom: 1px solid #000; width: 120px; text-align:center; color: #2b3b7a; font-family: 'Caveat', cursive, serif;">${new Date().toLocaleDateString()}</span></div>
                </div>
                <div style="font-family: Arial, sans-serif; font-size: 16px; line-height: 2.8; color: #333; text-align: left;">
-                   <span style="color:#555;">This is to Certify that</span> <span style="display:inline-block; border-bottom: 1px solid #000; width: 420px; text-align:center; font-weight: bold; font-family: 'Caveat', cursive, serif; font-size: 22px; color: #2b3b7a;">${st.studentName ? st.studentName.toUpperCase() : ""}</span>
+                   <span style="color:#555;">This is to Certify that</span> <span style="display:inline-block; border-bottom: 1px solid #000; width: 420px; text-align:center; font-weight: bold; font-family: 'Caveat', cursive, serif; font-size: 22px; color: #2b3b7a;">${sName}</span>
                    <br>
-                   <span style="color:#555;">S/o, D/o</span> <span style="display:inline-block; border-bottom: 1px solid #000; width: 490px; text-align:center; font-weight: bold; font-family: 'Caveat', cursive, serif; font-size: 22px; color: #2b3b7a;">${st.parentName ? st.parentName.toUpperCase() : ""}</span>
+                   <span style="color:#555;">S/o, D/o</span> <span style="display:inline-block; border-bottom: 1px solid #000; width: 490px; text-align:center; font-weight: bold; font-family: 'Caveat', cursive, serif; font-size: 22px; color: #2b3b7a;">${fName}</span>
                    <br>
                    <span style="color:#555;">R/o</span> <span style="display:inline-block; border-bottom: 1px solid #000; width: 510px; text-align:center; font-weight: bold; font-family: 'Caveat', cursive, serif; font-size: 22px; color: #2b3b7a;">${st.address ? st.address.toUpperCase() : "N/A"}</span>
                    <br>
                    <span style="color:#555;">Is a bonafide student of this college under class Roll No.</span> <span style="display:inline-block; border-bottom: 1px solid #000; width: 180px; text-align:center; font-weight: bold; font-family: 'Caveat', cursive, serif; font-size: 22px; color: #2b3b7a;">${st.rollNo || ""}</span>
                    <br>
-                   <span style="color:#555;">of class</span> <span style="display:inline-block; border-bottom: 1px solid #000; width: 150px; text-align:center; font-weight: bold; font-family: 'Caveat', cursive, serif; font-size: 22px; color: #2b3b7a;">${st.className || ""}</span>
+                   <span style="color:#555;">${classPrefix}</span> <span style="display:inline-block; border-bottom: 1px solid #000; width: 150px; text-align:center; font-weight: bold; font-family: 'Caveat', cursive, serif; font-size: 22px; color: #2b3b7a;">${classVal}</span>
                    <span style="color:#555; margin-left: 20px;">Year</span> <span style="display:inline-block; border-bottom: 1px solid #000; width: 150px; text-align:center; font-weight: bold; font-family: 'Caveat', cursive, serif; font-size: 22px; color: #2b3b7a;">${new Date().getFullYear()}</span>
                </div>
-               <div style="position: absolute; bottom: 40px; right: 40px; text-align: center;">
-                 ${currentSignatureUrl ? `<img src="${currentSignatureUrl}" style="height: 60px; display: block; margin: 0 auto; object-fit: contain;">` : `<div style="height:60px;"></div>`}
-                 <div style="font-weight: bold; font-family: Arial, sans-serif; font-size: 14px; margin-top: 5px;">Principal</div>
+               <div style="position: absolute; bottom: 40px; right: 40px; text-align: center; width: 200px;">
+                 ${currentSignatureUrl ? `<img src="${currentSignatureUrl}" style="height: 60px; display: block; margin: 0 auto; object-fit: contain; mix-blend-mode: multiply;">` : `<div style="height:60px;"></div>`}
+                 <div style="border-top: 1px solid #000; width: 150px; margin: 0 auto; padding-top: 5px; font-weight: bold; font-family: Arial, sans-serif; font-size: 14px; margin-top: 5px;">Principal</div>
                </div>
-               <div style="position: absolute; bottom: 40px; left: 40px; text-align: center;">
+               <div style="position: absolute; bottom: 40px; left: 40px; text-align: center; width: 200px;">
                  <div style="height:60px;"></div>
-                 <div style="font-weight: bold; font-family: Arial, sans-serif; font-size: 14px; margin-top: 5px; color:#555;">I/c Admission</div>
+                 <div style="border-top: 1px solid transparent; width: 150px; margin: 0 auto; padding-top: 5px; font-weight: bold; font-family: Arial, sans-serif; font-size: 14px; margin-top: 5px; color:#555;">I/c Admission</div>
                </div>
            </div>
         `;
@@ -3989,7 +3995,6 @@ window.triggerBulkAction = async () => {
         document.getElementById("cert-preview-frame").contentWindow.print();
     };
 };
-
 window.triggerGlobalBonafideBatch = async () => {
     const checked = document.querySelectorAll(".bonafide-checkbox:checked");
     if (checked.length === 0) return alert("Please select at least one student.");
@@ -6193,6 +6198,7 @@ window.replyToMailThread = async () => {
     }
     btn.innerHTML = "<i class='fas fa-reply'></i> Reply"; btn.disabled = false;
 };
+
 
 
 
