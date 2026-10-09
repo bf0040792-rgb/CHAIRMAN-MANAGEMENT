@@ -3850,20 +3850,25 @@ window.toggleAllBulkStudents = (el) => {
     document.querySelectorAll(".bulk-student-cb").forEach(cb => cb.checked = el.checked);
 };
 
-window.triggerBulkAction = () => {
+window.triggerBulkAction = async () => {
     const checked = document.querySelectorAll(".bulk-student-cb:checked");
     if (checked.length === 0) return alert("Please select at least one student.");
 
     const selectedIds = Array.from(checked).map(cb => cb.value);
     const selectedStudents = window.fetchedStudents.filter(st => selectedIds.includes(st.id));
 
-    closeCustomModal('bulk-action-modal');
-
     if (window.currentBulkActionType === 'id') {
-        window.generateBatchIDCards(selectedStudents);
+        if(typeof window.generateBatchIDCards === 'function') {
+            closeCustomModal('bulk-action-modal');
+            window.generateBatchIDCards(selectedStudents);
+        } else {
+            alert("ID Card Generation is currently disabled on the frontend. Generating from Backend soon...");
+        }
     } else if (window.currentBulkActionType === 'marksheet') {
+        closeCustomModal('bulk-action-modal');
         window.generateBulkMarksheets(selectedStudents);
     } else if (window.currentBulkActionType === 'admit') {
+        closeCustomModal('bulk-action-modal');
         const hasDefaulters = selectedStudents.some(st => st.dueBalance && st.dueBalance > 0);
         if (hasDefaulters) {
             window.pendingAdmitCardStudents = selectedStudents;
@@ -3873,7 +3878,9 @@ window.triggerBulkAction = () => {
             window.proceedAdmitCards('disable');
         }
     } else if (window.currentBulkActionType === 'bonafide') {
-        window.triggerBulkBonafide(selectedStudents);
+        const btn = document.getElementById("bulk-trigger-btn");
+        await window.triggerBulkBonafide(selectedStudents, btn);
+        closeCustomModal('bulk-action-modal');
     }
 };
 
@@ -3884,7 +3891,7 @@ window.triggerBulkAction = () => {
         triggerBtn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Generating...";
         triggerBtn.disabled = true;
     } else {
-        window.showToast("Compiling Bonafide PDF...", "#f59e0b");
+        console.log("Compiling Bonafide...");
     }
 
     let printWrapper = document.getElementById("bonafide-printable");
@@ -6186,6 +6193,8 @@ window.replyToMailThread = async () => {
     }
     btn.innerHTML = "<i class='fas fa-reply'></i> Reply"; btn.disabled = false;
 };
+
+
 
 
 
