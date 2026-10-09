@@ -960,7 +960,7 @@ const uploadToCloudinary = async (fileInputId, btnId, defaultText) => {
     try {
         const formData = new FormData();
         formData.append("file", file);
-        formData.append("upload_preset", "school_portal");
+        formData.append("upload_preset", "ml_default");
         
         const res = await fetch("https://api.cloudinary.com/v1_1/disgtvs6f/image/upload", { 
             method: "POST", 
@@ -6341,6 +6341,8 @@ window.replyToMailThread = async () => {
     }
     btn.innerHTML = "<i class='fas fa-reply'></i> Reply"; btn.disabled = false;
 };
+
+
 
 
 
