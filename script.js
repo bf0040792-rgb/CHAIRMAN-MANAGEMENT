@@ -1800,6 +1800,7 @@ function applyFeatureLocks() {
         item.setAttribute('aria-disabled', locked ? 'true' : 'false');
         if (locked && !item.querySelector('.company-lock-badge')) item.insertAdjacentHTML('beforeend', ' <span class="company-lock-badge"><i class="fas fa-lock"></i> Locked</span>');
         if (!locked) item.querySelector('.company-lock-badge')?.remove();
+        item.style.display = locked ? 'none' : '';
     });
     renderStudentFeatureGrid();
 }
@@ -6356,6 +6357,7 @@ window.replyToMailThread = async () => {
     }
     btn.innerHTML = "<i class='fas fa-reply'></i> Reply"; btn.disabled = false;
 };
+
 
 
 
